@@ -1,0 +1,114 @@
+# see documentation, e.g.
+# - https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#declaring-project-metadata
+# - https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+# - https://www.python.org/dev/peps/pep-0621/
+
+
+[project]
+authors = [
+    { name = "Matteo Masi", email = "matteo.masi@unifi.it" },
+    { name = "Fabio Castelli", email = "fabio.castelli@unifi.it" }
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+]
+description = "MOBIDIC - Distributed and continuous hydrological balance model"
+keywords = ["Hydrology"," Numerical modelling"," Distributed hydrologic modelling"]
+license = "Apache-2.0"
+name = "mobidicpy"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.10"
+version = "0.0.1"
+
+
+[project.urls]
+Repository = "https://github.com/mobicidhydro/mobidicpy"
+Issues = "https://github.com/mobicidhydro/mobidicpy/issues"
+
+[tool.setuptools]
+py-modules = ['mobidicpy']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["mobidicpy"]
+command_line = "-m pytest"
+omit = ["examples/*"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py38,py39,py310,py311,py312
+skip_missing_interpreters = true
+[testenv]
+commands = pytest
+extras = dev
+"""
+
+[tool.ruff]
+line-length = 120
+output-format = "concise"
+extend-exclude = ["docs", "*.ipynb"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Enable Pyflakes `E` and `F` codes by default.
+select = ["E", "F"]
+ignore = [
+    "ANN204", # Missing return type annotation for special (dunder) method
+    "FBT",    # Using boolean function arguments
+    "TD",     # TODOs
+    "FIX001", # Resolve FIXMEs
+    "FIX002", # Resolve TODOs
+    "B028",   # No explicit `stacklevel` keyword argument found in warning
+    # No docstrings required in the following cases
+    "D100", # Missing module docstring
+    "D104", # Missing public package docstring
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in `__init__`
+]
+pydocstyle.convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can ignore a few extra rules
+"tests/**.py" = [
+    "ANN201", # Missing return type annotation for public function
+    "PT011",  # Missing `match` parameter in `pytest.raises()`
+    "S101",   # Use of assert is detected
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mobidicpy"]
+force-single-line = true
+no-lines-before = ["future","standard-library","third-party","first-party","local-folder"]
+
+[tool.bumpversion]
+current_version = "0.0.1"
+
+[[tool.bumpversion.files]]
+filename = "mobidicpy/__init__.py"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+
+[[tool.bumpversion.files]]
+filename = "CITATION.cff"
