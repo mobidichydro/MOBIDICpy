@@ -1,0 +1,25 @@
+# YAML 1.2
+---
+cff-version: "1.2.0"
+title: "MOBIDICpy"
+authors:
+  - family-names: Castelli
+    given-names: Fabio
+    orcid: "https://orcid.org/0000-0003-0304-0289"
+  - family-names: Masi
+    given-names: Matteo
+    orcid: "https://orcid.org/0000-0002-1746-9150"
+version: "0.0.1"
+repository-code: "https://github.com/mobicidhydro/mobidicpy"
+keywords:
+  - "Hydrology"
+  - "Numerical modelling"
+  - "Distributed hydrologic modelling"
+  - "Hydrological balance"
+  - "MOBIDIC"
+  - "Hydrological model"
+  - "Rainfall-runoff"
+  - "Water resources"
+  - "Catchment hydrology"
+  - "Hydrological analysis"
+message: "If you use this software, please cite it using these metadata."
