@@ -6,8 +6,8 @@
 
 [project]
 authors = [
-    { name = "Matteo Masi", email = "matteo.masi@unifi.it" },
-    { name = "Fabio Castelli", email = "fabio.castelli@unifi.it" }
+    { name = "Fabio Castelli", email = "fabio.castelli@unifi.it" },
+    { name = "Matteo Masi", email = "matteo.masi@unifi.it" }
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -25,7 +25,7 @@ dependencies = [
     "matplotlib",
 ]
 description = "MOBIDIC - Distributed and continuous hydrological balance model"
-keywords = ["Hydrology"," Numerical modelling"," Distributed hydrologic modelling"]
+keywords = ["Hydrology", "Numerical modelling", "Distributed hydrologic modelling"]
 license = "Apache-2.0"
 name = "mobidicpy"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -52,7 +52,7 @@ omit = ["examples/*"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py38,py39,py310,py311,py312
+envlist = py310,py311,py312
 skip_missing_interpreters = true
 [testenv]
 commands = pytest
@@ -105,7 +105,7 @@ no-lines-before = ["future","standard-library","third-party","first-party","loca
 current_version = "0.0.1"
 
 [[tool.bumpversion.files]]
-filename = "mobidicpy/__init__.py"
+filename = "mobidic/__init__.py"
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
