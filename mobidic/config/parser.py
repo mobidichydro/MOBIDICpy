@@ -13,30 +13,21 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
     """
     Load and validate MOBIDIC configuration from YAML file.
 
-    Parameters
-    ----------
-    config_path : str or Path
-        Path to the YAML configuration file.
+    Args:
+        config_path: Path to the YAML configuration file.
 
-    Returns
-    -------
-    MOBIDICConfig
-        Validated configuration object.
+    Returns:
+        MOBIDICConfig: Validated configuration object.
 
-    Raises
-    ------
-    FileNotFoundError
-        If the configuration file does not exist.
-    yaml.YAMLError
-        If the YAML file is invalid.
-    ValueError
-        If the configuration does not match the schema.
+    Raises:
+        FileNotFoundError: If the configuration file does not exist.
+        yaml.YAMLError: If the YAML file is invalid.
+        ValueError: If the configuration does not match the schema.
 
-    Examples
-    --------
-    >>> config = load_config("examples/sample_config.yaml")
-    >>> print(config.basin.id)
-    'Arno'
+    Examples:
+        >>> config = load_config("examples/sample_config.yaml")
+        >>> print(config.basin.id)
+        'Arno'
     """
     config_path = Path(config_path)
 
@@ -64,16 +55,12 @@ def save_config(config: MOBIDICConfig, output_path: Union[str, Path]) -> None:
     """
     Save MOBIDIC configuration to YAML file.
 
-    Parameters
-    ----------
-    config : MOBIDICConfig
-        Configuration object to save.
-    output_path : str or Path
-        Path where the YAML file will be saved.
+    Args:
+        config: Configuration object to save.
+        output_path: Path where the YAML file will be saved.
 
-    Examples
-    --------
-    >>> save_config(config, "config/config_modified.yaml")
+    Examples:
+        >>> save_config(config, "config/config_modified.yaml")
     """
     output_path = Path(output_path)
 

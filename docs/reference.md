@@ -1,0 +1,3 @@
+# `MOBIDICpy` API reference
+
+::: mobidic

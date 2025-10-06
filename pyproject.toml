@@ -41,10 +41,18 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
 ]
+doc = [
+    "mkdocs >=1.6.0",
+    "mkdocs-material >=9.6.0",
+    "mkdocstrings[python] >=0.30.0",
+    "mkdocs-autorefs >=1.4.0",
+    "mdx-include >=1.4.1",
+    "mkdocs-markdownextradata-plugin >=0.2.5",
+]
 
 [project.urls]
-Repository = "https://github.com/mobicidhydro/mobidicpy"
-Issues = "https://github.com/mobicidhydro/mobidicpy/issues"
+Repository = "https://github.com/mobidichydro/mobidicpy"
+Issues = "https://github.com/mobidichydro/mobidicpy/issues"
 
 [tool.setuptools]
 packages = ["mobidic"]
