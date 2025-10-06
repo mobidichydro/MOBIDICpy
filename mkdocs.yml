@@ -2,7 +2,7 @@ site_name: MOBIDICpy
 site_description: MOBIDIC - Distributed and continuous hydrological balance model
 site_author: Fabio Castelli, Matteo Masi
 site_url: https://mobidichydro.github.io/mobidicpy
-repo_name: mobidichydro/mobidicpy
+repo_name: mobidicpy
 repo_url: https://github.com/mobidichydro/mobidicpy
 edit_uri: "edit/main/docs/"
 copyright: Copyright &copy; 2025, MOBIDICpy Project
@@ -23,13 +23,13 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: light blue
+      primary: indigo
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: light blue
+      primary: indigo
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
