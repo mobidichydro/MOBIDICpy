@@ -27,7 +27,7 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
     Examples:
         >>> config = load_config("examples/sample_config.yaml")
         >>> print(config.basin.id)
-        'Arno'
+        'Basin'
     """
     config_path = Path(config_path)
 
