@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union
 
 import yaml
+from loguru import logger
 from pydantic import ValidationError
 
 from .schema import MOBIDICConfig
@@ -32,20 +33,27 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
     config_path = Path(config_path)
 
     if not config_path.exists():
+        logger.error(f"Configuration file not found: {config_path}")
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+    logger.info(f"Loading configuration from: {config_path}")
 
     # Load YAML file
     with open(config_path, "r", encoding="utf-8") as f:
         try:
             config_dict = yaml.safe_load(f)
+            logger.success(f"Successfully parsed YAML file: {config_path}")
         except yaml.YAMLError as e:
+            logger.error(f"Error parsing YAML file {config_path}: {e}")
             raise yaml.YAMLError(f"Error parsing YAML file {config_path}: {e}") from e
 
     # Validate and parse with Pydantic
     try:
         config = MOBIDICConfig(**config_dict)
+        logger.info("Configuration validated successfully")
     except ValidationError as e:
         # Add context to the error message and re-raise
+        logger.error(f"Configuration validation failed for {config_path}")
         raise ValueError(f"Configuration validation failed for {config_path}:\n{e}") from e
 
     return config
@@ -64,6 +72,8 @@ def save_config(config: MOBIDICConfig, output_path: Union[str, Path]) -> None:
     """
     output_path = Path(output_path)
 
+    logger.info(f"Saving configuration to: {output_path}")
+
     # Convert Pydantic model to dictionary
     config_dict = config.model_dump(exclude_none=True, mode="python")
 
@@ -77,3 +87,5 @@ def save_config(config: MOBIDICConfig, output_path: Union[str, Path]) -> None:
             allow_unicode=True,
             indent=2,
         )
+
+    logger.info(f"Configuration saved successfully to: {output_path}")

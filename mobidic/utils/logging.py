@@ -34,9 +34,9 @@ def configure_logger(
     # Default format string
     if format_string is None:
         if colorize:
-            format_string = "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
+            format_string = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
         else:
-            format_string = "{time:HH:mm:ss} | {level: <8} | {message}"
+            format_string = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
 
     # Add stdout handler
     logger.add(

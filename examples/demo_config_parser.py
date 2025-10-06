@@ -3,222 +3,242 @@
 import sys
 from pathlib import Path
 
+from loguru import logger
+
 # Add parent directory to path for development (no install needed)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from mobidic.config import load_config
+from mobidic.utils import configure_logger
+
+# Configure logger using centralized configuration
+configure_logger(level="INFO")
 
 # Path to sample configuration
 config_path = Path(__file__).parent / "sample_config.yaml"
 
 # Load and validate configuration
-print("Loading configuration from:", config_path)
-
 try:
     config = load_config(config_path)
-    print("Configuration loaded and validated successfully!")
 except Exception as e:
-    print("Error loading configuration:", e)
+    logger.error(f"Error loading configuration: {e}")
     sys.exit(1)
 
 # Access configuration values in the same order as YAML file
 
 # PROJECT DATA
-print("\n" + "=" * 60)
-print("Basin Information:")
-print("=" * 60)
-print(f"Basin ID: {config.basin.id}")
-print(f"Parameter Set: {config.basin.paramset_id}")
-print(f"Baricenter: ({config.basin.baricenter.lon}°E, {config.basin.baricenter.lat}°N)")
+logger.info("=" * 60)
+logger.info("Basin Information:")
+logger.info("=" * 60)
+logger.info(f"Basin ID: {config.basin.id}")
+logger.info(f"Parameter Set: {config.basin.paramset_id}")
+logger.info(f"Baricenter: ({config.basin.baricenter.lon}°E, {config.basin.baricenter.lat}°N)")
 
 # FILE PATHS
-print("\n" + "=" * 60)
-print("File Paths:")
-print("=" * 60)
-print(f"Meteodata: {config.paths.meteodata}")
-print(f"GIS Data: {config.paths.gisdata}")
-print(f"States Directory: {config.paths.states}")
-print(f"Output Directory: {config.paths.output}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("File Paths:")
+logger.info("=" * 60)
+logger.info(f"Meteodata: {config.paths.meteodata}")
+logger.info(f"GIS Data: {config.paths.gisdata}")
+logger.info(f"States Directory: {config.paths.states}")
+logger.info(f"Output Directory: {config.paths.output}")
 
 # VECTOR FILES
-print("\n" + "=" * 60)
-print("Vector Files:")
-print("=" * 60)
-print(f"River Network: {config.vector_files.river_network.shp}")
-print(f"ID Field: {config.vector_files.river_network.id_field}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Vector Files:")
+logger.info("=" * 60)
+logger.info(f"River Network: {config.vector_files.river_network.shp}")
+logger.info(f"ID Field: {config.vector_files.river_network.id_field}")
 
 # RASTER FILES
-print("\n" + "=" * 60)
-print("Raster Files:")
-print("=" * 60)
-print(f"DTM: {config.raster_files.dtm}")
-print(f"Flow Direction: {config.raster_files.flow_dir}")
-print(f"Flow Accumulation: {config.raster_files.flow_acc}")
-print(f"Wc0: {config.raster_files.Wc0}")
-print(f"Wg0: {config.raster_files.Wg0}")
-print(f"ks: {config.raster_files.ks}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Raster Files:")
+logger.info("=" * 60)
+logger.info(f"DTM: {config.raster_files.dtm}")
+logger.info(f"Flow Direction: {config.raster_files.flow_dir}")
+logger.info(f"Flow Accumulation: {config.raster_files.flow_acc}")
+logger.info(f"Wc0: {config.raster_files.Wc0}")
+logger.info(f"Wg0: {config.raster_files.Wg0}")
+logger.info(f"ks: {config.raster_files.ks}")
 if config.raster_files.kf:
-    print(f"kf: {config.raster_files.kf}")
+    logger.info(f"kf: {config.raster_files.kf}")
 if config.raster_files.CH:
-    print(f"CH: {config.raster_files.CH}")
+    logger.info(f"CH: {config.raster_files.CH}")
 if config.raster_files.Alb:
-    print(f"Alb: {config.raster_files.Alb}")
+    logger.info(f"Alb: {config.raster_files.Alb}")
 if config.raster_files.Ma:
-    print(f"Ma: {config.raster_files.Ma}")
+    logger.info(f"Ma: {config.raster_files.Ma}")
 if config.raster_files.Mf:
-    print(f"Mf: {config.raster_files.Mf}")
+    logger.info(f"Mf: {config.raster_files.Mf}")
 if config.raster_files.gamma:
-    print(f"gamma: {config.raster_files.gamma}")
+    logger.info(f"gamma: {config.raster_files.gamma}")
 if config.raster_files.kappa:
-    print(f"kappa: {config.raster_files.kappa}")
+    logger.info(f"kappa: {config.raster_files.kappa}")
 if config.raster_files.beta:
-    print(f"beta: {config.raster_files.beta}")
+    logger.info(f"beta: {config.raster_files.beta}")
 if config.raster_files.alpha:
-    print(f"alpha: {config.raster_files.alpha}")
+    logger.info(f"alpha: {config.raster_files.alpha}")
 
-print("\n" + "=" * 60)
-print("Raster Settings:")
-print("=" * 60)
-print(f"Flow Direction Type: {config.raster_settings.flow_dir_type}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Raster Settings:")
+logger.info("=" * 60)
+logger.info(f"Flow Direction Type: {config.raster_settings.flow_dir_type}")
 
 # GLOBAL LAND PARAMETERS
-print("\n" + "=" * 60)
-print("Soil Parameters:")
-print("=" * 60)
-print(f"Wc0: {config.parameters.soil.Wc0} mm")
-print(f"Wg0: {config.parameters.soil.Wg0} mm")
-print(f"ks: {config.parameters.soil.ks} mm/h")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Soil Parameters:")
+logger.info("=" * 60)
+logger.info(f"Wc0: {config.parameters.soil.Wc0} mm")
+logger.info(f"Wg0: {config.parameters.soil.Wg0} mm")
+logger.info(f"ks: {config.parameters.soil.ks} mm/h")
 if hasattr(config.parameters.soil, "ks_min") and config.parameters.soil.ks_min:
-    print(f"ks_min: {config.parameters.soil.ks_min} mm/h")
+    logger.info(f"ks_min: {config.parameters.soil.ks_min} mm/h")
 if hasattr(config.parameters.soil, "ks_max") and config.parameters.soil.ks_max:
-    print(f"ks_max: {config.parameters.soil.ks_max} mm/h")
-print(f"kf: {config.parameters.soil.kf} m/s")
-print(f"gamma (percolation): {config.parameters.soil.gamma} 1/s")
-print(f"kappa (adsorption): {config.parameters.soil.kappa} 1/s")
-print(f"beta (hypodermic): {config.parameters.soil.beta} 1/s")
-print(f"alpha (hillslope): {config.parameters.soil.alpha} 1/s")
+    logger.info(f"ks_max: {config.parameters.soil.ks_max} mm/h")
+logger.info(f"kf: {config.parameters.soil.kf} m/s")
+logger.info(f"gamma (percolation): {config.parameters.soil.gamma} 1/s")
+logger.info(f"kappa (adsorption): {config.parameters.soil.kappa} 1/s")
+logger.info(f"beta (hypodermic): {config.parameters.soil.beta} 1/s")
+logger.info(f"alpha (hillslope): {config.parameters.soil.alpha} 1/s")
 
-print("\n" + "=" * 60)
-print("Energy Parameters:")
-print("=" * 60)
-print(f"Tconst: {config.parameters.energy.Tconst} K")
-print(f"kaps: {config.parameters.energy.kaps} W/m/K")
-print(f"nis: {config.parameters.energy.nis} m²/s")
-print(f"CH: {config.parameters.energy.CH}")
-print(f"Alb: {config.parameters.energy.Alb}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Energy Parameters:")
+logger.info("=" * 60)
+logger.info(f"Tconst: {config.parameters.energy.Tconst} K")
+logger.info(f"kaps: {config.parameters.energy.kaps} W/m/K")
+logger.info(f"nis: {config.parameters.energy.nis} m²/s")
+logger.info(f"CH: {config.parameters.energy.CH}")
+logger.info(f"Alb: {config.parameters.energy.Alb}")
 
-print("\n" + "=" * 60)
-print("Routing Parameters:")
-print("=" * 60)
-print(f"Method: {config.parameters.routing.method}")
-print(f"wcel (wave celerity): {config.parameters.routing.wcel} m/s")
-print(f"Br0: {config.parameters.routing.Br0} m")
-print(f"NBr: {config.parameters.routing.NBr}")
-print(f"n_Man (Manning coeff.): {config.parameters.routing.n_Man} s/m^(1/3)")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Routing Parameters:")
+logger.info("=" * 60)
+logger.info(f"Method: {config.parameters.routing.method}")
+logger.info(f"wcel (wave celerity): {config.parameters.routing.wcel} m/s")
+logger.info(f"Br0: {config.parameters.routing.Br0} m")
+logger.info(f"NBr: {config.parameters.routing.NBr}")
+logger.info(f"n_Man (Manning coeff.): {config.parameters.routing.n_Man} s/m^(1/3)")
 
-print("\n" + "=" * 60)
-print("Groundwater Parameters:")
-print("=" * 60)
-print(f"Model: {config.parameters.groundwater.model}")
-print(f"Global Loss: {config.parameters.groundwater.global_loss} m³/s")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Groundwater Parameters:")
+logger.info("=" * 60)
+logger.info(f"Model: {config.parameters.groundwater.model}")
+logger.info(f"Global Loss: {config.parameters.groundwater.global_loss} m³/s")
 
 if hasattr(config.parameters, "multipliers"):
-    print("\n" + "=" * 60)
-    print("Multipliers:")
-    print("=" * 60)
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("Multipliers:")
+    logger.info("=" * 60)
     if hasattr(config.parameters.multipliers, "ks_factor"):
-        print(f"ks_factor: {config.parameters.multipliers.ks_factor}")
+        logger.info(f"ks_factor: {config.parameters.multipliers.ks_factor}")
     if hasattr(config.parameters.multipliers, "Wc_factor"):
-        print(f"Wc_factor: {config.parameters.multipliers.Wc_factor}")
+        logger.info(f"Wc_factor: {config.parameters.multipliers.Wc_factor}")
     if hasattr(config.parameters.multipliers, "Wg_factor"):
-        print(f"Wg_factor: {config.parameters.multipliers.Wg_factor}")
+        logger.info(f"Wg_factor: {config.parameters.multipliers.Wg_factor}")
     if hasattr(config.parameters.multipliers, "Wg_Wc_tr"):
-        print(f"Wg_Wc_tr: {config.parameters.multipliers.Wg_Wc_tr}")
+        logger.info(f"Wg_Wc_tr: {config.parameters.multipliers.Wg_Wc_tr}")
     if hasattr(config.parameters.multipliers, "CH_factor"):
-        print(f"CH_factor: {config.parameters.multipliers.CH_factor}")
+        logger.info(f"CH_factor: {config.parameters.multipliers.CH_factor}")
     if hasattr(config.parameters.multipliers, "cel_factor"):
-        print(f"cel_factor: {config.parameters.multipliers.cel_factor}")
+        logger.info(f"cel_factor: {config.parameters.multipliers.cel_factor}")
     if hasattr(config.parameters.multipliers, "chan_factor"):
-        print(f"chan_factor: {config.parameters.multipliers.chan_factor}")
+        logger.info(f"chan_factor: {config.parameters.multipliers.chan_factor}")
 
 # INITIAL CONDITIONS
 if hasattr(config, "initial_conditions"):
-    print("\n" + "=" * 60)
-    print("Initial Conditions:")
-    print("=" * 60)
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("Initial Conditions:")
+    logger.info("=" * 60)
     if hasattr(config.initial_conditions, "Ws"):
-        print(f"Ws (hillslope depth): {config.initial_conditions.Ws} m")
+        logger.info(f"Ws (hillslope depth): {config.initial_conditions.Ws} m")
     if hasattr(config.initial_conditions, "Wcsat"):
-        print(f"Wcsat (capillary saturation): {config.initial_conditions.Wcsat}")
+        logger.info(f"Wcsat (capillary saturation): {config.initial_conditions.Wcsat}")
     if hasattr(config.initial_conditions, "Wgsat"):
-        print(f"Wgsat (gravitational saturation): {config.initial_conditions.Wgsat}")
+        logger.info(f"Wgsat (gravitational saturation): {config.initial_conditions.Wgsat}")
 
 # SIMULATION CONTROLS
-print("\n" + "=" * 60)
-print("Simulation Settings:")
-print("=" * 60)
-print(f"Realtime Mode: {config.simulation.realtime}")
-print(f"Timestep: {config.simulation.timestep} seconds")
-print(f"Resample Factor: {config.simulation.resample}")
-print(f"Soil Scheme: {config.simulation.soil_scheme}")
-print(f"Energy Balance: {config.simulation.energy_balance}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Simulation Settings:")
+logger.info("=" * 60)
+logger.info(f"Realtime Mode: {config.simulation.realtime}")
+logger.info(f"Timestep: {config.simulation.timestep} seconds")
+logger.info(f"Resample Factor: {config.simulation.resample}")
+logger.info(f"Soil Scheme: {config.simulation.soil_scheme}")
+logger.info(f"Energy Balance: {config.simulation.energy_balance}")
 
 # OUTPUT CONTROLS
-print("\n" + "=" * 60)
-print("Output States:")
-print("=" * 60)
-print(f"Discharge: {config.output_states.discharge}")
-print(f"Reservoir States: {config.output_states.reservoir_states}")
-print(f"Soil Capillary: {config.output_states.soil_capillary}")
-print(f"Soil Gravitational: {config.output_states.soil_gravitational}")
-print(f"Surface Temperature: {config.output_states.surface_temperature}")
-print(f"Ground Temperature: {config.output_states.ground_temperature}")
-print(f"Aquifer Head: {config.output_states.aquifer_head}")
-print(f"ET/Precip: {config.output_states.et_prec}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Output States:")
+logger.info("=" * 60)
+logger.info(f"Discharge: {config.output_states.discharge}")
+logger.info(f"Reservoir States: {config.output_states.reservoir_states}")
+logger.info(f"Soil Capillary: {config.output_states.soil_capillary}")
+logger.info(f"Soil Gravitational: {config.output_states.soil_gravitational}")
+logger.info(f"Surface Temperature: {config.output_states.surface_temperature}")
+logger.info(f"Ground Temperature: {config.output_states.ground_temperature}")
+logger.info(f"Aquifer Head: {config.output_states.aquifer_head}")
+logger.info(f"ET/Precip: {config.output_states.et_prec}")
 
-print("\n" + "=" * 60)
-print("Output States Settings:")
-print("=" * 60)
-print(f"Output Format: {config.output_states_settings.output_format}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Output States Settings:")
+logger.info("=" * 60)
+logger.info(f"Output Format: {config.output_states_settings.output_format}")
 if hasattr(config.output_states_settings, "output_interval") and config.output_states_settings.output_interval:
-    print(f"Output Interval: {config.output_states_settings.output_interval} seconds")
+    logger.info(f"Output Interval: {config.output_states_settings.output_interval} seconds")
 
 if hasattr(config, "output_report"):
-    print("\n" + "=" * 60)
-    print("Output Report:")
-    print("=" * 60)
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("Output Report:")
+    logger.info("=" * 60)
     if hasattr(config.output_report, "discharge"):
-        print(f"Discharge: {config.output_report.discharge}")
+        logger.info(f"Discharge: {config.output_report.discharge}")
     if hasattr(config.output_report, "lateral_inflow"):
-        print(f"Lateral Inflow: {config.output_report.lateral_inflow}")
+        logger.info(f"Lateral Inflow: {config.output_report.lateral_inflow}")
 
-print("\n" + "=" * 60)
-print("Output Report Settings:")
-print("=" * 60)
-print(f"Output Format: {config.output_report_settings.output_format}")
+logger.info("")
+logger.info("=" * 60)
+logger.info("Output Report Settings:")
+logger.info("=" * 60)
+logger.info(f"Output Format: {config.output_report_settings.output_format}")
 if hasattr(config.output_report_settings, "report_interval") and config.output_report_settings.report_interval:
-    print(f"Report Interval: {config.output_report_settings.report_interval} seconds")
-print(f"Reach Selection: {config.output_report_settings.reach_selection}")
+    logger.info(f"Report Interval: {config.output_report_settings.report_interval} seconds")
+logger.info(f"Reach Selection: {config.output_report_settings.reach_selection}")
 if config.output_report_settings.reach_selection == "file":
-    print(f"Selection File: {config.output_report_settings.sel_file}")
+    logger.info(f"Selection File: {config.output_report_settings.sel_file}")
 if config.output_report_settings.reach_selection == "list":
-    print(f"Selected Reaches: {config.output_report_settings.sel_list}")
+    logger.info(f"Selected Reaches: {config.output_report_settings.sel_list}")
 
 # ADVANCED SETTINGS
 if hasattr(config, "advanced"):
-    print("\n" + "=" * 60)
-    print("Advanced Settings:")
-    print("=" * 60)
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("Advanced Settings:")
+    logger.info("=" * 60)
     if hasattr(config.advanced, "log_level"):
-        print(f"Log Level: {config.advanced.log_level}")
+        logger.info(f"Log Level: {config.advanced.log_level}")
     if hasattr(config.advanced, "log_file"):
-        print(f"Log File: {config.advanced.log_file}")
+        logger.info(f"Log File: {config.advanced.log_file}")
 
 
 # Demonstrate validation by creating config with invalid data
-print("\n" + "=" * 60)
-print("Demonstrating Validation:")
-print("=" * 60)
+logger.info("")
+logger.info("=" * 60)
+logger.info("Demonstrating Validation:")
+logger.info("=" * 60)
 
 # Create a test YAML with invalid timestep
 test_config_path = Path(__file__).parent / "test_invalid.yaml"
@@ -267,15 +287,16 @@ output_states:
 
 try:
     invalid_config = load_config(test_config_path)
-    print("ERROR: Negative timestep was accepted (should have been rejected!)")
+    logger.info("ERROR: Negative timestep was accepted (should have been rejected!)")
 except ValueError as e:
-    print("[OK] Validation worked! Negative timestep rejected during config loading")
-    print(f"     Error type: {type(e).__name__}")
+    logger.info("[OK] Validation worked! Negative timestep rejected during config loading")
+    logger.info(f"     Error type: {type(e).__name__}")
 finally:
     # Clean up test file
     if test_config_path.exists():
         test_config_path.unlink()
 
-print("\n" + "=" * 60)
-print("Configuration parser demo completed successfully!")
-print("=" * 60)
+logger.info("")
+logger.info("=" * 60)
+logger.info("Configuration parser demo completed successfully!")
+logger.info("=" * 60)
