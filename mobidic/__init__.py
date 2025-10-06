@@ -2,6 +2,9 @@
 
 __version__ = "0.0.1"
 
-from mobidic.config import MOBIDICConfig, load_config
+from mobidic.config import MOBIDICConfig
+from mobidic.config import load_config
+from mobidic.preprocessing import read_raster
+from mobidic.preprocessing import read_shapefile
 
-__all__ = ["__version__", "load_config", "MOBIDICConfig"]
+__all__ = ["__version__", "load_config", "MOBIDICConfig", "read_raster", "read_shapefile"]
