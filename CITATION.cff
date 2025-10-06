@@ -10,7 +10,7 @@ authors:
     given-names: Matteo
     orcid: "https://orcid.org/0000-0002-1746-9150"
 version: "0.0.1"
-repository-code: "https://github.com/mobicidhydro/mobidicpy"
+repository-code: "https://github.com/mobidichydro/mobidicpy"
 keywords:
   - "Hydrology"
   - "Numerical modelling"
