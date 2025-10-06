@@ -1,0 +1,379 @@
+# MOBIDIC Configuration - Arno River Basin
+# Event simulation - November 2023
+
+
+######## PROJECT DATA
+
+basin:
+  # REQUIRED: Descriptive name of basin
+  # [Any string with no blank characters, eg: Blue_Nile]
+  id: Arno
+
+  # REQUIRED: Descriptive name of parameter set / scenario
+  # [Any string with no blank characters, eg: Blue_Nile_Scenario_24]
+  paramset_id: Event_November_2023
+
+  baricenter:
+    # REQUIRED: Longitude of basin baricenter [deg. East]
+    lon: 11.0
+
+    # REQUIRED: Latitude of basin baricenter [deg. North]
+    lat: 44.0
+
+
+######## FILE PATHS
+
+paths:
+  # REQUIRED: File where the meteo data files are stored
+  # [directory path including terminal /, eg: /blue_nile/meteodata/meteodata.nc]
+  meteodata: examples/Arno/meteodata/Arno_meteodata.nc
+
+  # REQUIRED: Consolidated dataset to be created by GIS preprocessing
+  # [full pathname to .nc file, eg: /blue_nile/geodat/gisdata.nc]
+  gisdata: examples/Arno/gisdata/Arno_gisdata.nc
+
+  # REQUIRED: Directory where the model states will be stored
+  # [directory path including terminal /, eg: /blue_nile/states/]
+  states: examples/Arno/states/
+
+  # REQUIRED: Directory where output report files will be stored
+  # [directory path including terminal /, eg: /blue_nile/outputs/]
+  output: examples/Arno/outputs/
+
+
+######## VECTOR FILES
+
+vector_files:
+  river_network:
+    # REQUIRED: Shape of river network
+    # [full pathname to .shp file, eg: /blue_nile/geodat/ret.shp]
+    shp: examples/Arno/shp/Arno_river_network.shp
+
+    # REQUIRED: Field name of streams id in the river network shapefile
+    # [Any string with no blank characters, eg: STREAM_ID]
+    id_field: REACH_ID
+
+
+####### RASTER FILES
+
+raster_files:
+  # REQUIRED: Grid of basin elevation in meters above sea level
+  # [full pathname to .tif file, eg: /blue_nile/geodat/dem.tif]
+  dtm: examples/Arno/raster/dtm.tif
+
+  # REQUIRED: Grid of flow directions
+  # [full pathname to .tif file, eg: /blue_nile/geodat/flowdir.tif]
+  flow_dir: examples/Arno/raster/flowdir.tif
+
+  # REQUIRED: Grid of flow accumulation, as number of upstream cells
+  # [full pathname to .tif file, eg: /blue_nile/geodat/flowacc.tif]
+  flow_acc: examples/Arno/raster/flowacc.tif
+
+  # REQUIRED: Grid of maximum water holding capacity in soil small pores, in millimiters
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Wc0.tif]
+  Wc0: examples/Arno/raster/cap.tif
+
+  # REQUIRED: Grid of maximum water holding capacity in soil large pores, in millimiters
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Wg0.tif]
+  Wg0: examples/Arno/raster/grav.tif
+
+  # REQUIRED: Grids of soil hydraulic conductivity, in millimiters per hour
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Ks.tif]
+  ks: examples/Arno/raster/ks.tif
+
+  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in meters per second
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Kf.tif]
+  kf:
+
+  # OPTIONAL: Grid of turbulent exchange coeff. for heat, non dimensional
+  # [full pathname to .tif file, eg: /blue_nile/geodat/CH.tif]
+  CH:
+
+  # OPTIONAL: Grid of surface albedo, non dimensional
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Alb.tif]
+  Alb:
+
+  # OPTIONAL: Grid of binary mask (0,1) defining the artesian aquifer extension
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Ma.tif]
+  Ma:
+
+  # OPTIONAL: Grid of binary mask (0,1) defining the freatic aquifer extension
+  # [full pathname to .tif file, eg: /blue_nile/geodat/Mf.tif]
+  Mf:
+
+  # OPTIONAL: Grid of percolation coefficient, in one over seconds
+  # [full pathname to .tif file]
+  gamma:
+
+  # OPTIONAL: Grid of adsorption coefficient, in one over seconds
+  # [full pathname to .tif file]
+  kappa:
+
+  # OPTIONAL: Grid of hypodermic flow coefficient, in one over seconds
+  # [full pathname to .tif file]
+  beta:
+
+  # OPTIONAL: Grid of hillslope flow coefficient, in one over seconds
+  # [full pathname to .tif file]
+  alpha: 
+
+raster_settings:
+  # REQUIRED: Flow direction pointer type
+  # ['Grass' for 1-8 notation or 'Arc' for 1-2-4-8-16-32-64-128 notation]
+  flow_dir_type: Grass
+
+
+####### GLOBAL LAND PARAMETERS
+# These parameters can be defined as single values (default for the entire basin)
+# or as raster files (see above). If both are provided, the raster files will
+# override the single values.
+
+parameters:
+  soil:
+    # REQUIRED: Default value of maximum water holding capacity in soil small pores, in millimiters
+    # [positive number in float or exp notation]
+    Wc0: 0.000e+000
+
+    # REQUIRED: Default value of maximum water holding capacity in soil large pores, in millimiters
+    # [positive number in float or exp notation]
+    Wg0: 0.000e+000
+
+    # REQUIRED: Default value of soil hydraulic conductivity, in mm/h
+    # [positive number in float or exp notation]
+    ks: 1.000e+000
+
+    # OPTIONAL: Default value of minimum soil hydraulic conductivity, in mm/h
+    # [positive number in float or exp notation]
+    ks_min:
+
+    # OPTIONAL: Default value of maximum soil hydraulic conductivity, in mm/h
+    # [positive number in float or exp notation]
+    ks_max:
+
+    # REQUIRED: Default value of (real or ideal) aquifer conductivity, in m/s
+    # [positive number in float or exp notation]
+    kf: 1.000e-007
+
+    # REQUIRED: Percolation coefficient, in 1/s
+    # [positive number in float or exp notation]
+    gamma: 2.689337e-07
+
+    # REQUIRED: Adsorption coefficient, in 1/s
+    # [positive number in float or exp notation]
+    kappa: 1.096651e-07
+
+    # REQUIRED: Hypodermic flow coefficient, in 1/s
+    # [positive number in float or exp notation]
+    beta: 7.62e-06
+
+    # REQUIRED: Hillslope flow coefficient, in 1/s
+    # [positive number in float or exp notation]
+    alpha: 2.50e-05
+  
+  energy:
+    # REQUIRED: Deep ground temperature, in deg. Kelvin
+    # [positive number in float or exp notation]
+    Tconst: 2.900e+002
+
+    # REQUIRED: Soil thermal conductivity, in W/m/K
+    # [positive number in float or exp notation]
+    kaps: 2.500e+000
+
+    # REQUIRED: Soil thermal diffusivity, in m²/s
+    # [positive number in float or exp notation]
+    nis: 0.8000e-006
+
+    # REQUIRED: Default value of turbulent exchange coeff. for heat, non dimensional
+    # [positive number in float or exp notation]
+    CH: 1.000e-003
+
+    # REQUIRED: Default value of surface albedo, non dimensional
+    # [positive number in float or exp notation]
+    Alb: 2.000e-001
+
+  routing:
+    # REQUIRED: Type of channel routing scheme
+    # [one among the following options 'Musk', 'MuskCun', 'Lag', 'Linear']
+    method: Linear
+
+    # REQUIRED: Flood wave celerity in channels, in m/s
+    # [positive value in float or exp notation]
+    wcel: 5.180e+000
+
+    # REQUIRED: Width of channels with first Strahler order, in meters
+    # [positive value in float or exp notation]
+    Br0: 1.000e+000
+
+    # REQUIRED: Exponent of equation W = Br0*O^NBr, where W=Width of channels and O=Strahler order
+    # [positive value > 1 in float or exp notation]
+    NBr: 1.500e+000
+
+    # REQUIRED: Manning roughness coefficient for channels, in s/m^(1/3)
+    # [positive value in float or exp notation]
+    n_Man: 3.000e-002
+
+  groundwater:
+    # REQUIRED: Groundwater model type
+    # [one among the following options: None, Linear, Linear_mult, Dupuit, MODFLOW]
+    model: None
+
+    # OPTIONAL: Global water loss from aquifers, in m³/s
+    # [positive value in float or exp notation]
+    global_loss: 0.000e+000
+
+  multipliers:
+    # OPTIONAL: Multiplying factor of soil hydraulic conductivity, non dimensional
+    # [positive value in float or exp notation]
+    ks_factor: 1.000e+000
+
+    # OPTIONAL: Multiplying factor of maximum water holding capacity in soil small pores, non dimensional
+    # [positive value in float or exp notation]
+    Wc_factor: 1.000e+000
+
+    # OPTIONAL: Multiplying factor of maximum water holding capacity in soil large pores, non dimensional
+    # [positive value in float or exp notation]
+    Wg_factor: 1.000e+000
+
+    # OPTIONAL: Transition factor between gravitational and capillary storage, non dimensional
+    # [positive value in float or exp notation]
+    Wg_Wc_tr: 1.000e+000
+
+    # OPTIONAL: Multiplying factor of turbulent exchange coeff. for heat, non dimensional
+    # [positive value in float or exp notation]
+    CH_factor: 1.000e+000
+
+    # OPTIONAL: Multiplying factor for flood wave celerity, non dimensional
+    # [positive value in float or exp notation]
+    cel_factor: 1.00e+000
+
+    # OPTIONAL: Scale factor for fraction of channalized flow, non dimensional
+    # [positive value in float or exp notation]
+    chan_factor: 0.000e+000
+
+
+####### INITIAL CONDITIONS
+
+initial_conditions:
+  # OPTIONAL: Initial depth of hillslope runoff, in meters
+  # [positive value in float or exp notation]
+  Ws: 0.00
+
+  # OPTIONAL: Initial relative saturation of capillary soil, non dimensional
+  # [positive value in float or exp notation in the range 0-1]
+  Wcsat: 0.3
+
+  # OPTIONAL: Initial relative saturation of gravitational soil, non dimensional
+  # [positive value in float or exp notation in the range 0-1]
+  Wgsat: 0.01
+
+
+####### SIMULATION CONTROLS
+
+simulation:
+  # REQUIRED: Option to wait for new data at end of computation (realtime mode)
+  # [integer number, 0=NO, 1=YES, -1=CALIBRATION (AVOID RE-INTERPOLATION)]
+  realtime: 0
+
+  # REQUIRED: Data and model time step, in seconds, same timestep as in meteodata
+  # [positive value in float or exp notation, eg: 86400 for daily data]
+  timestep: 900
+
+  # REQUIRED: Degradation factor from grid data space resolution to model space resolution, non dimensional
+  # [positive integer number]
+  resample: 1
+
+  # REQUIRED: Type of soil hydrology scheme
+  # [one among the following options 'Bucket', 'CN']
+  soil_scheme: Bucket
+
+  # REQUIRED: Type of surface energy balance scheme
+  # [one among the following options 'None', '1L', '5L', 'Snow']
+  energy_balance: None
+
+
+####### OUTPUT CONTROLS
+
+output_states:
+  # REQUIRED: Option to save states of river network for results analysis
+  # [boolean]
+  discharge: true
+
+  # REQUIRED: Option to save states of reservoirs and lakes for results analysis
+  # [boolean]
+  reservoir_states: true
+
+  # REQUIRED: Option to save states of soil small pores for results analysis
+  # [boolean]
+  soil_capillary: true
+
+  # REQUIRED: Option to save states of soil large pores for results analysis
+  # [boolean]
+  soil_gravitational: true
+
+  # REQUIRED: Option to save states of land surface temperature for results analysis
+  # [boolean]
+  surface_temperature: false
+
+  # REQUIRED: Option to save states of ground temperature for results analysis
+  # [boolean]
+  ground_temperature: false
+
+  # REQUIRED: Option to save states of aquifers for results analysis
+  # [boolean]
+  aquifer_head: false
+
+  # REQUIRED: Option to save states of evapotranspiration and precipitation for results analysis
+  # [boolean]
+  et_prec: false
+
+output_states_settings:
+  # OPTIONAL: Format for state output files
+  # [one among the following options: 'netCDF' (default)]
+  output_format: netCDF
+
+  # OPTIONAL: Time interval for state output, in seconds
+  # [positive integer. If empty, equal to timestep]
+  output_interval:
+
+output_report:
+  # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
+  # [boolean]
+  discharge: true
+
+  # OPTIONAL: Option to save lateral inflow hydrograph at selected reach IDs
+  # [boolean]
+  lateral_inflow: false
+  
+output_report_settings:
+  # OPTIONAL: Format for report output files
+  # [one among the following options: 'csv', 'Parquet' (default)]
+  output_format: Parquet
+
+  # OPTIONAL: Time interval for report output, in seconds
+  # [positive integer. If empty, equal to timestep]
+  report_interval:
+
+  # OPTIONAL: Method for selecting reaches to output
+  # [one among the following options: 'all' (default), 'file', 'list']
+  reach_selection: list
+
+  # OPTIONAL: Path to JSON file containing reach IDs to output
+  # [full pathname to .json file. Used if reach_selection=file]
+  sel_file: examples/Arno/reach_ids.json
+
+  # OPTIONAL: List of reach IDs to output
+  # [list of integers, e.g. [1234, 5678]. Used if reach_selection=list]
+  sel_list: [1000]
+
+
+####### ADVANCED SETTINGS
+
+advanced:
+  # OPTIONAL: Logging level
+  # [one among the following options: 'DEBUG', 'INFO' (default), 'WARNING', 'ERROR']
+  log_level: INFO
+
+  # OPTIONAL: Path to log file
+  # [full pathname to .log file. If empty, only logs to console]
+  log_file: mobidic.log
+
