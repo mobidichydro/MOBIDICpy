@@ -23,6 +23,8 @@ dependencies = [
     "pandas",
     "numpy",
     "matplotlib",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
 ]
 description = "MOBIDIC - Distributed and continuous hydrological balance model"
 keywords = ["Hydrology", "Numerical modelling", "Distributed hydrologic modelling"]
@@ -33,19 +35,26 @@ requires-python = ">=3.10"
 version = "0.0.1"
 
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+]
+
 [project.urls]
 Repository = "https://github.com/mobicidhydro/mobidicpy"
 Issues = "https://github.com/mobicidhydro/mobidicpy/issues"
 
 [tool.setuptools]
-py-modules = ['mobidicpy']
+packages = ["mobidic"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
-source = ["mobidicpy"]
+source = ["mobidic"]
 command_line = "-m pytest"
 omit = ["examples/*"]
 
