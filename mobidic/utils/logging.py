@@ -9,8 +9,9 @@ from loguru import logger
 def configure_logger(
     level: str = "INFO",
     format_string: str | None = None,
-    log_file: str | Path | None = None,
     colorize: bool = True,
+    log_file: str | Path | None = None,
+    
 ) -> None:
     """Configure the logger for MOBIDIC package.
 
@@ -34,7 +35,15 @@ def configure_logger(
     # Default format string
     if format_string is None:
         if colorize:
-            format_string = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
+            if level == "DEBUG":
+                format_string = (
+                    "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                    "<level>{level: <8}</level> | "
+                    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+                    "{message}"
+                )
+            else:
+                format_string = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
         else:
             format_string = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
 
@@ -49,9 +58,15 @@ def configure_logger(
     # Add file handler if specified
     if log_file is not None:
         log_file = Path(log_file)
+        if level == "DEBUG":
+            format_logfile = (
+                "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}"
+            )
+        else:
+            format_logfile = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
         logger.add(
             log_file,
-            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}",
+            format=format_logfile,
             level=level,
             rotation="10 MB",  # Rotate when file reaches 10 MB
             retention="30 days",  # Keep logs for 30 days
