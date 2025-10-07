@@ -33,7 +33,6 @@ class RiverNetworkVector(BaseModel):
     """River network shapefile configuration."""
 
     shp: str = Field(..., description="Shape of river network")
-    id_field: str = Field(..., description="Field name of streams id in the river network shapefile")
 
 
 class VectorFiles(BaseModel):

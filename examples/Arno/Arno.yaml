@@ -53,10 +53,6 @@ vector_files:
     # [full pathname to .shp file, eg: /blue_nile/geodat/river_network.shp]
     shp: examples/Arno/shp/Arno_river_network.shp
 
-    # REQUIRED: Field name of streams id in the river network shapefile
-    # [Any string with no blank characters, eg: REACH_ID]
-    id_field: REACH_ID
-
 
 ####### RASTER FILES
 
