@@ -78,6 +78,7 @@ bump-major:  ## Bump major version
 clean:  ## Clean temporary files and caches
 	rm -rf build/
 	rm -rf dist/
+	rm -rf site/
 	rm -rf *.egg-info/
 	rm -rf .pytest_cache/
 	rm -rf .coverage
