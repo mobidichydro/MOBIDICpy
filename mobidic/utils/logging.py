@@ -11,7 +11,6 @@ def configure_logger(
     format_string: str | None = None,
     colorize: bool = True,
     log_file: str | Path | None = None,
-    
 ) -> None:
     """Configure the logger for MOBIDIC package.
 
@@ -59,9 +58,7 @@ def configure_logger(
     if log_file is not None:
         log_file = Path(log_file)
         if level == "DEBUG":
-            format_logfile = (
-                "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}"
-            )
+            format_logfile = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} | {message}"
         else:
             format_logfile = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
         logger.add(
