@@ -41,6 +41,7 @@ logger.info("File Paths:")
 logger.info("=" * 60)
 logger.info(f"Meteodata: {config.paths.meteodata}")
 logger.info(f"GIS Data: {config.paths.gisdata}")
+logger.info(f"Network: {config.paths.network}")
 logger.info(f"States Directory: {config.paths.states}")
 logger.info(f"Output Directory: {config.paths.output}")
 

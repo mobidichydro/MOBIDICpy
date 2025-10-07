@@ -26,9 +26,13 @@ paths:
   # [directory path including terminal /, eg: /blue_nile/meteodata/meteodata.nc]
   meteodata: example/meteodata/meteodata.nc
 
-  # REQUIRED: Consolidated dataset to be created by GIS preprocessing
+  # REQUIRED: Consolidated raster dataset to be created by GIS preprocessing
   # [full pathname to .nc file, eg: /blue_nile/geodat/gisdata.nc]
   gisdata: example/gisdata/gisdata.nc
+
+  # REQUIRED: Consolidated hydrographic network to be created by GIS preprocessing (geoparquet format)
+  # [full pathname to .parquet file, eg: /blue_nile/geodat/net.parquet]
+  network: example/gisdata/net.parquet
 
   # REQUIRED: Directory where the model states will be stored
   # [directory path including terminal /, eg: /blue_nile/states/]
@@ -44,11 +48,11 @@ paths:
 vector_files:
   river_network:
     # REQUIRED: Shape of river network
-    # [full pathname to .shp file, eg: /blue_nile/geodat/ret.shp]
-    shp: example/shp/River_network.shp
+    # [full pathname to .shp file, eg: /blue_nile/geodat/river_network.shp]
+    shp: example/shp/river_network.shp
 
     # REQUIRED: Field name of streams id in the river network shapefile
-    # [Any string with no blank characters, eg: STREAM_ID]
+    # [Any string with no blank characters, eg: REACH_ID]
     id_field: REACH_ID
 
 

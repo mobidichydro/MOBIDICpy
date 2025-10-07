@@ -24,6 +24,7 @@ class Paths(BaseModel):
 
     meteodata: str = Field(..., description="File where the meteo data files are stored")
     gisdata: str = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
+    network: str = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
     states: str = Field(..., description="Directory where the model states will be stored")
     output: str = Field(..., description="Directory where output report files will be stored")
 

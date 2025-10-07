@@ -28,6 +28,7 @@ def minimal_config_dict():
         "paths": {
             "meteodata": "test/meteodata.nc",
             "gisdata": "test/gisdata.nc",
+            "network": "test/network.parquet",
             "states": "test/states/",
             "output": "test/outputs/",
         },
