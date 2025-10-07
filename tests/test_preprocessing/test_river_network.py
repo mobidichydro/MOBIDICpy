@@ -94,7 +94,7 @@ def non_binary_network_gdf():
 
 def test_build_network_topology_simple(simple_network_gdf):
     """Test building network topology on simple network."""
-    network = _build_network_topology(simple_network_gdf, "REACH_ID")
+    network = _build_network_topology(simple_network_gdf)
 
     # Check that topology fields exist
     assert "upstream_1" in network.columns
@@ -118,7 +118,7 @@ def test_build_network_topology_simple(simple_network_gdf):
 def test_enforce_binary_tree(non_binary_network_gdf):
     """Test enforcing binary tree structure on network with 3-way junction."""
     # Build topology first
-    network = _build_network_topology(non_binary_network_gdf, "REACH_ID")
+    network = _build_network_topology(non_binary_network_gdf)
 
     # Before enforcement, we have 4 reaches
     assert len(network) == 4
@@ -141,7 +141,7 @@ def test_enforce_binary_tree(non_binary_network_gdf):
 
 def test_compute_strahler_order_simple(simple_network_gdf):
     """Test Strahler ordering on simple network."""
-    network = _build_network_topology(simple_network_gdf, "REACH_ID")
+    network = _build_network_topology(simple_network_gdf)
     network = _compute_strahler_order(network)
 
     # R1 and R2 should be order 1 (no upstream)
@@ -160,7 +160,7 @@ def test_compute_strahler_order_simple(simple_network_gdf):
 
 def test_compute_strahler_order_complex(complex_network_gdf):
     """Test Strahler ordering on complex network."""
-    network = _build_network_topology(complex_network_gdf, "REACH_ID")
+    network = _build_network_topology(complex_network_gdf)
     network = _compute_strahler_order(network)
 
     # First-order streams (no upstream): R1, R2, R4
@@ -180,7 +180,7 @@ def test_compute_strahler_order_complex(complex_network_gdf):
 
 def test_calculate_routing_parameters(simple_network_gdf):
     """Test calculation of routing parameters."""
-    network = _build_network_topology(simple_network_gdf, "REACH_ID")
+    network = _build_network_topology(simple_network_gdf)
     network = _compute_strahler_order(network)
 
     params = {"wcel": 5.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03}
@@ -210,7 +210,7 @@ def test_calculate_routing_parameters(simple_network_gdf):
 
 def test_compute_calculation_order(simple_network_gdf):
     """Test computation of calculation order."""
-    network = _build_network_topology(simple_network_gdf, "REACH_ID")
+    network = _build_network_topology(simple_network_gdf)
     network = _compute_strahler_order(network)
     network = _compute_calculation_order(network)
 
@@ -240,7 +240,6 @@ def test_process_river_network_simple(simple_network_gdf, tmp_path):
     # Process network
     network = process_river_network(
         shp_path,
-        "REACH_ID",
         join_single_tributaries=False,
         routing_params={"wcel": 5.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03},
     )
@@ -280,7 +279,6 @@ def test_process_river_network_with_joining(simple_network_gdf, tmp_path):
     # Process network with joining
     network = process_river_network(
         shp_path,
-        "REACH_ID",
         join_single_tributaries=True,
         routing_params={"wcel": 5.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03},
     )
@@ -314,7 +312,7 @@ def test_preserve_original_fields(tmp_path):
     gdf.to_file(shp_path)
 
     # Process network
-    network = process_river_network(shp_path, "REACH_ID", join_single_tributaries=False)
+    network = process_river_network(shp_path, join_single_tributaries=False)
 
     # Check that all original fields are preserved
     original_fields = ["REACH_ID", "NAME", "LENGTH_KM", "ORDER", "CUST_DATA"]
@@ -339,7 +337,7 @@ def test_export_and_load_network_parquet(simple_network_gdf, tmp_path):
     simple_network_gdf.to_file(shp_path)
 
     # Process network
-    network = process_river_network(shp_path, "REACH_ID", join_single_tributaries=False)
+    network = process_river_network(shp_path, join_single_tributaries=False)
 
     # Export to Parquet
     output_path = tmp_path / "network.parquet"
@@ -362,7 +360,7 @@ def test_export_and_load_network_shapefile(simple_network_gdf, tmp_path):
     simple_network_gdf.to_file(shp_path)
 
     # Process network
-    network = process_river_network(shp_path, "REACH_ID", join_single_tributaries=False)
+    network = process_river_network(shp_path, join_single_tributaries=False)
 
     # Export to shapefile
     output_path = tmp_path / "network_out.shp"
@@ -377,19 +375,10 @@ def test_export_and_load_network_shapefile(simple_network_gdf, tmp_path):
     assert len(loaded_network) == len(network)
 
 
-def test_invalid_id_field(simple_network_gdf, tmp_path):
-    """Test that invalid id_field raises ValueError."""
-    shp_path = tmp_path / "test_network.shp"
-    simple_network_gdf.to_file(shp_path)
-
-    with pytest.raises(ValueError, match="Field 'INVALID_FIELD' not found"):
-        process_river_network(shp_path, "INVALID_FIELD")
-
-
 def test_nonexistent_shapefile():
     """Test that nonexistent shapefile raises FileNotFoundError."""
     with pytest.raises(Exception):  # geopandas raises various exceptions
-        process_river_network("nonexistent.shp", "REACH_ID")
+        process_river_network("nonexistent.shp")
 
 
 def test_load_nonexistent_network():
@@ -403,7 +392,7 @@ def test_export_invalid_format(simple_network_gdf, tmp_path):
     shp_path = tmp_path / "test_network.shp"
     simple_network_gdf.to_file(shp_path)
 
-    network = process_river_network(shp_path, "REACH_ID", join_single_tributaries=False)
+    network = process_river_network(shp_path, join_single_tributaries=False)
 
     with pytest.raises(ValueError, match="Unsupported format"):
         export_network(network, tmp_path / "network.csv", format="csv")

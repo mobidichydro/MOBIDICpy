@@ -14,7 +14,6 @@ from pathlib import Path
 
 def process_river_network(
     shapefile_path: str | Path,
-    id_field: str,
     join_single_tributaries: bool = True,
     routing_params: dict | None = None,
 ) -> gpd.GeoDataFrame:
@@ -27,7 +26,6 @@ def process_river_network(
 
     Args:
         shapefile_path: Path to river network shapefile
-        id_field: Name of field containing reach IDs
         join_single_tributaries: If True, joins reaches with single tributaries (default: True)
         routing_params: Dictionary with routing parameters:
             - wcel: Wave celerity [m/s] (default: 5.0)
@@ -54,13 +52,9 @@ def process_river_network(
     # Read shapefile
     gdf = gpd.read_file(shapefile_path)
 
-    # Validate id_field
-    if id_field not in gdf.columns:
-        raise ValueError(f"Field '{id_field}' not found in shapefile. Available fields: {gdf.columns.tolist()}")
-
     # Build network topology
     logger.debug("Building network topology")
-    network = _build_network_topology(gdf, id_field)
+    network = _build_network_topology(gdf)
 
     # Enforce binary tree structure (max 2 upstream tributaries per reach)
     logger.debug("Enforcing binary tree structure")
@@ -91,12 +85,11 @@ def process_river_network(
     return network
 
 
-def _build_network_topology(gdf: gpd.GeoDataFrame, id_field: str) -> gpd.GeoDataFrame:
+def _build_network_topology(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Build network topology by detecting upstream/downstream connections.
 
     Args:
         gdf: GeoDataFrame with river network
-        id_field: Name of field containing reach IDs (used only for validation/logging)
 
     Returns:
         GeoDataFrame with added topology fields and all original shapefile fields preserved

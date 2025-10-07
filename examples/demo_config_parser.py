@@ -51,7 +51,6 @@ logger.info("=" * 60)
 logger.info("Vector Files:")
 logger.info("=" * 60)
 logger.info(f"River Network: {config.vector_files.river_network.shp}")
-logger.info(f"ID Field: {config.vector_files.river_network.id_field}")
 
 # RASTER FILES
 logger.info("")
