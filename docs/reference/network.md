@@ -1,28 +1,26 @@
-# River Network Processing
+# River network processing
 
-The river network processing module provides a complete pipeline for building and analyzing river network topology, including Strahler ordering, reach joining, and routing parameter calculation.
+The river network processing module provides a toolkit for building and analyzing river network topology, including Strahler ordering, reach joining, and routing parameter calculation.
 
 ## Overview
 
-River network processing is a critical preprocessing step that:
+River network processing is a required preprocessing step that:
 
-- Builds network topology from shapefile geometry
+- Builds network topology from a shapefile geometry
+- Enforces binary tree structure (maximum 2 upstream tributaries per reach)
 - Computes Strahler stream ordering
 - Optionally joins single-tributary reaches to simplify the network
 - Calculates hydraulic and routing parameters (width, lag time, storage coefficient)
 - Determines optimal calculation order for routing algorithms
 - Exports processed networks for use in simulations
 
-The implementation translates several MATLAB functions from the original MOBIDIC model:
-`readshaperet.m`, `botte.m`, `bintree.m`, `crearete.m`, `strahler.m`, `preproc_ret.m`.
-
 ## Functions
 
-### Network Processing
+### River network processing
 
 ::: mobidic.preprocessing.river_network.process_river_network
 
-### Network I/O
+### River network I/O
 
 ::: mobidic.preprocessing.river_network.export_network
 
@@ -30,7 +28,7 @@ The implementation translates several MATLAB functions from the original MOBIDIC
 
 ## Examples
 
-### Complete Network Processing
+### Complete river network processing
 
 ```python
 from mobidic import process_river_network, export_network
@@ -53,11 +51,11 @@ print(f"Total length: {network['length_m'].sum() / 1000:.1f} km")
 # Export to GeoParquet (recommended)
 export_network(network, "output/network.parquet", format="parquet")
 
-# Or export to Shapefile (for compatibility)
+# Or export to Shapefile (for backward compatibility)
 export_network(network, "output/network.shp", format="shapefile")
 ```
 
-### Loading a Processed Network
+### Loading a processed Network
 
 ```python
 from mobidic import load_network
@@ -73,7 +71,7 @@ headwater_reaches = network[network['strahler_order'] == 1]
 print(f"Number of headwater streams: {len(headwater_reaches)}")
 ```
 
-### Analyzing Network Topology
+### Analyzing river network topology
 
 ```python
 from mobidic import process_river_network
@@ -113,7 +111,7 @@ upstream_reaches = get_upstream_network(network, 100)
 print(f"Reaches upstream of 100: {len(upstream_reaches)}")
 ```
 
-## Network Schema
+## River network schema
 
 Processed networks contain the following fields:
 
@@ -132,7 +130,7 @@ Processed networks contain the following fields:
 | `storage_coeff` | float | Storage coefficient (dimensionless) |
 | `n_manning` | float | Manning roughness coefficient |
 
-## Strahler Ordering
+## Strahler ordering
 
 The Strahler stream order is a hierarchical classification system:
 
@@ -151,7 +149,7 @@ Example network:
                 3 ─┘
 ```
 
-## Routing Parameters
+## Routing parameters
 
 Calculated parameters for channel routing:
 
@@ -173,11 +171,42 @@ Calculated parameters for channel routing:
   - Roughness parameter for friction calculations
   - Can be specified or estimated from channel properties
 
-## Network Topology
+## Processing pipeline
+
+The river network processing follows these steps in order:
+
+1. **Read shapefile**: Load river network geometry and attributes
+2. **Build topology**: Identify upstream/downstream connections by matching reach endpoints
+3. **Enforce binary tree**: Add fictitious short reaches for nodes with >2 tributaries
+4. **Compute Strahler order**: Assign hierarchical stream orders
+5. **Join single tributaries** (optional): Merge linear reach sequences
+6. **Calculate routing parameters**: Compute width, lag time, storage coefficient
+7. **Determine calculation order**: Set optimal processing sequence for routing
+
+### Binary tree enforcement
+
+Networks may have junctions where more than 2 reaches join. MOBIDIC requires binary trees (maximum 2 upstream tributaries per reach) for its routing algorithms. The `_enforce_binary_tree()` function:
+
+- Identifies nodes with >2 upstream reaches
+- Adds fictitious short reaches (0.1m length) to split non-binary junctions
+- Updates topology to maintain network connectivity
+
+**Example**: A 3-way junction (reaches A, B, C joining at node N flowing to reach D):
+
+```
+Before:              After:
+  A ─┐                 A ─┐
+  B ─┼─ N ─> D         B ─┼─ N1 ─> F ─> N ─> D
+  C ─┘                 C ─┘         (fictitious)
+```
+
+This step typically adds a small number of fictitious reaches.
+
+## River network topology
 
 ### Supported Structures
 
-- **Binary trees**: Maximum 2 upstream tributaries per reach
+- **Binary trees**: Maximum 2 upstream tributaries per reach (enforced automatically)
 - **Multiple outlets**: Supports networks with more than one terminal reach
 - **Disconnected networks**: Warns if multiple unconnected sub-networks exist
 
@@ -186,7 +215,7 @@ Calculated parameters for channel routing:
 The processing pipeline validates:
 
 - Reach connectivity (no dangling reaches)
-- Non-binary junctions (warns if >2 upstream tributaries)
+- Binary tree structure (automatically enforced)
 - Circular references (detects loops)
 - Duplicate reach IDs
 
@@ -204,24 +233,15 @@ This is useful for:
 - Focusing on hydrologically significant junctions
 - Matching observational data at specific locations
 
-## Performance
+**Note**: Joining is applied *after* binary tree enforcement, so some fictitious reaches may be merged.
 
-Network processing performance (tested on Arno river basin):
-
-- **Input**: 1,281 reaches, ~3,572 km total length
-- **After joining**: 1,235 reaches (46 merged)
-- **Processing time**: <2 seconds
-- **Strahler orders**: 1-5
-- **Memory usage**: Minimal (<50 MB)
-
-Suitable for large networks (>10,000 reaches) with efficient geopandas operations.
 
 ## File Formats
 
 ### GeoParquet (Recommended)
 
 - **Pros**: Fast I/O, efficient compression, preserves all data types, widely supported
-- **Cons**: Requires `pyarrow` or `fastparquet`
+- **Cons**: Requires `pyarrow` (default) or `fastparquet`
 - **Use**: Default format for processed networks
 
 ### Shapefile (Legacy)
