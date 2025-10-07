@@ -6,6 +6,11 @@ from mobidic.preprocessing.grid_operations import (
     degrade_flow_direction,
     degrade_raster,
 )
+from mobidic.preprocessing.river_network import (
+    export_network,
+    load_network,
+    process_river_network,
+)
 
 __all__ = [
     "read_raster",
@@ -13,4 +18,7 @@ __all__ = [
     "degrade_raster",
     "degrade_flow_direction",
     "convert_flow_direction",
+    "process_river_network",
+    "export_network",
+    "load_network",
 ]
