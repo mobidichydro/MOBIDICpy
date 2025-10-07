@@ -12,7 +12,12 @@ nav:
   - Introduction: introduction.md
   - Development: development.md
   - Examples: examples.md
-  - API Reference: reference.md
+  - API Reference:
+    - Overview: reference/index.md
+    - Configuration: reference/config.md
+    - GIS Data I/O: reference/gis_io.md
+    - Grid Operations: reference/grid_ops.md
+    - River Network: reference/network.md
 
 theme:
   name: "material"
