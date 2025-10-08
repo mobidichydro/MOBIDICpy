@@ -11,6 +11,10 @@ from mobidic.preprocessing.river_network import (
     load_network,
     process_river_network,
 )
+from mobidic.preprocessing.hillslope_reach_mapping import (
+    compute_hillslope_cells,
+    map_hillslope_to_reach,
+)
 
 __all__ = [
     "read_raster",
@@ -21,4 +25,6 @@ __all__ = [
     "process_river_network",
     "export_network",
     "load_network",
+    "compute_hillslope_cells",
+    "map_hillslope_to_reach",
 ]
