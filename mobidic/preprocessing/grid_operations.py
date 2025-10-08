@@ -315,3 +315,81 @@ def convert_flow_direction(
     logger.success(f"Flow direction conversion complete: {np.sum(valid_mask)} cells converted")
 
     return converted
+
+
+def convert_to_mobidic_notation(
+    flow_dir: np.ndarray,
+    from_notation: Literal["Grass", "Arc"],
+) -> np.ndarray:
+    """Convert flow direction from Grass or Arc notation to MOBIDIC notation.
+
+    MOBIDIC uses a transformed version of the Grass notation with a 180-degree rotation.
+    This transformation is applied in MATLAB's buildgis_mysql_include.m:
+        AI=[1 2 3 4 5 6 7 8]; MD=[5 6 7 8 1 2 3 4];
+
+    Args:
+        flow_dir: 2D numpy array with flow directions (NaN for nodata).
+        from_notation: Source notation ('Grass' for 1-8 or 'Arc' for power-of-2).
+
+    Returns:
+        Flow direction array converted to MOBIDIC notation (1-8).
+
+    Notes:
+        Transformation mappings:
+            - GRASS -> MOBIDIC: 1->5, 2->6, 3->7, 4->8, 5->1, 6->2, 7->3, 8->4
+            - Arc values are first converted to Grass, then to MOBIDIC
+
+        Notation comparison:
+            GRASS:              MOBIDIC:
+              7 6 5               3 2 1
+              8   4               4   8
+              1 2 3               5 6 7
+
+        MOBIDIC directions:
+            1: up-right      (row -1, col +1)
+            2: up            (row -1, col  0)
+            3: up-left       (row -1, col -1)
+            4: left          (row  0, col -1)
+            5: down-left     (row +1, col -1)
+            6: down          (row +1, col  0)
+            7: down-right    (row +1, col +1)
+            8: right         (row  0, col +1)
+
+    Examples:
+        >>> flow_dir_grass = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 1]])
+        >>> flow_dir_mobidic = convert_to_mobidic_notation(flow_dir_grass, 'Grass')
+        >>> flow_dir_mobidic
+        array([[5, 6, 7],
+               [8, 1, 2],
+               [3, 4, 5]])
+    """
+    logger.info(f"Converting flow direction from {from_notation} to MOBIDIC notation")
+
+    # GRASS to MOBIDIC transformation (from buildgis_mysql_include.m)
+    grass_to_mobidic = {1: 5, 2: 6, 3: 7, 4: 8, 5: 1, 6: 2, 7: 3, 8: 4}
+
+    # Arc to GRASS mapping
+    arc_to_grass = {1: 8, 2: 1, 4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7}
+
+    # Create output array
+    converted = flow_dir.copy()
+
+    if from_notation == "Arc":
+        # Arc -> Grass -> MOBIDIC (two-step conversion)
+        logger.debug("Converting Arc -> Grass -> MOBIDIC")
+        for arc_val, grass_val in arc_to_grass.items():
+            mask = flow_dir == arc_val
+            converted[mask] = grass_to_mobidic[grass_val]
+    elif from_notation == "Grass":
+        # Grass -> MOBIDIC (direct conversion)
+        logger.debug("Converting Grass -> MOBIDIC")
+        for grass_val, mobidic_val in grass_to_mobidic.items():
+            mask = flow_dir == grass_val
+            converted[mask] = mobidic_val
+    else:
+        raise ValueError(f"Invalid from_notation: {from_notation}. Must be 'Grass' or 'Arc'")
+
+    valid_cells = np.sum(np.isfinite(converted))
+    logger.success(f"Flow direction conversion to MOBIDIC complete: {valid_cells} cells converted")
+
+    return converted
