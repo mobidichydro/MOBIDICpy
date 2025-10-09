@@ -7,9 +7,9 @@ from mobidic.config import load_config
 from mobidic.utils import configure_logger
 from mobidic.preprocessing import (
     read_raster,
+    grid_to_matrix,
     degrade_raster,
     degrade_flow_direction,
-    convert_flow_direction,
     read_shapefile,
     load_network,
     process_river_network,
@@ -24,9 +24,9 @@ __all__ = [
     "MOBIDICConfig",
     "configure_logger",
     "read_raster",
+    "grid_to_matrix",
     "degrade_raster",
     "degrade_flow_direction",
-    "convert_flow_direction",
     "read_shapefile",
     "load_network",
     "process_river_network",

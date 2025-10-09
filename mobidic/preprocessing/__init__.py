@@ -1,10 +1,14 @@
 """MOBIDIC preprocessing module for GIS data processing."""
 
-from mobidic.preprocessing.gis_reader import read_raster, read_shapefile
+from mobidic.preprocessing.gis_reader import (
+    read_shapefile,
+    read_raster,
+    grid_to_matrix,
+)
 from mobidic.preprocessing.grid_operations import (
-    convert_flow_direction,
     degrade_flow_direction,
     degrade_raster,
+    convert_to_mobidic_notation,
 )
 from mobidic.preprocessing.river_network import (
     export_network,
@@ -17,11 +21,12 @@ from mobidic.preprocessing.hillslope_reach_mapping import (
 )
 
 __all__ = [
-    "read_raster",
     "read_shapefile",
+    "read_raster",
+    "grid_to_matrix",
     "degrade_raster",
     "degrade_flow_direction",
-    "convert_flow_direction",
+    "convert_to_mobidic_notation",
     "process_river_network",
     "export_network",
     "load_network",

@@ -1,0 +1,54 @@
+""" MOBIDIC: MATLAB -> Python translation
+Script for checking the flow direction against the result from MATLAB
+"""
+
+import numpy as np
+from pathlib import Path
+from mobidic import (
+    load_config,
+    configure_logger,
+    grid_to_matrix,
+)
+from mobidic.preprocessing import convert_to_mobidic_notation
+
+# Configuration
+config = load_config("examples/Arno/Arno.yaml")
+
+# Read flow direction computed in matlab
+zp = np.loadtxt("matlab/zp.txt", delimiter=",")
+
+# Configure logger
+configure_logger(level="DEBUG")
+
+# Step 1: Read flow direction and convert to MOBIDIC notation
+print("\n" + "=" * 60)
+print("STEP 1: Reading raster data")
+print("=" * 60)
+
+# Read flow direction
+flow_dir_path = config.raster_files.flow_dir
+if flow_dir_path:
+    print(f"\nReading flow direction: {flow_dir_path}")
+    flow_dir, xll, yll, cellsize = grid_to_matrix(flow_dir_path)
+    print(f"  Grid shape: {flow_dir.shape}")
+    print(f"  Resolution: {cellsize} m")
+else:
+    raise ValueError("Flow direction raster not specified in configuration")
+
+# Convert flow direction to MOBIDIC notation
+flow_dir_mobidic = convert_to_mobidic_notation(flow_dir)
+
+# Read flow direction from MATLAB
+print("\n" + "=" * 60)
+print("STEP 2: Comparing with MATLAB results")
+print("=" * 60)
+if zp.shape != flow_dir_mobidic.shape:
+    raise ValueError("Shape mismatch between Python and MATLAB flow direction data")
+difference = flow_dir_mobidic - zp
+num_differences = np.count_nonzero(difference[~np.isnan(difference)])
+if num_differences == 0:
+    print("CHECK PASSED. All flow direction values match between Python and MATLAB.")
+else:
+    print(f"Number of differing cells: {num_differences}")
+    print("Differences (Python - MATLAB):")
+    print(difference)

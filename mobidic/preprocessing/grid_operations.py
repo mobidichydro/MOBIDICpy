@@ -1,12 +1,15 @@
 """Grid operations for spatial data processing.
 
 This module provides functions for coarsening resolution of raster grids,
-and flow direction conversion between different notation systems.
+flow direction conversion between different notation systems, and reading
+grid files in various formats.
 """
 
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
+import rasterio
 from loguru import logger
 
 
@@ -246,80 +249,9 @@ def degrade_flow_direction(
     return flow_dir_degraded, flow_acc_degraded
 
 
-def convert_flow_direction(
-    flow_dir: np.ndarray,
-    from_notation: Literal["Grass", "Arc"],
-    to_notation: Literal["Grass", "Arc"],
-) -> np.ndarray:
-    """Convert flow direction between Grass (1-8) and Arc (power-of-2) notations.
-
-    Args:
-        flow_dir: 2D numpy array with flow directions (NaN for nodata).
-        from_notation: Source notation ('Grass' for 1-8 or 'Arc' for power-of-2).
-        to_notation: Target notation ('Grass' for 1-8 or 'Arc' for power-of-2).
-
-    Returns:
-        Converted flow direction array with the same shape as input.
-
-    Notes:
-        Notation systems:
-            - Grass (1-8): 1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E
-            - Arc (power-of-2): 1=E, 2=SE, 4=S, 8=SW, 16=W, 32=NW, 64=N, 128=NE
-
-    Examples:
-        >>> flow_dir_grass = np.array([[1, 2], [3, 4]])  # Grass notation
-        >>> flow_dir_arc = convert_flow_direction(flow_dir_grass, 'Grass', 'Arc')
-        >>> flow_dir_arc
-        array([[128,  64],
-               [ 32,  16]])
-    """
-    if from_notation == to_notation:
-        logger.debug(f"Same notation ({from_notation}), returning original data")
-        return flow_dir.copy()
-
-    logger.info(f"Converting flow direction from {from_notation} to {to_notation} notation")
-
-    # Mapping between Grass (1-8) and Arc (power-of-2) notations
-    # Direction: NE, N, NW, W, SW, S, SE, E
-    grass_to_arc = {
-        1: 128,  # NE
-        2: 64,  # N
-        3: 32,  # NW
-        4: 16,  # W
-        5: 8,  # SW
-        6: 4,  # S
-        7: 2,  # SE
-        8: 1,  # E
-    }
-
-    arc_to_grass = {v: k for k, v in grass_to_arc.items()}
-
-    # Create output array
-    converted = flow_dir.copy()
-
-    # Get conversion mapping
-    if from_notation == "Grass" and to_notation == "Arc":
-        mapping = grass_to_arc
-    elif from_notation == "Arc" and to_notation == "Grass":
-        mapping = arc_to_grass
-    else:
-        raise ValueError(f"Invalid notation combination: {from_notation} -> {to_notation}")
-
-    # Convert valid (non-NaN) cells
-    valid_mask = np.isfinite(flow_dir)
-
-    # Apply mapping
-    for old_val, new_val in mapping.items():
-        converted[valid_mask & (flow_dir == old_val)] = new_val
-
-    logger.success(f"Flow direction conversion complete: {np.sum(valid_mask)} cells converted")
-
-    return converted
-
-
 def convert_to_mobidic_notation(
     flow_dir: np.ndarray,
-    from_notation: Literal["Grass", "Arc"],
+    from_notation: Literal["Grass", "Arc"] = "Grass",
 ) -> np.ndarray:
     """Convert flow direction from Grass or Arc notation to MOBIDIC notation.
 
@@ -329,7 +261,7 @@ def convert_to_mobidic_notation(
 
     Args:
         flow_dir: 2D numpy array with flow directions (NaN for nodata).
-        from_notation: Source notation ('Grass' for 1-8 or 'Arc' for power-of-2).
+        from_notation: Source notation ('Grass' for 1-8 or 'Arc' for power-of-2). Default is 'Grass'.
 
     Returns:
         Flow direction array converted to MOBIDIC notation (1-8).
@@ -393,3 +325,4 @@ def convert_to_mobidic_notation(
     logger.success(f"Flow direction conversion to MOBIDIC complete: {valid_cells} cells converted")
 
     return converted
+

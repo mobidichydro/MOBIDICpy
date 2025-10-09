@@ -3,7 +3,6 @@
 import numpy as np
 import pytest
 from mobidic.preprocessing.grid_operations import (
-    convert_flow_direction,
     degrade_flow_direction,
     degrade_raster,
 )
@@ -216,86 +215,3 @@ class TestDegradeFlowDirection:
         # Top-left coarse cell should use cell with acc=100
         assert deg_acc[0, 0] == 100.0 / 4  # normalized by factor **2
 
-
-class TestConvertFlowDirection:
-    """Tests for convert_flow_direction function."""
-
-    def test_grass_to_arc_conversion(self):
-        """Test conversion from Grass (1-8) to Arc (power-of-2) notation."""
-        # Create flow direction in Grass notation
-        # 1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E
-        flow_dir_grass = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [1, 2, 3, 4], [5, 6, 7, 8]], dtype=float)
-
-        # Convert to Arc notation
-        flow_dir_arc = convert_flow_direction(flow_dir_grass, from_notation="Grass", to_notation="Arc")
-
-        # Expected Arc notation:
-        # 1=E, 2=SE, 4=S, 8=SW, 16=W, 32=NW, 64=N, 128=NE
-        expected = np.array([[128, 64, 32, 16], [8, 4, 2, 1], [128, 64, 32, 16], [8, 4, 2, 1]], dtype=float)
-
-        np.testing.assert_array_equal(flow_dir_arc, expected)
-
-    def test_arc_to_grass_conversion(self):
-        """Test conversion from Arc (power-of-2) to Grass (1-8) notation."""
-        # Create flow direction in Arc notation
-        flow_dir_arc = np.array([[128, 64, 32, 16], [8, 4, 2, 1], [128, 64, 32, 16], [8, 4, 2, 1]], dtype=float)
-
-        # Convert to Grass notation
-        flow_dir_grass = convert_flow_direction(flow_dir_arc, from_notation="Arc", to_notation="Grass")
-
-        # Expected Grass notation
-        expected = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [1, 2, 3, 4], [5, 6, 7, 8]], dtype=float)
-
-        np.testing.assert_array_equal(flow_dir_grass, expected)
-
-    def test_conversion_with_nan(self):
-        """Test conversion with NaN values."""
-        flow_dir_grass = np.array([[1, 2, np.nan, 4], [5, np.nan, 7, 8]], dtype=float)
-
-        flow_dir_arc = convert_flow_direction(flow_dir_grass, from_notation="Grass", to_notation="Arc")
-
-        # NaN should be preserved
-        assert np.isnan(flow_dir_arc[0, 2])
-        assert np.isnan(flow_dir_arc[1, 1])
-
-        # Valid values should be converted
-        assert flow_dir_arc[0, 0] == 128  # Grass 1 -> Arc 128
-        assert flow_dir_arc[0, 1] == 64  # Grass 2 -> Arc 64
-
-    def test_conversion_same_notation(self):
-        """Test conversion when source and target notations are the same."""
-        flow_dir = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=float)
-
-        result = convert_flow_direction(flow_dir, from_notation="Grass", to_notation="Grass")
-
-        np.testing.assert_array_equal(result, flow_dir)
-
-    def test_conversion_roundtrip(self):
-        """Test that roundtrip conversion preserves values."""
-        flow_dir_grass = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=float)
-
-        # Grass -> Arc -> Grass
-        flow_dir_arc = convert_flow_direction(flow_dir_grass, from_notation="Grass", to_notation="Arc")
-        flow_dir_back = convert_flow_direction(flow_dir_arc, from_notation="Arc", to_notation="Grass")
-
-        np.testing.assert_array_equal(flow_dir_back, flow_dir_grass)
-
-    def test_conversion_all_directions(self):
-        """Test conversion for all 8 directions."""
-        # Test all Grass directions (1-8)
-        flow_dir_grass = np.arange(1, 9, dtype=float).reshape(2, 4)
-
-        flow_dir_arc = convert_flow_direction(flow_dir_grass, from_notation="Grass", to_notation="Arc")
-
-        # Verify each direction is correctly mapped
-        expected = np.array([[128, 64, 32, 16], [8, 4, 2, 1]], dtype=float)
-        np.testing.assert_array_equal(flow_dir_arc, expected)
-
-    def test_invalid_notation_raises_error(self):
-        """Test that invalid notation combination raises error."""
-        flow_dir = np.array([[1, 2], [3, 4]], dtype=float)
-
-        # This should work fine since both are valid notations
-        # The function will handle same notation gracefully
-        result = convert_flow_direction(flow_dir, from_notation="Grass", to_notation="Grass")
-        np.testing.assert_array_equal(result, flow_dir)
