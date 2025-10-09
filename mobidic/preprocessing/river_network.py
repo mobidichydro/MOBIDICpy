@@ -158,8 +158,8 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     upstream_1, upstream_2, downstream, strahler_order). Original shapefile fields
     are preserved only for real reaches.
 
-    TODO: Double-check this implementation against MATLAB's bintree.m for exact behavior.
-    
+    TODO: Double check this implementation against MATLAB's bintree.m.
+
     Args:
         network: GeoDataFrame with network topology
 
@@ -175,6 +175,11 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         if col not in ["mobidic_id", "upstream_1", "upstream_2", "downstream", "strahler_order", "geometry"]
     ]
 
+    # We need to rebuild the topology after adding fictitious reaches
+    # First, clear the upstream connections (we'll rebuild them)
+    network["upstream_1"] = np.nan
+    network["upstream_2"] = np.nan
+
     # Extract end coordinates for each reach
     end_coords = []
     for idx in network.index:
@@ -183,28 +188,27 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         end_coords.append(coords[-1])
     end_coords = np.array(end_coords)
 
-    # Find unique downstream nodes by grouping reaches with the same downstream index
-    # This matches MATLAB's ifc=unique(to0)
+    # Find unique downstream nodes (sorted to match MATLAB's unique() behavior)
     unique_downstream = network["downstream"].unique()
     unique_downstream = unique_downstream[unique_downstream >= 0]  # Exclude terminal reaches (-1)
+    unique_downstream = np.sort(unique_downstream)  # Sort to match MATLAB unique() order
 
-    tolerance = 0.05
-    fictitious_reaches = []
     max_mobidic_id = network["mobidic_id"].max()
     fictitious_id_counter = 1
     original_network_size = len(network)
+    num_fictitious_added = 0
 
-    # Process each unique downstream node (matching MATLAB's for i=1:length(ifc))
+    # Process each unique downstream node
     for downstream_node in unique_downstream:
         downstream_node = int(downstream_node)
 
-        # Keep processing this node until it has <= 2 upstream reaches (matching MATLAB's while 1)
+        # Keep processing this node until it has <= 2 upstream reaches
         while True:
-            # Find all reaches that flow into this downstream node (matching MATLAB's k=find(ton==ifc(i)))
+            # Find all reaches that flow into this downstream node
             reaches_to_node = network[network["downstream"] == downstream_node].index.tolist()
             num_upstream = len(reaches_to_node)
 
-            # If binary or less, we're done with this node (matching MATLAB's if nk <= 2, break)
+            # If binary or less, we're done with this node
             if num_upstream <= 2:
                 break
 
@@ -213,24 +217,26 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
                 "Adding fictitious reach to enforce binary tree."
             )
 
-            # Create new fictitious node ID (matching MATLAB's tomax=tomax+1)
-            new_fictitious_node_id = original_network_size + len(fictitious_reaches)
+            # Create new fictitious node ID
+            new_fictitious_node_id = original_network_size + num_fictitious_added
 
-            # Get the end coordinate of the LAST upstream reach (matching MATLAB's xx(ie(k(nk))))
+            # Get the end coordinate of the LAST upstream reach
             last_reach_idx = reaches_to_node[-1]
             last_reach_end = end_coords[last_reach_idx]
 
             # Create fictitious reach vertices offset by ±0.05 from the last reach's end point
-            # (matching MATLAB's xx(imax-1)=xx(ie(k(nk)))+0.05, yy(imax-1)=yy(ie(k(nk)))+0.05)
             fictitious_start = last_reach_end + np.array([0.05, 0.05])
             fictitious_end = last_reach_end - np.array([0.05, 0.05])
 
             # Create the fictitious reach geometry
             fictitious_geom = LineString([fictitious_start, fictitious_end])
 
+            # Get the last 2 upstream reaches
+            last_idx = reaches_to_node[-1]
+            second_last_idx = reaches_to_node[-2]
+
             # Create the fictitious reach entry
-            # (matching MATLAB's nc=nc+1; cod(nc)=comax+1; is(nc)=imax-1; ie(nc)=imax; etc.)
-            fictitious_reach = {
+            fictitious_data = {
                 "mobidic_id": max_mobidic_id + fictitious_id_counter,
                 "geometry": fictitious_geom,
                 "upstream_1": np.nan,
@@ -239,49 +245,51 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
                 "strahler_order": -1,
             }
 
-            # Get the last 2 upstream reaches (matching MATLAB's k(nk) and k(nk-1))
-            last_idx = reaches_to_node[-1]
-            second_last_idx = reaches_to_node[-2]
+            # Fill original shapefile columns with NaN
+            for col in original_cols:
+                fictitious_data[col] = np.nan
 
-            # Update fictitious reach's upstream connections
-            fictitious_reach["upstream_1"] = last_idx
-            fictitious_reach["upstream_2"] = second_last_idx
-
-            fictitious_reaches.append(fictitious_reach)
+            # Add the fictitious reach to the network immediately
+            # This is critical so it's available for the next iteration of the while loop
+            new_row = gpd.GeoDataFrame([fictitious_data], crs=network.crs)
+            for col in network.columns:
+                if col not in new_row.columns:
+                    new_row[col] = np.nan
+            network = gpd.GeoDataFrame(pd.concat([network, new_row], ignore_index=True), crs=network.crs)
 
             # Redirect the last 2 upstream reaches to the new fictitious node
-            # (matching MATLAB's ton(k(nk))=tomax; ton(k(nk-1))=tomax)
             network.at[last_idx, "downstream"] = new_fictitious_node_id
             network.at[second_last_idx, "downstream"] = new_fictitious_node_id
 
             # Update the end coordinate for the fictitious reach (for potential next iteration)
             end_coords = np.vstack([end_coords, fictitious_end])
 
-            # Update the downstream node's upstream connections
-            # Remove the last 2 reaches from its upstream list and add the fictitious reach
-            if network.at[downstream_node, "upstream_1"] == last_idx:
-                network.at[downstream_node, "upstream_1"] = new_fictitious_node_id
-            elif network.at[downstream_node, "upstream_2"] == last_idx:
-                network.at[downstream_node, "upstream_2"] = new_fictitious_node_id
-
-            if network.at[downstream_node, "upstream_1"] == second_last_idx:
-                network.at[downstream_node, "upstream_1"] = new_fictitious_node_id
-            elif network.at[downstream_node, "upstream_2"] == second_last_idx:
-                network.at[downstream_node, "upstream_2"] = new_fictitious_node_id
-
             fictitious_id_counter += 1
+            num_fictitious_added += 1
 
             # Loop continues to check if this node still has > 2 upstream reaches
 
-    # Add fictitious reaches to network
-    if fictitious_reaches:
-        fictitious_gdf = gpd.GeoDataFrame(fictitious_reaches, crs=network.crs)
-        # Fill original shapefile columns with NaN for fictitious reaches
-        for col in original_cols:
-            if col not in fictitious_gdf.columns:
-                fictitious_gdf[col] = np.nan
-        network = gpd.GeoDataFrame(pd.concat([network, fictitious_gdf], ignore_index=True), crs=network.crs)
-        logger.info(f"Added {len(fictitious_reaches)} fictitious reach(es) to enforce binary tree structure")
+    if num_fictitious_added > 0:
+        logger.info(f"Added {num_fictitious_added} fictitious reach(es) to enforce binary tree structure")
+
+    # Rebuild upstream connections from downstream connections
+    network["upstream_1"] = np.nan
+    network["upstream_2"] = np.nan
+
+    for idx in network.index:
+        downstream_idx = network.at[idx, "downstream"]
+        if downstream_idx >= 0:
+            downstream_idx = int(downstream_idx)
+            # Add this reach to the downstream reach's upstream list
+            if np.isnan(network.at[downstream_idx, "upstream_1"]):
+                network.at[downstream_idx, "upstream_1"] = idx
+            elif np.isnan(network.at[downstream_idx, "upstream_2"]):
+                network.at[downstream_idx, "upstream_2"] = idx
+            else:
+                logger.error(
+                    f"Reach {downstream_idx} has >2 upstream reaches after binary tree enforcement. "
+                    f"This should not happen."
+                )
 
     return network
 
@@ -545,6 +553,25 @@ def _compute_calculation_order(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     for idx in terminal_indices:
         _recursive_calc_order(idx)
+
+    # Handle disconnected components (reaches not reachable from any terminal reach)
+    unprocessed = network[network["calc_order"] == -1].index
+    if len(unprocessed) > 0:
+        logger.warning(
+            f"Found {len(unprocessed)} reaches not connected to any terminal outlet. "
+            "Processing as disconnected subnetworks."
+        )
+        for idx in unprocessed:
+            if network.at[idx, "calc_order"] == -1:  # Still unprocessed
+                _recursive_calc_order(idx)
+
+    # Verify all reaches were processed
+    still_unprocessed = network[network["calc_order"] == -1]
+    if len(still_unprocessed) > 0:
+        logger.error(
+            f"{len(still_unprocessed)} reaches still have unassigned calculation order. "
+            f"This may indicate circular references in the network topology."
+        )
 
     logger.debug(f"Calculation order range: [1, {network['calc_order'].max()}]")
 
