@@ -243,7 +243,7 @@ def map_hillslope_to_reach(
                 # Current cell already has an assignment, use it for the entire flow path
                 assigned_reach = ch[ic, jc]
                 # Assign all cells in the flow path to this reach
-                for (pi, pj) in flow_path:
+                for pi, pj in flow_path:
                     ch[pi, pj] = assigned_reach
                 break
 
@@ -255,7 +255,7 @@ def map_hillslope_to_reach(
             if len(h) > 0:
                 # Found a channel cell, assign reach ID to entire flow path
                 assigned_reach = reach_ids[h[0]]
-                for (pi, pj) in flow_path:
+                for pi, pj in flow_path:
                     ch[pi, pj] = assigned_reach
                 break
 
@@ -265,7 +265,7 @@ def map_hillslope_to_reach(
             # Check for invalid flow direction
             if fd < 1 or fd > 8 or np.isnan(fd):
                 # Assign -9999 to entire flow path
-                for (pi, pj) in flow_path:
+                for pi, pj in flow_path:
                     ch[pi, pj] = -9999
                 break
 
@@ -277,14 +277,14 @@ def map_hillslope_to_reach(
             # Check bounds
             if ic_next < 0 or ic_next >= nrows or jc_next < 0 or jc_next >= ncols:
                 # Assign -9999 to entire flow path
-                for (pi, pj) in flow_path:
+                for pi, pj in flow_path:
                     ch[pi, pj] = -9999
                 break
 
             # Check for loops (cell appears twice in flow path)
             if (ic_next, jc_next) in flow_path:
                 # Assign -9999 to entire flow path
-                for (pi, pj) in flow_path:
+                for pi, pj in flow_path:
                     ch[pi, pj] = -9999
                 break
 
@@ -304,7 +304,6 @@ def map_hillslope_to_reach(
     )
 
     return ch
-
 
 
 def _densify_linestring(geom: LineString, step: float) -> np.ndarray:

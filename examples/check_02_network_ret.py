@@ -1,4 +1,4 @@
-""" MOBIDIC: MATLAB -> Python translation
+"""MOBIDIC: MATLAB -> Python translation
 Script for checking the network processing result from MATLAB ("ret" structure)
 """
 
@@ -85,7 +85,9 @@ if not upstream_match_2:
 print("\n=== Downstream connectivity ===")
 print(f"MATLAB shape: {matlab_downstream.shape}")
 print(f"Python shape: {python_downstream.shape}")
-downstream_match = np.allclose(matlab_downstream, python_downstream, equal_nan=True) # equal_nan=True include NaN in comparison
+downstream_match = np.allclose(
+    matlab_downstream, python_downstream, equal_nan=True
+)  # equal_nan=True include NaN in comparison
 print(f"Match: {downstream_match}")
 if not downstream_match:
     diff_mask = ~np.isclose(matlab_downstream, python_downstream, equal_nan=True)

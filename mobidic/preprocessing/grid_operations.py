@@ -5,11 +5,9 @@ flow direction conversion between different notation systems, and reading
 grid files in various formats.
 """
 
-from pathlib import Path
 from typing import Literal
 
 import numpy as np
-import rasterio
 from loguru import logger
 
 
@@ -325,4 +323,3 @@ def convert_to_mobidic_notation(
     logger.success(f"Flow direction conversion to MOBIDIC complete: {valid_cells} cells converted")
 
     return converted
-

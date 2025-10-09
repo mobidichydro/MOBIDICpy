@@ -179,6 +179,7 @@ def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, floa
         logger.error(f"Unsupported file format: {suffix_lower}")
         raise ValueError(f"Unsupported file format: {suffix_lower}. Must be .tif or .tiff")
 
+
 def read_shapefile(
     filepath: str | Path,
     crs: str | None = None,

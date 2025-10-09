@@ -214,4 +214,3 @@ class TestDegradeFlowDirection:
         # Check that max accumulation cell is correctly identified
         # Top-left coarse cell should use cell with acc=100
         assert deg_acc[0, 0] == 100.0 / 4  # normalized by factor **2
-

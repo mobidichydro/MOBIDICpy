@@ -1,9 +1,8 @@
-""" MOBIDIC: MATLAB -> Python translation
+"""MOBIDIC: MATLAB -> Python translation
 Script for checking the flow direction against the result from MATLAB
 """
 
 import numpy as np
-from pathlib import Path
 from mobidic import (
     load_config,
     configure_logger,
