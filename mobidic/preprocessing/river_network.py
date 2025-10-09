@@ -106,7 +106,7 @@ def _build_network_topology(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     network["upstream_1"] = np.nan
     network["upstream_2"] = np.nan
     network["downstream"] = -1
-    network["strahler_order"] = 0
+    network["strahler_order"] = -1  # -1 indicates uncomputed (will be 1 or higher when computed)
 
     # Extract start and end coordinates for each reach
     start_coords = []
@@ -240,7 +240,7 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
                 "upstream_1": np.nan,
                 "upstream_2": np.nan,
                 "downstream": downstream_idx,
-                "strahler_order": 0,
+                "strahler_order": -1,  # -1 indicates uncomputed
             }
 
             fictitious_reaches.append(fictitious_reach)
@@ -322,7 +322,7 @@ def _compute_strahler_order(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     def _recursive_strahler(idx: int) -> int:
         """Recursively compute Strahler order for a reach."""
-        if network.at[idx, "strahler_order"] > 0:
+        if network.at[idx, "strahler_order"] >= 1:
             return network.at[idx, "strahler_order"]
 
         upstream_1 = network.at[idx, "upstream_1"]
@@ -360,6 +360,25 @@ def _compute_strahler_order(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     for idx in terminal_indices:
         _recursive_strahler(idx)
 
+    # Handle disconnected components (reaches not reachable from any terminal reach)
+    unprocessed = network[network["strahler_order"] == -1].index
+    if len(unprocessed) > 0:
+        logger.warning(
+            f"Found {len(unprocessed)} reaches not connected to any terminal outlet. "
+            "Processing as disconnected subnetworks."
+        )
+        for idx in unprocessed:
+            if network.at[idx, "strahler_order"] == -1:  # Still unprocessed
+                _recursive_strahler(idx)
+
+    # Verify all reaches were processed
+    still_unprocessed = network[network["strahler_order"] == -1]
+    if len(still_unprocessed) > 0:
+        logger.error(
+            f"{len(still_unprocessed)} reaches still have unassigned Strahler order. "
+            f"This may indicate circular references in the network topology."
+        )
+
     # Log order statistics
     order_counts = network["strahler_order"].value_counts().sort_index()
     logger.info(f"Strahler order distribution: {order_counts.to_dict()}")
@@ -378,8 +397,8 @@ def _join_single_tributaries(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
         GeoDataFrame with simplified network
     """
-    # Mark reaches to keep (those with order > 0)
-    network["active"] = network["strahler_order"] > 0
+    # Mark reaches to keep (those with order >= 1)
+    network["active"] = network["strahler_order"] >= 1
 
     max_iterations = len(network)
     iteration = 0
@@ -514,7 +533,7 @@ def _compute_calculation_order(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     def _recursive_calc_order(idx: int) -> int:
         """Recursively compute calculation order for a reach."""
-        if "calc_order" in network.columns and network.at[idx, "calc_order"] > 0:
+        if "calc_order" in network.columns and network.at[idx, "calc_order"] >= 1:
             return network.at[idx, "calc_order"]
 
         upstream_1 = network.at[idx, "upstream_1"]
@@ -538,7 +557,7 @@ def _compute_calculation_order(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         return calc_order
 
     # Initialize calc_order column
-    network["calc_order"] = 0
+    network["calc_order"] = -1  # -1 indicates uncomputed
 
     # Start from terminal reaches
     terminal_indices = network[network["downstream"] == -1].index
