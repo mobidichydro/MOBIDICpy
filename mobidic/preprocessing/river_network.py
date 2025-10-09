@@ -158,6 +158,8 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     upstream_1, upstream_2, downstream, strahler_order). Original shapefile fields
     are preserved only for real reaches.
 
+    TODO: Double-check this implementation against MATLAB's bintree.m for exact behavior.
+    
     Args:
         network: GeoDataFrame with network topology
 
@@ -173,124 +175,103 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         if col not in ["mobidic_id", "upstream_1", "upstream_2", "downstream", "strahler_order", "geometry"]
     ]
 
-    # Find all unique downstream nodes (identified by end coordinates)
+    # Extract end coordinates for each reach
     end_coords = []
     for idx in network.index:
         geom = network.at[idx, "geometry"]
         coords = np.array(geom.coords)
         end_coords.append(coords[-1])
-
     end_coords = np.array(end_coords)
 
-    # Group reaches by their downstream node (end coordinate)
+    # Find unique downstream nodes by grouping reaches with the same downstream index
+    # This matches MATLAB's ifc=unique(to0)
+    unique_downstream = network["downstream"].unique()
+    unique_downstream = unique_downstream[unique_downstream >= 0]  # Exclude terminal reaches (-1)
+
     tolerance = 0.05
     fictitious_reaches = []
     max_mobidic_id = network["mobidic_id"].max()
     fictitious_id_counter = 1
+    original_network_size = len(network)
 
-    # Process each unique confluence node
-    processed_nodes = set()
+    # Process each unique downstream node (matching MATLAB's for i=1:length(ifc))
+    for downstream_node in unique_downstream:
+        downstream_node = int(downstream_node)
 
-    for i in network.index:
-        end_coord = end_coords[i]
-        end_coord_tuple = tuple(end_coord)
+        # Keep processing this node until it has <= 2 upstream reaches (matching MATLAB's while 1)
+        while True:
+            # Find all reaches that flow into this downstream node (matching MATLAB's k=find(ton==ifc(i)))
+            reaches_to_node = network[network["downstream"] == downstream_node].index.tolist()
+            num_upstream = len(reaches_to_node)
 
-        if end_coord_tuple in processed_nodes:
-            continue
+            # If binary or less, we're done with this node (matching MATLAB's if nk <= 2, break)
+            if num_upstream <= 2:
+                break
 
-        # Find all reaches that end at this node (i.e., flow into it)
-        distances = np.sqrt(np.sum((end_coords - end_coord) ** 2, axis=1))
-        reaches_at_node = np.where(distances < tolerance)[0]
+            logger.debug(
+                f"Downstream node {downstream_node} has {num_upstream} upstream reaches. "
+                "Adding fictitious reach to enforce binary tree."
+            )
 
-        # Find the downstream reach (the one that starts at this node)
-        downstream_idx = network.at[i, "downstream"]
+            # Create new fictitious node ID (matching MATLAB's tomax=tomax+1)
+            new_fictitious_node_id = original_network_size + len(fictitious_reaches)
 
-        if downstream_idx == -1:
-            # This is a terminal node, skip
-            processed_nodes.add(end_coord_tuple)
-            continue
+            # Get the end coordinate of the LAST upstream reach (matching MATLAB's xx(ie(k(nk))))
+            last_reach_idx = reaches_to_node[-1]
+            last_reach_end = end_coords[last_reach_idx]
 
-        # Count how many reaches flow into this node
-        num_upstream = len(reaches_at_node)
+            # Create fictitious reach vertices offset by ±0.05 from the last reach's end point
+            # (matching MATLAB's xx(imax-1)=xx(ie(k(nk)))+0.05, yy(imax-1)=yy(ie(k(nk)))+0.05)
+            fictitious_start = last_reach_end + np.array([0.05, 0.05])
+            fictitious_end = last_reach_end - np.array([0.05, 0.05])
 
-        if num_upstream <= 2:
-            # Binary or less, no action needed
-            processed_nodes.add(end_coord_tuple)
-            continue
-
-        # We have more than 2 upstream reaches - need to add fictitious reaches
-        logger.debug(
-            f"Node at {end_coord} has {num_upstream} upstream reaches. "
-            "Adding fictitious reaches to enforce binary tree."
-        )
-
-        # Keep the first 2 reaches connected to the original downstream node
-        # Add fictitious reaches for the rest
-        while num_upstream > 2:
-            # Create a new fictitious node slightly offset from the confluence
-            new_node_coord = end_coord + np.array([0.05, 0.05])
-
-            # Create a fictitious reach from the new node to the original confluence
-            fictitious_geom = LineString([new_node_coord, end_coord])
+            # Create the fictitious reach geometry
+            fictitious_geom = LineString([fictitious_start, fictitious_end])
 
             # Create the fictitious reach entry
+            # (matching MATLAB's nc=nc+1; cod(nc)=comax+1; is(nc)=imax-1; ie(nc)=imax; etc.)
             fictitious_reach = {
                 "mobidic_id": max_mobidic_id + fictitious_id_counter,
                 "geometry": fictitious_geom,
                 "upstream_1": np.nan,
                 "upstream_2": np.nan,
-                "downstream": downstream_idx,
-                "strahler_order": -1,  # -1 indicates uncomputed
+                "downstream": downstream_node,
+                "strahler_order": -1,
             }
 
+            # Get the last 2 upstream reaches (matching MATLAB's k(nk) and k(nk-1))
+            last_idx = reaches_to_node[-1]
+            second_last_idx = reaches_to_node[-2]
+
+            # Update fictitious reach's upstream connections
+            fictitious_reach["upstream_1"] = last_idx
+            fictitious_reach["upstream_2"] = second_last_idx
+
             fictitious_reaches.append(fictitious_reach)
-            fictitious_id_idx = len(network) + len(fictitious_reaches) - 1
 
-            # Redirect the last 2 upstream reaches to the new fictitious reach
-            last_idx = reaches_at_node[-1]
-            second_last_idx = reaches_at_node[-2]
+            # Redirect the last 2 upstream reaches to the new fictitious node
+            # (matching MATLAB's ton(k(nk))=tomax; ton(k(nk-1))=tomax)
+            network.at[last_idx, "downstream"] = new_fictitious_node_id
+            network.at[second_last_idx, "downstream"] = new_fictitious_node_id
 
-            network.at[last_idx, "downstream"] = fictitious_id_idx
-            network.at[second_last_idx, "downstream"] = fictitious_id_idx
+            # Update the end coordinate for the fictitious reach (for potential next iteration)
+            end_coords = np.vstack([end_coords, fictitious_end])
 
-            # Update the fictitious reach's upstream connections
-            fictitious_reaches[-1]["upstream_1"] = last_idx
-            fictitious_reaches[-1]["upstream_2"] = second_last_idx
+            # Update the downstream node's upstream connections
+            # Remove the last 2 reaches from its upstream list and add the fictitious reach
+            if network.at[downstream_node, "upstream_1"] == last_idx:
+                network.at[downstream_node, "upstream_1"] = new_fictitious_node_id
+            elif network.at[downstream_node, "upstream_2"] == last_idx:
+                network.at[downstream_node, "upstream_2"] = new_fictitious_node_id
 
-            # Update downstream reach's upstream connections
-            # The downstream could be in the network or in fictitious_reaches
-            if downstream_idx < len(network):
-                # Downstream is in the original network
-                if network.at[downstream_idx, "upstream_1"] == last_idx:
-                    network.at[downstream_idx, "upstream_1"] = fictitious_id_idx
-                elif network.at[downstream_idx, "upstream_2"] == last_idx:
-                    network.at[downstream_idx, "upstream_2"] = fictitious_id_idx
+            if network.at[downstream_node, "upstream_1"] == second_last_idx:
+                network.at[downstream_node, "upstream_1"] = new_fictitious_node_id
+            elif network.at[downstream_node, "upstream_2"] == second_last_idx:
+                network.at[downstream_node, "upstream_2"] = new_fictitious_node_id
 
-                if network.at[downstream_idx, "upstream_1"] == second_last_idx:
-                    network.at[downstream_idx, "upstream_1"] = fictitious_id_idx
-                elif network.at[downstream_idx, "upstream_2"] == second_last_idx:
-                    network.at[downstream_idx, "upstream_2"] = fictitious_id_idx
-            else:
-                # Downstream is a fictitious reach
-                fict_idx = downstream_idx - len(network)
-                if fictitious_reaches[fict_idx]["upstream_1"] == last_idx:
-                    fictitious_reaches[fict_idx]["upstream_1"] = fictitious_id_idx
-                elif fictitious_reaches[fict_idx]["upstream_2"] == last_idx:
-                    fictitious_reaches[fict_idx]["upstream_2"] = fictitious_id_idx
-
-                if fictitious_reaches[fict_idx]["upstream_1"] == second_last_idx:
-                    fictitious_reaches[fict_idx]["upstream_1"] = fictitious_id_idx
-                elif fictitious_reaches[fict_idx]["upstream_2"] == second_last_idx:
-                    fictitious_reaches[fict_idx]["upstream_2"] = fictitious_id_idx
-
-            # Update for next iteration
-            reaches_at_node = reaches_at_node[:-2]  # Remove the last 2
-            downstream_idx = fictitious_id_idx  # The new downstream is the fictitious reach
-            end_coord = new_node_coord  # The new confluence is the fictitious node
-            num_upstream = len(reaches_at_node)
             fictitious_id_counter += 1
 
-        processed_nodes.add(end_coord_tuple)
+            # Loop continues to check if this node still has > 2 upstream reaches
 
     # Add fictitious reaches to network
     if fictitious_reaches:
