@@ -14,7 +14,7 @@ from pathlib import Path
 
 def process_river_network(
     shapefile_path: str | Path,
-    join_single_tributaries: bool = True,
+    join_single_tributaries: bool = False,
     routing_params: dict | None = None,
 ) -> gpd.GeoDataFrame:
     """Process river network shapefile to create a complete network structure.
@@ -44,7 +44,7 @@ def process_river_network(
         >>> network = process_river_network(
         ...     "river_network.shp",
         ...     "REACH_ID",
-        ...     routing_params={"wcel": 5.18, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03}
+        ...     routing_params={"wcel": 3.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03}
         ... )
     """
     logger.info(f"Processing river network from {shapefile_path}")
