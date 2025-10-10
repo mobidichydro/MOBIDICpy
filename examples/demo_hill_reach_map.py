@@ -7,11 +7,13 @@ This script demonstrates how to:
 4. Export results
 """
 
+import numpy as np
 from mobidic import (
     load_config,
     configure_logger,
     process_river_network,
     compute_hillslope_cells,
+    map_hillslope_to_reach,
 )
 
 # Configuration
@@ -43,5 +45,36 @@ print("=" * 60)
 
 network = compute_hillslope_cells(
     network=network,
-    flowdir_path=config.raster_files.flow_dir,
+    grid_path=config.raster_files.flow_dir,
 )
+
+# Step 3: Map hillslope cells to reaches
+print("\n" + "=" * 60)
+print("STEP 3: Mapping hillslope cells to reaches")
+print("=" * 60)
+
+reach_map = map_hillslope_to_reach(
+    network=network,
+    flowdir_path=config.raster_files.flow_dir,
+    flow_dir_type=config.raster_settings.flow_dir_type,
+)
+
+print(f"\nReach map shape: {reach_map.shape}")
+print(f"Unique reaches assigned: {len(set(reach_map[~np.isnan(reach_map)]))}")
+print(f"Cells assigned to reaches: {np.sum(~np.isnan(reach_map))}")
+print(f"Unassigned cells: {np.sum(reach_map == -9999)}")
+
+# Step 4: Export results
+print("\n" + "=" * 60)
+print("STEP 4: Exporting results")
+print("=" * 60)
+
+reach_map_output_path = "examples/Arno/output/reach_map.tif"
+import rasterio
+with rasterio.open(config.raster_files.flow_dir) as src:
+    profile = src.profile
+    profile.update(dtype=rasterio.float32, count=1, compress="lzw")
+
+    with rasterio.open(reach_map_output_path, "w", **profile) as dst:
+        dst.write(reach_map.astype(rasterio.float32), 1)
+print(f"\nReach map exported to: {reach_map_output_path}")
