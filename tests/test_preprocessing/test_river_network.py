@@ -6,14 +6,13 @@ import pytest
 from shapely.geometry import LineString
 from mobidic.preprocessing.river_network import (
     process_river_network,
-    export_network,
-    load_network,
     _build_network_topology,
     _enforce_binary_tree,
     _compute_strahler_order,
     _calculate_routing_parameters,
     _compute_calculation_order,
 )
+from mobidic.preprocessing.io import save_network, load_network
 
 
 @pytest.fixture
@@ -339,9 +338,9 @@ def test_export_and_load_network_parquet(simple_network_gdf, tmp_path):
     # Process network
     network = process_river_network(shp_path, join_single_tributaries=False)
 
-    # Export to Parquet
+    # Save to Parquet
     output_path = tmp_path / "network.parquet"
-    export_network(network, output_path, format="parquet")
+    save_network(network, output_path, format="parquet")
 
     assert output_path.exists()
 
@@ -353,8 +352,8 @@ def test_export_and_load_network_parquet(simple_network_gdf, tmp_path):
     assert list(loaded_network.columns) == list(network.columns)
 
 
-def test_export_and_load_network_shapefile(simple_network_gdf, tmp_path):
-    """Test exporting and loading network in shapefile format."""
+def test_save_network_shapefile(simple_network_gdf, tmp_path):
+    """Test saving network in shapefile format."""
     # Save to temporary shapefile
     shp_path = tmp_path / "test_network.shp"
     simple_network_gdf.to_file(shp_path)
@@ -362,14 +361,14 @@ def test_export_and_load_network_shapefile(simple_network_gdf, tmp_path):
     # Process network
     network = process_river_network(shp_path, join_single_tributaries=False)
 
-    # Export to shapefile
+    # Save to shapefile
     output_path = tmp_path / "network_out.shp"
-    export_network(network, output_path, format="shapefile")
+    save_network(network, output_path, format="shapefile")
 
     assert output_path.exists()
 
-    # Load network
-    loaded_network = load_network(output_path)
+    # Load network using geopandas (since load_network only supports parquet)
+    loaded_network = gpd.read_file(output_path)
 
     # Check that loaded network has same number of features
     assert len(loaded_network) == len(network)
@@ -387,12 +386,12 @@ def test_load_nonexistent_network():
         load_network("nonexistent.parquet")
 
 
-def test_export_invalid_format(simple_network_gdf, tmp_path):
-    """Test that invalid export format raises ValueError."""
+def test_save_invalid_format(simple_network_gdf, tmp_path):
+    """Test that invalid save format raises ValueError."""
     shp_path = tmp_path / "test_network.shp"
     simple_network_gdf.to_file(shp_path)
 
     network = process_river_network(shp_path, join_single_tributaries=False)
 
     with pytest.raises(ValueError, match="Unsupported format"):
-        export_network(network, tmp_path / "network.csv", format="csv")
+        save_network(network, tmp_path / "network.csv", format="csv")

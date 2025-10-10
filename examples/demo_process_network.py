@@ -1,6 +1,6 @@
 """Test script to process the Arno river network."""
 
-from mobidic import load_config, process_river_network, export_network
+from mobidic import load_config, process_river_network, save_network
 
 # Load configuration
 config = load_config("examples/Arno/Arno.yaml")
@@ -28,7 +28,7 @@ print(f"  Mean channel width: {network['width_m'].mean():.2f} m")
 # Export to parquet
 print(f"\nExporting to {config.paths.network}...")
 try:
-    export_network(network, config.paths.network, format="parquet")
+    save_network(network, config.paths.network, format="parquet")
     print("Successfully exported to Parquet format")
 except ImportError as e:
     print(f"Warning: {e}")
