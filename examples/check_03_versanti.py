@@ -33,7 +33,7 @@ network = process_river_network(
 # Compute hillslope cells
 network = compute_hillslope_cells(
     network=network,
-    flowdir_path=config.raster_files.flow_dir,
+    grid_path=config.raster_files.flow_dir,
 )
 
 # Compare with MATLAB results hillslope_cells vs versanti
