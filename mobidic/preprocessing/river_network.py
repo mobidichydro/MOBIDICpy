@@ -14,7 +14,7 @@ from pathlib import Path
 
 def process_river_network(
     shapefile_path: str | Path,
-    join_single_tributaries: bool = False,
+    join_single_tributaries: bool = True,
     routing_params: dict | None = None,
 ) -> gpd.GeoDataFrame:
     """Process river network shapefile to create a complete network structure.
@@ -158,7 +158,6 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     upstream_1, upstream_2, downstream, strahler_order). Original shapefile fields
     are preserved only for real reaches.
 
-    TODO: Double check this implementation against MATLAB's bintree.m.
 
     Args:
         network: GeoDataFrame with network topology
