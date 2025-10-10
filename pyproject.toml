@@ -29,6 +29,8 @@ dependencies = [
     "geopandas>=1.1.0",
     "loguru>=0.7.0",
     "pyarrow",
+    "xarray>=2023.1.0",
+    "netcdf4",
 ]
 description = "MOBIDIC - Distributed and continuous hydrological balance model"
 keywords = ["Hydrology", "Numerical modelling", "Distributed hydrologic modelling"]
