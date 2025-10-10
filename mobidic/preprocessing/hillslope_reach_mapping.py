@@ -8,14 +8,15 @@ import numpy as np
 import geopandas as gpd
 from loguru import logger
 from shapely.geometry import LineString
+from pathlib import Path
 
 from mobidic.preprocessing.grid_operations import convert_to_mobidic_notation
+from mobidic.preprocessing.gis_reader import grid_to_matrix
 
 
 def compute_hillslope_cells(
     network: gpd.GeoDataFrame,
-    transform: tuple,
-    shape: tuple,
+    flowdir_path: str | Path,
     densify_step: float = 10.0,
 ) -> gpd.GeoDataFrame:
     """Compute hillslope cells for each reach in the river network.
@@ -24,10 +25,11 @@ def compute_hillslope_cells(
     which grid cells are directly occupied by the channel. These cells are
     stored as linear indices in the 'hillslope_cells' column.
 
+    TODO: Check slight mismatch with MATLAB results in a few cases. See check_03_versanti.py.
+
     Args:
         network: GeoDataFrame with processed river network (must contain geometry column)
-        transform: Affine transform from rasterio (contains origin and resolution)
-        shape: Tuple (nrows, ncols) of the grid
+        flowdir_path: Path to flow direction raster (used to get grid parameters)
         densify_step: Distance [m] between points when densifying reach geometries (default: 10.0)
 
     Returns:
@@ -36,33 +38,16 @@ def compute_hillslope_cells(
     Examples:
         >>> from mobidic import process_river_network, read_raster
         >>> network = process_river_network("river_network.shp")
-        >>> raster = read_raster("dtm.tif")
-        >>> network = compute_hillslope_cells(network, raster['transform'], raster['data'].shape)
+        >>> flowdir_path = "flowdir.tif"
+        >>> network = compute_hillslope_cells(network, flowdir_path)
     """
     logger.info(f"Computing hillslope cells for {len(network)} reaches")
 
-    # Extract grid parameters from transform
-    # Transform is an Affine object: (a, b, c, d, e, f) representing
-    # x = a * col + b * row + c
-    # y = d * col + e * row + f
-    # For standard north-up raster: a=cellsize, e=-cellsize, b=d=0, c=xllcorner, f=ytop
-    xllcorner = transform[2]  # x-coordinate of left edge
-    ytop = transform[5]  # y-coordinate of top edge
-    cellsize_x = transform[0]  # cell width
-    cellsize_y = abs(transform[4])  # cell height (absolute value)
+    # Read flow direction
+    flowdir, xllcorner, yllcorner, cellsize = grid_to_matrix(flowdir_path)
+    nrows, ncols = flowdir.shape
 
-    nrows, ncols = shape
-
-    # Calculate yllcorner (bottom-left y-coordinate) to match MATLAB convention
-    # yllcorner = ytop - nrows * cellsize_y
-    yllcorner = ytop + nrows * transform[4]  # transform[4] is negative
-
-    # MATLAB's grid2mat.m adds 0.5*cellsize to shift from edge to center coordinates
-    # (see grid2mat.m lines 29-30). This ensures consistent cell assignment with MATLAB.
-    xllcorner = xllcorner + 0.5 * cellsize_x
-    yllcorner = yllcorner + 0.5 * cellsize_y
-
-    logger.debug(f"Grid parameters: xllcorner={xllcorner}, yllcorner={yllcorner}, cellsize={cellsize_x}")
+    logger.debug(f"Grid parameters: xllcorner={xllcorner}, yllcorner={yllcorner}, cellsize={cellsize}")
 
     # Initialize column for storing hillslope cells
     hillslope_cells = []
@@ -82,14 +67,12 @@ def compute_hillslope_cells(
             continue
 
         # Convert geographic coordinates to grid indices
-        # MATLAB code: cc=round((xx0-xllcorner)./cellsize)+1; rr=round((yy0-yllcorner)./cellsize)+1;
-        # Note: MATLAB uses 1-based indexing, Python uses 0-based
         xx0 = coords[:, 0]  # x coordinates
         yy0 = coords[:, 1]  # y coordinates
 
-        # Convert to grid indices (0-based, matching MATLAB's 1-based minus 1)
-        col_indices = np.round((xx0 - xllcorner) / cellsize_x).astype(int)
-        row_indices = np.round((yy0 - yllcorner) / cellsize_y).astype(int)
+        # Convert to grid indices
+        col_indices = np.round((xx0 - xllcorner) / cellsize).astype(int)
+        row_indices = np.round((yy0 - yllcorner) / cellsize).astype(int)
 
         # Filter out-of-bounds indices
         valid_mask = (row_indices >= 0) & (row_indices < nrows) & (col_indices >= 0) & (col_indices < ncols)
@@ -100,9 +83,7 @@ def compute_hillslope_cells(
             hillslope_cells.append([])
             continue
 
-        # Convert to linear indices (column-major order to match MATLAB)
-        # MATLAB: linear_idx = col * nrows + row + 1 (1-based)
-        # Python: linear_idx = col * nrows + row (0-based)
+        # Convert to linear indices
         linear_indices = col_indices * nrows + row_indices
 
         # Get unique indices
