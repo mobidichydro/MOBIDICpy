@@ -55,7 +55,8 @@ for i in range(min(len(network), ret.shape[0])):
 
     # Convert Python cells to 1-based for comparison
     python_cells_1based = np.array(sorted(python_cells)) + 1 if len(python_cells) > 0 else np.array([])
-    matlab_versanti_sorted = np.array(sorted(matlab_versanti))
+    # Remove duplicates from MATLAB results (some very short reaches have duplicate entries)
+    matlab_versanti_sorted = np.array(sorted(np.unique(matlab_versanti)))
 
     # Compare
     if np.array_equal(python_cells_1based, matlab_versanti_sorted):
@@ -95,7 +96,7 @@ else:
         matlab_versanti = ret["versanti"][idx, 0].flatten()
         python_cells = network.iloc[idx]["hillslope_cells"]
         python_cells_1based = np.array(sorted(python_cells)) + 1 if len(python_cells) > 0 else np.array([])
-        matlab_versanti_sorted = np.array(sorted(matlab_versanti))
+        matlab_versanti_sorted = np.array(sorted(np.unique(matlab_versanti)))
 
         print(f"\nDetailed comparison for reach {idx}:")
         print(f"  MATLAB: {matlab_versanti_sorted}")

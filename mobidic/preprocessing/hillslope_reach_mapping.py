@@ -25,12 +25,13 @@ def compute_hillslope_cells(
     which grid cells are directly occupied by the channel. These cells are
     stored as linear indices in the 'hillslope_cells' column.
 
-    TODO: Check slight mismatch with MATLAB results in a few cases. See check_03_versanti.py.
+    The densification uses iterative midpoint subdivision (matching MATLAB's
+    densify.m) to ensure exact compatibility with the original implementation.
 
     Args:
         network: GeoDataFrame with processed river network (must contain geometry column)
         flowdir_path: Path to flow direction raster (used to get grid parameters)
-        densify_step: Distance [m] between points when densifying reach geometries (default: 10.0)
+        densify_step: Maximum distance [m] between points when densifying reach geometries (default: 10.0)
 
     Returns:
         GeoDataFrame with added 'hillslope_cells' column containing list of linear indices
@@ -288,11 +289,14 @@ def map_hillslope_to_reach(
 
 
 def _densify_linestring(geom: LineString, step: float) -> np.ndarray:
-    """Densify a LineString geometry by adding points at regular intervals.
+    """Densify a LineString geometry using iterative midpoint subdivision.
+
+    This function iteratively subdivides line segments by adding midpoints
+    until all segments are shorter than the specified step size.
 
     Args:
         geom: LineString geometry
-        step: Distance between points [m]
+        step: Maximum distance between consecutive points [m]
 
     Returns:
         Array of shape (n, 2) with densified coordinates
@@ -300,13 +304,49 @@ def _densify_linestring(geom: LineString, step: float) -> np.ndarray:
     if geom.is_empty or geom.length == 0:
         return np.array([])
 
-    coords = []
-    total_length = geom.length
-    num_points = max(2, int(np.ceil(total_length / step)))
+    # Get original coordinates
+    coords = np.array(geom.coords)
+    xx = coords[:, 0]
+    yy = coords[:, 1]
+    n = len(xx)
 
-    for i in range(num_points):
-        distance = (i / (num_points - 1)) * total_length
-        point = geom.interpolate(distance)
-        coords.append([point.x, point.y])
+    # Compute segment lengths between consecutive vertices
+    ss = np.zeros(n)
+    if n > 1:
+        ss[1:] = np.sqrt((xx[1:] - xx[:-1]) ** 2 + (yy[1:] - yy[:-1]) ** 2)
 
-    return np.array(coords)
+    # Remove duplicate points (segments with length < epsilon)
+    eps = 1e-10
+    kg_mask = np.ones(n, dtype=bool)
+    if n > 1:
+        kg_mask[1:] = ss[1:] >= eps
+
+    kg = np.where(kg_mask)[0]
+
+    if len(kg) == 0:
+        return np.array([])
+
+    # Cumulative distance along original vertices (excluding duplicates)
+    ss_cum = np.cumsum(ss[kg])
+
+    # Start with distances at original vertices
+    sd = ss_cum.copy()
+
+    if len(kg) > 1:
+        # Iteratively subdivide by interpolating at midpoints until max segment <= step
+        # MATLAB: sd = interp1(1:length(sd), sd, 1:0.5:length(sd))
+        # This doubles the number of points each iteration by adding midpoints
+        while np.max(np.diff(sd)) > step:
+            indices_old = np.arange(1, len(sd) + 1)  # 1, 2, 3, ..., n
+            indices_new = np.arange(1, len(sd) + 0.5, 0.5)  # 1, 1.5, 2, 2.5, ..., n
+            sd = np.interp(indices_new, indices_old, sd)
+
+        # Interpolate x,y coordinates at the densified distances
+        xd = np.interp(sd, ss_cum, xx[kg])
+        yd = np.interp(sd, ss_cum, yy[kg])
+    else:
+        # Only one vertex after removing duplicates
+        xd = xx[kg]
+        yd = yy[kg]
+
+    return np.column_stack([xd, yd])
