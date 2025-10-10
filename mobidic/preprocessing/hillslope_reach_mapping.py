@@ -104,7 +104,7 @@ def compute_hillslope_cells(
 
 def map_hillslope_to_reach(
     network: gpd.GeoDataFrame,
-    flowdir_path: np.ndarray,
+    flowdir_path: str | Path,
     flow_dir_type: str = "Grass",
 ) -> np.ndarray:
     """Map each hillslope cell to its downstream river reach.
@@ -113,9 +113,15 @@ def map_hillslope_to_reach(
     it reaches a cell that belongs to a river reach (hillslope cell), then
     assigns the reach's mobidic_id to the original cell.
 
+    This function translates MATLAB's hill2chan.m algorithm:
+    - Builds a lookup table of reach cells from network.hillslope_cells
+    - For each valid cell, follows flow direction until reaching a reach cell
+    - Assigns the reach's mobidic_id to all cells along the path
+    - Handles edge cases: out-of-bounds, invalid directions, loops
+
     Args:
-        flow_dir: Flow direction raster (2D array)
         network: GeoDataFrame with river network (must have 'hillslope_cells' and 'mobidic_id' columns)
+        flowdir_path: Path to flow direction raster file
         flow_dir_type: Flow direction notation ('Grass' for 1-8 or 'Arc' for power-of-2)
 
     Returns:
@@ -132,12 +138,118 @@ def map_hillslope_to_reach(
     """
     logger.info("Mapping hillslope cells to river reaches")
 
+    # Validate network has required columns
+    if "hillslope_cells" not in network.columns:
+        logger.error("Network must have 'hillslope_cells' column. Run compute_hillslope_cells() first.")
+        raise ValueError("Network must have 'hillslope_cells' column")
+    if "mobidic_id" not in network.columns:
+        logger.error("Network must have 'mobidic_id' column")
+        raise ValueError("Network must have 'mobidic_id' column")
+
+    # Read flow direction grid
     flowdir, xllcorner, yllcorner, cellsize = grid_to_matrix(flowdir_path)
 
     # Transform flow direction from GRASS/Arc to MOBIDIC notation
     flowdir = convert_to_mobidic_notation(flowdir, from_notation=flow_dir_type)
 
-    # TODO: Implement hill2chan.m functionality
+    nrows, ncols = flowdir.shape
+
+    # Initialize output array with NaN
+    reach_map = np.full((nrows, ncols), np.nan, dtype=float)
+
+    # Build lookup table: linear_index -> mobidic_id
+    # This replaces MATLAB's ri/rv arrays with a dictionary for O(1) lookup
+    logger.debug("Building reach cell lookup table")
+    cell_to_reach = {}
+    for idx in network.index:
+        mobidic_id = network.loc[idx, "mobidic_id"]
+        hillslope_cells = network.loc[idx, "hillslope_cells"]
+
+        if hillslope_cells is None or len(hillslope_cells) == 0:
+            continue
+
+        for cell_idx in hillslope_cells:
+            # Store first occurrence (matches MATLAB h(1) behavior)
+            if cell_idx not in cell_to_reach:
+                cell_to_reach[cell_idx] = mobidic_id
+
+    logger.debug(f"Lookup table built: {len(cell_to_reach)} reach cells")
+
+    # Direction offsets for MOBIDIC notation (1-8)
+    di = np.array([-1, -1, -1, 0, 1, 1, 1, 0])  # row offset (matches i8)
+    dj = np.array([-1, 0, 1, 1, 1, 0, -1, -1])  # column offset (matches j8)
+
+    # Get valid cells (non-NaN flow direction)
+    valid_cells = np.where(np.isfinite(flowdir))
+    n_valid = len(valid_cells[0])
+
+    logger.info(f"Processing {n_valid} valid cells")
+
+    # Process each valid cell
+    processed_count = 0
+    unassigned_count = 0
+
+    for k in range(n_valid):
+        i0, j0 = valid_cells[0][k], valid_cells[1][k]
+
+        # Skip if already assigned
+        if not np.isnan(reach_map[i0, j0]):
+            continue
+
+        # Track path for this cell
+        path_i = [i0]
+        path_j = [j0]
+        ic, jc = i0, j0
+
+        # Follow flow direction until reaching a reach cell or error
+        while True:
+            # Convert current position to linear index
+            kc = jc * nrows + ic
+
+            # Check if current cell is a reach cell
+            if kc in cell_to_reach:
+                # Assign reach to original cell
+                reach_map[i0, j0] = cell_to_reach[kc]
+                processed_count += 1
+                break
+
+            # Check for invalid flow direction
+            direction = flowdir[ic, jc]
+            if not (1 <= direction <= 8) or np.isnan(direction):
+                reach_map[i0, j0] = -9999
+                unassigned_count += 1
+                break
+
+            # Move to next cell
+            direction_idx = int(direction) - 1
+            ic_next = ic + di[direction_idx]
+            jc_next = jc + dj[direction_idx]
+
+            # Check bounds
+            if ic_next < 0 or ic_next >= nrows or jc_next < 0 or jc_next >= ncols:
+                reach_map[i0, j0] = -9999
+                unassigned_count += 1
+                break
+
+            # MATLAB loop detection: if find(sub2ind([n,m],i0,j0) == sub2ind([n,m],ic,jc))
+            # Check if next position (ic_next, jc_next) is already in the path
+            # This detects if we're revisiting any cell in the current path
+            if any(ic_next == pi and jc_next == pj for pi, pj in zip(path_i, path_j)):
+                reach_map[i0, j0] = -9999
+                unassigned_count += 1
+                break
+
+            # Append to path and continue (MATLAB: i0=[i0 ic]; j0=[j0 jc];)
+            path_i.append(ic_next)
+            path_j.append(jc_next)
+            ic, jc = ic_next, jc_next
+
+    logger.success(
+        f"Hillslope-to-reach mapping complete: {processed_count} cells assigned, "
+        f"{unassigned_count} cells unassigned (out-of-bounds, loops, or invalid flow)"
+    )
+
+    return reach_map
 
 
 def _densify_linestring(geom: LineString, step: float) -> np.ndarray:

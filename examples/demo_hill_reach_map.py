@@ -7,6 +7,7 @@ This script demonstrates how to:
 4. Export results
 """
 
+import rasterio
 import numpy as np
 from mobidic import (
     load_config,
@@ -70,7 +71,7 @@ print("STEP 4: Exporting results")
 print("=" * 60)
 
 reach_map_output_path = "examples/Arno/output/reach_map.tif"
-import rasterio
+
 with rasterio.open(config.raster_files.flow_dir) as src:
     profile = src.profile
     profile.update(dtype=rasterio.float32, count=1, compress="lzw")
