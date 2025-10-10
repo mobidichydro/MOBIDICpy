@@ -9,7 +9,7 @@ config = load_config("examples/Arno/Arno.yaml")
 print("Processing Arno river network...")
 network = process_river_network(
     shapefile_path=config.vector_files.river_network.shp,
-    join_single_tributaries=False,
+    join_single_tributaries=True,
     routing_params={
         "wcel": config.parameters.routing.wcel,
         "Br0": config.parameters.routing.Br0,
