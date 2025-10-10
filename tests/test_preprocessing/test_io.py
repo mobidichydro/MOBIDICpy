@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 import xarray as xr
 import geopandas as gpd
-from pathlib import Path
 from shapely.geometry import LineString
 from unittest.mock import Mock
 

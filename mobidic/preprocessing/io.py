@@ -1,7 +1,7 @@
 """I/O functions for saving and loading preprocessed GIS data.
 
 This module provides functions to save/load preprocessed data to/from files:
-- Gridded data: NetCDF format (xarray-compatible)
+- Gridded data: NetCDF4 format (xarray-compatible)
 - River network: GeoParquet format (default) or Shapefile
 """
 
@@ -21,6 +21,9 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
 
     This function saves all grids (DTM, flow direction, soil parameters, etc.),
     metadata, and hillslope-reach mapping to a single NetCDF file using xarray.
+
+    TODO: Check grid orientations (flip y-axis when writing/reading for better visualization in external tools)
+    TODO: Check nodata handling (set nodata values in grids and metadata)
 
     Args:
         gisdata: GISData object containing preprocessed data
@@ -74,7 +77,7 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     ds.attrs["crs"] = str(gisdata.metadata["crs"])
     ds.attrs["resolution_x"] = resolution[0]
     ds.attrs["resolution_y"] = resolution[1]
-    ds.attrs["nodata_value"] = gisdata.metadata["nodata"]
+    ds.attrs["nodata_value"] = np.nan
     ds.attrs["resample_factor"] = gisdata.config.simulation.resample
     ds.attrs["flow_dir_notation"] = "MOBIDIC"
     ds.attrs["conventions"] = "CF-1.8"
@@ -180,7 +183,7 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
 
     # Save to NetCDF
     encoding = {var: {"zlib": True, "complevel": 4} for var in ds.data_vars}
-    ds.to_netcdf(output_path, encoding=encoding)
+    ds.to_netcdf(output_path, encoding=encoding, engine="netcdf4")
 
     logger.success(f"Gridded data saved to {output_path}")
     logger.debug(f"File size: {output_path.stat().st_size / 1024 / 1024:.2f} MB")
