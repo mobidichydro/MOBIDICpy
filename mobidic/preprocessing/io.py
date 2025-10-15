@@ -122,7 +122,7 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
         "long_name": "Hillslope to Reach Mapping",
         "units": "1",
         "description": "MOBIDIC ID of downstream reach for each cell",
-        "missing_value": -9999,
+        # "missing_value": -9999,
     }
 
     # Add optional parameter metadata
