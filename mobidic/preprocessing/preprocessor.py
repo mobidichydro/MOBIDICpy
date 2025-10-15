@@ -177,13 +177,20 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     grids["ks"] = ks_data * 0.001 / 3600  # Convert from mm/h to m/s
 
     # Check ranges of ks values (ks_min and ks_max in mm/h from config)
-    ks_min = config.parameters.soil.ks_min * 0.001 / 3600
-    ks_max = config.parameters.soil.ks_max * 0.001 / 3600
-    if np.any(grids["ks"] < ks_min):
-        logger.warning(f"Some ks values are below the minimum threshold: {ks_min} m/s")
-    if np.any(grids["ks"] > ks_max):
-        logger.warning(f"Some ks values are above the maximum threshold: {ks_max} m/s")
-    grids["ks"] = np.clip(grids["ks"], ks_min, ks_max)
+    ks_min = config.parameters.soil.ks_min
+    ks_max = config.parameters.soil.ks_max
+    if ks_min is not None:
+        ks_min = ks_min * 0.001 / 3600
+        if np.any(grids["ks"] < ks_min):
+            logger.warning(f"Some ks values are below the minimum threshold: {ks_min} m/s")
+
+    if ks_max is not None:
+        ks_max = ks_max * 0.001 / 3600
+        if np.any(grids["ks"] > ks_max):
+            logger.warning(f"Some ks values are above the maximum threshold: {ks_max} m/s")
+
+    if ks_min is not None and ks_max is not None:
+        grids["ks"] = np.clip(grids["ks"], ks_min, ks_max)
 
     # Load optional raster files
     optional_rasters = {
