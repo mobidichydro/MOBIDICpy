@@ -135,11 +135,22 @@ class TestSaveGISData:
         assert "flow_dir" in ds
         assert "Wc0" in ds
         assert "hillslope_reach_map" in ds
+        assert "crs" in ds  # CF-1.12: grid mapping variable
 
         # Check attributes
         assert "basin_id" in ds.attrs
         assert ds.attrs["basin_id"] == "TestBasin"
-        assert "crs" in ds.attrs
+        assert "Conventions" in ds.attrs
+        assert ds.attrs["Conventions"] == "CF-1.12"
+
+        # Check CF-1.12 compliance
+        assert "crs_wkt" in ds["crs"].attrs
+        assert "grid_mapping" in ds["dtm"].attrs
+        assert ds["dtm"].attrs["grid_mapping"] == "crs"
+        assert "axis" in ds["x"].attrs
+        assert ds["x"].attrs["axis"] == "X"
+        assert "axis" in ds["y"].attrs
+        assert ds["y"].attrs["axis"] == "Y"
 
         ds.close()
 
