@@ -12,10 +12,11 @@ from pathlib import Path
 from typing import Any
 import numpy as np
 import geopandas as gpd
+import rasterio
 from loguru import logger
 
 from mobidic.config.schema import MOBIDICConfig
-from mobidic.preprocessing.gis_reader import read_raster
+from mobidic.preprocessing.gis_reader import grid_to_matrix
 from mobidic.preprocessing.grid_operations import (
     degrade_raster,
     degrade_flow_direction,
@@ -133,37 +134,44 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     # Load DTM (required)
     logger.debug(f"Loading DTM from {config.raster_files.dtm}")
-    dtm_data = read_raster(config.raster_files.dtm)
-    grids["dtm"] = dtm_data["data"]
-    metadata["transform"] = dtm_data["transform"]
-    metadata["crs"] = dtm_data["crs"]
-    metadata["bounds"] = dtm_data["bounds"]
-    metadata["shape"] = dtm_data["shape"]
-    metadata["resolution"] = dtm_data["resolution"]
-    metadata["nodata"] = dtm_data.get("nodata", -9999.0)
+    dtm_data, xllcorner, yllcorner, cellsize = grid_to_matrix(config.raster_files.dtm)
+    grids["dtm"] = dtm_data
+
+    # Extract CRS from DTM using rasterio
+    with rasterio.open(config.raster_files.dtm) as src:
+        crs = src.crs
+
+    # Store metadata extracted from DTM
+    metadata["xllcorner"] = xllcorner
+    metadata["yllcorner"] = yllcorner
+    metadata["cellsize"] = cellsize
+    metadata["shape"] = dtm_data.shape
+    metadata["resolution"] = (cellsize, cellsize)
+    metadata["nodata"] = np.nan
+    metadata["crs"] = crs
 
     # Load flow direction (required)
     logger.debug(f"Loading flow direction from {config.raster_files.flow_dir}")
-    flow_dir_data = read_raster(config.raster_files.flow_dir)
-    grids["flow_dir"] = flow_dir_data["data"]
+    flow_dir_data, _, _, _ = grid_to_matrix(config.raster_files.flow_dir)
+    grids["flow_dir"] = flow_dir_data
 
     # Load flow accumulation (required)
     logger.debug(f"Loading flow accumulation from {config.raster_files.flow_acc}")
-    flow_acc_data = read_raster(config.raster_files.flow_acc)
-    grids["flow_acc"] = flow_acc_data["data"]
+    flow_acc_data, _, _, _ = grid_to_matrix(config.raster_files.flow_acc)
+    grids["flow_acc"] = flow_acc_data
 
     # Load soil parameters (required)
     logger.debug(f"Loading Wc0 from {config.raster_files.Wc0}")
-    wc0_data = read_raster(config.raster_files.Wc0)
-    grids["Wc0"] = wc0_data["data"]
+    wc0_data, _, _, _ = grid_to_matrix(config.raster_files.Wc0)
+    grids["Wc0"] = wc0_data
 
     logger.debug(f"Loading Wg0 from {config.raster_files.Wg0}")
-    wg0_data = read_raster(config.raster_files.Wg0)
-    grids["Wg0"] = wg0_data["data"]
+    wg0_data, _, _, _ = grid_to_matrix(config.raster_files.Wg0)
+    grids["Wg0"] = wg0_data
 
     logger.debug(f"Loading ks from {config.raster_files.ks}")
-    ks_data = read_raster(config.raster_files.ks)
-    grids["ks"] = ks_data["data"]
+    ks_data, _, _, _ = grid_to_matrix(config.raster_files.ks)
+    grids["ks"] = ks_data
 
     # Load optional raster files
     optional_rasters = {
@@ -181,8 +189,8 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     for name, path in optional_rasters.items():
         if path is not None:
             logger.debug(f"Loading {name} from {path}")
-            data = read_raster(path)
-            grids[name] = data["data"]
+            data, _, _, _ = grid_to_matrix(path)
+            grids[name] = data
         else:
             logger.debug(f"Using default value for {name} (no raster provided)")
             # Create grid filled with default parameter value
