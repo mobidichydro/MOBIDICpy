@@ -100,7 +100,8 @@ def read_raster(
 
 
 def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, float]:
-    """Read raster grid file and return data array with corner coordinates.
+    """Read raster grid file and return data array with corner coordinates. This function
+    replicates the behavior of MATLAB's function for GeoTIFF files.
 
     Reads raster files in GeoTIFF (.tif, .tiff)
     format. Returns the data array and corner coordinates adjusted to cell centers.
@@ -124,7 +125,6 @@ def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, floa
         - Corner coordinates are adjusted to cell centers (0.5 * cellsize offset)
         - Data is flipped vertically to match MATLAB convention
         - Very small values (< -1e32) are converted to NaN
-        - For .flt files, requires a corresponding .hdr header file
 
     Examples:
         >>> data, xll, yll, cellsize = grid_to_matrix('elevation.tif')
@@ -164,7 +164,7 @@ def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, floa
         # Flip vertically (to match MATLAB convention)
         matgr = np.flipud(matgr)
 
-        # Convert very small values to NaN
+        # Filter nodata values (e.g., -3.4e38)
         matgr[matgr < -1e32] = np.nan
 
         # Adjust to cell center
