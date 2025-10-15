@@ -15,8 +15,8 @@ from scipy.io import loadmat
 # Configuration
 config = load_config("examples/Arno/Arno.yaml")
 
-# MATLAB ch matrix import file .mat (matlab/Arno/gisdata/Arno_gisdata.mat)
-mat_data = loadmat("matlab/example/gisdata/Arno_gisdata.mat")
+# MATLAB ch matrix import file .mat
+mat_data = loadmat("examples/Arno/gisdata/Arno_gisdata.mat")
 ch = mat_data["ch"]
 
 # Configure logger

@@ -14,8 +14,8 @@ from mobidic.preprocessing import (
 config = load_config("examples/Arno/Arno.yaml")
 
 
-# MATLAB ret structure import file .mat (matlab/Arno/gisdata/Arno_gisdata.mat)
-mat_data = loadmat("matlab/example/gisdata/Arno_gisdata.mat")
+# MATLAB ret structure import file .mat
+mat_data = loadmat("examples/Arno/gisdata/Arno_gisdata.mat")
 ret = mat_data["ret"]
 
 # Process river network

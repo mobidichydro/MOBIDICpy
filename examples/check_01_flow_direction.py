@@ -14,7 +14,7 @@ from mobidic.preprocessing import convert_to_mobidic_notation
 config = load_config("examples/Arno/Arno.yaml")
 
 # Read flow direction computed in matlab
-zp = np.loadtxt("matlab/zp.txt", delimiter=",")
+zp = np.loadtxt("examples/Arno/output/matlab/zp.csv", delimiter=",")
 
 # Configure logger
 configure_logger(level="DEBUG")
