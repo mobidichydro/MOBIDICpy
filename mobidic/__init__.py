@@ -7,7 +7,6 @@ from mobidic.config import load_config
 from mobidic.utils import configure_logger
 from mobidic.preprocessing import GISData
 from mobidic.preprocessing import (
-    read_raster,
     grid_to_matrix,
     degrade_raster,
     degrade_flow_direction,
@@ -28,7 +27,6 @@ __all__ = [
     "load_config",
     "configure_logger",
     "GISData",
-    "read_raster",
     "grid_to_matrix",
     "degrade_raster",
     "degrade_flow_direction",

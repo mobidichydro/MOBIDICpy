@@ -37,7 +37,7 @@ def compute_hillslope_cells(
         GeoDataFrame with added 'hillslope_cells' column containing list of linear indices
 
     Examples:
-        >>> from mobidic import process_river_network, read_raster
+        >>> from mobidic import process_river_network
         >>> network = process_river_network("river_network.shp")
         >>> flowdir_path = "flowdir.tif"
         >>> network = compute_hillslope_cells(network, flowdir_path)
@@ -135,7 +135,7 @@ def map_hillslope_to_reach(
         ValueError: If network doesn't have required columns or flow_dir_type is invalid
 
     Examples:
-        >>> from mobidic import read_raster, process_river_network, compute_hillslope_cells
+        >>> from mobidic import process_river_network, compute_hillslope_cells
         >>> network = process_river_network("river_network.shp")
         >>> network = compute_hillslope_cells(network, "flow_dir.tif")
         >>> reach_map = map_hillslope_to_reach(network, "flow_dir.tif")

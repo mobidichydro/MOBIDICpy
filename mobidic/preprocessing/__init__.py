@@ -2,7 +2,6 @@
 
 from mobidic.preprocessing.gis_reader import (
     read_shapefile,
-    read_raster,
     grid_to_matrix,
 )
 from mobidic.preprocessing.grid_operations import (
@@ -30,7 +29,6 @@ from mobidic.preprocessing.io import (
 
 __all__ = [
     "read_shapefile",
-    "read_raster",
     "grid_to_matrix",
     "degrade_flow_direction",
     "degrade_raster",
