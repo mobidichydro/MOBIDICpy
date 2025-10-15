@@ -77,6 +77,7 @@ def main():
     for var_name in sorted(loaded_gisdata.grids.keys()):
         grid = loaded_gisdata.grids[var_name]
         import numpy as np
+
         print(f"  - {var_name}: min={np.nanmin(grid):.3f}, max={np.nanmax(grid):.3f}, mean={np.nanmean(grid):.3f}")
     print()
 
