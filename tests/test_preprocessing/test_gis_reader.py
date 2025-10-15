@@ -313,17 +313,24 @@ class TestGridToMatrix:
             dst.write(data, 1)
 
         # Read with grid_to_matrix
-        matgr, xllcorner, yllcorner, cellsize_out = grid_to_matrix(filepath)
+        result = grid_to_matrix(filepath)
+
+        # Check that result is a dictionary
+        assert isinstance(result, dict)
+        assert "data" in result
+        assert "xllcorner" in result
+        assert "yllcorner" in result
+        assert "cellsize" in result
 
         # Check that data is flipped vertically
-        assert np.array_equal(matgr, np.flipud(data))
+        assert np.array_equal(result["data"], np.flipud(data))
 
         # Check cellsize
-        assert cellsize_out == cellsize
+        assert result["cellsize"] == cellsize
 
         # Check corner coordinates (adjusted to cell center)
-        assert xllcorner == xll + 0.5 * cellsize
-        assert yllcorner == yll + 0.5 * cellsize
+        assert result["xllcorner"] == xll + 0.5 * cellsize
+        assert result["yllcorner"] == yll + 0.5 * cellsize
 
     def test_grid_to_matrix_with_nodata(self, tmp_path):
         """Test grid_to_matrix with nodata values."""
@@ -352,15 +359,15 @@ class TestGridToMatrix:
             dst.write(data, 1)
 
         # Read with grid_to_matrix
-        matgr, xllcorner, yllcorner, cellsize_out = grid_to_matrix(filepath)
+        result = grid_to_matrix(filepath)
 
         # Check that nodata values are converted to NaN
         # After flipud: row 0 becomes row 2, row 2 becomes row 0
         flipped_data = np.flipud(data)
         flipped_data[flipped_data == nodata] = np.nan
 
-        assert np.isnan(matgr[2, 2])  # Original [0, 2] -> flipped [2, 2]
-        assert np.isnan(matgr[1, 1])  # Middle stays in middle
+        assert np.isnan(result["data"][2, 2])  # Original [0, 2] -> flipped [2, 2]
+        assert np.isnan(result["data"][1, 1])  # Middle stays in middle
 
     def test_grid_to_matrix_very_small_values(self, tmp_path):
         """Test grid_to_matrix converts very small values to NaN."""
@@ -385,13 +392,13 @@ class TestGridToMatrix:
             dst.write(data, 1)
 
         # Read with grid_to_matrix
-        matgr, xllcorner, yllcorner, cellsize_out = grid_to_matrix(filepath)
+        result = grid_to_matrix(filepath)
 
         # Check that very small values (< -1e32) are converted to NaN
         # Note: array is flipped, so positions change
-        assert np.isnan(matgr[1, 1])  # -1e33 value
-        assert np.isnan(matgr[0, 2])  # -2e33 value
-        assert matgr[2, 0] == 1.0  # Normal value
+        assert np.isnan(result["data"][1, 1])  # -1e33 value
+        assert np.isnan(result["data"][0, 2])  # -2e33 value
+        assert result["data"][2, 0] == 1.0  # Normal value
 
     def test_grid_to_matrix_runtime_error(self, tmp_path):
         """Test that RuntimeError is raised for corrupted GeoTIFF."""

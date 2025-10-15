@@ -134,8 +134,11 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     # Load DTM (required)
     logger.debug(f"Loading DTM from {config.raster_files.dtm}")
-    dtm_data, xllcorner, yllcorner, cellsize = grid_to_matrix(config.raster_files.dtm)
-    grids["dtm"] = dtm_data
+    dtm_result = grid_to_matrix(config.raster_files.dtm)
+    grids["dtm"] = dtm_result["data"]
+    xllcorner = dtm_result["xllcorner"]
+    yllcorner = dtm_result["yllcorner"]
+    cellsize = dtm_result["cellsize"]
 
     # Extract CRS from DTM using rasterio
     with rasterio.open(config.raster_files.dtm) as src:
@@ -145,19 +148,20 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     metadata["xllcorner"] = xllcorner
     metadata["yllcorner"] = yllcorner
     metadata["cellsize"] = cellsize
-    metadata["shape"] = dtm_data.shape
+    metadata["shape"] = grids["dtm"].shape
     metadata["resolution"] = (cellsize, cellsize)
     metadata["nodata"] = np.nan
     metadata["crs"] = crs
 
     # Load flow direction (required)
     logger.debug(f"Loading flow direction from {config.raster_files.flow_dir}")
-    flow_dir_data, _, _, _ = grid_to_matrix(config.raster_files.flow_dir)
-    grids["flow_dir"] = flow_dir_data
+    flow_dir_result = grid_to_matrix(config.raster_files.flow_dir)
+    grids["flow_dir"] = flow_dir_result["data"]
 
     # Load flow accumulation (required)
     logger.debug(f"Loading flow accumulation from {config.raster_files.flow_acc}")
-    flow_acc_data, _, _, _ = grid_to_matrix(config.raster_files.flow_acc)
+    flow_acc_result = grid_to_matrix(config.raster_files.flow_acc)
+    flow_acc_data = flow_acc_result["data"]
     if np.any((flow_acc_data[~np.isnan(flow_acc_data)] < 1)):
         flow_acc_data[~np.isnan(flow_acc_data)] += 1
         logger.warning("Flow accumulation values were < 1 and have been incremented by 1.")
@@ -171,16 +175,16 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     # Load soil parameters (required)
     logger.debug(f"Loading Wc0 from {config.raster_files.Wc0}")
-    wc0_data, _, _, _ = grid_to_matrix(config.raster_files.Wc0)
-    grids["Wc0"] = wc0_data * 0.001  # Convert from mm to m
+    wc0_result = grid_to_matrix(config.raster_files.Wc0)
+    grids["Wc0"] = wc0_result["data"] * 0.001  # Convert from mm to m
 
     logger.debug(f"Loading Wg0 from {config.raster_files.Wg0}")
-    wg0_data, _, _, _ = grid_to_matrix(config.raster_files.Wg0)
-    grids["Wg0"] = wg0_data * 0.001  # Convert from mm to m
+    wg0_result = grid_to_matrix(config.raster_files.Wg0)
+    grids["Wg0"] = wg0_result["data"] * 0.001  # Convert from mm to m
 
     logger.debug(f"Loading ks from {config.raster_files.ks}")
-    ks_data, _, _, _ = grid_to_matrix(config.raster_files.ks)
-    grids["ks"] = ks_data * 0.001 / 3600  # Convert from mm/h to m/s
+    ks_result = grid_to_matrix(config.raster_files.ks)
+    grids["ks"] = ks_result["data"] * 0.001 / 3600  # Convert from mm/h to m/s
 
     # Check ranges of ks values (ks_min and ks_max in mm/h from config)
     ks_min = config.parameters.soil.ks_min
@@ -214,8 +218,8 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     for name, path in optional_rasters.items():
         if path is not None:
             logger.debug(f"Loading {name} from {path}")
-            data, _, _, _ = grid_to_matrix(path)
-            grids[name] = data
+            result = grid_to_matrix(path)
+            grids[name] = result["data"]
         else:
             logger.debug(f"Using default value for {name} (no raster provided)")
             # Create grid filled with default parameter value

@@ -45,7 +45,11 @@ def compute_hillslope_cells(
     logger.info(f"Computing hillslope cells for {len(network)} reaches")
 
     # Read reference grid
-    grid, xllcorner, yllcorner, cellsize = grid_to_matrix(grid_path)
+    grid_result = grid_to_matrix(grid_path)
+    grid = grid_result["data"]
+    xllcorner = grid_result["xllcorner"]
+    yllcorner = grid_result["yllcorner"]
+    cellsize = grid_result["cellsize"]
     nrows, ncols = grid.shape
 
     logger.debug(f"Grid parameters: xllcorner={xllcorner}, yllcorner={yllcorner}, cellsize={cellsize}")
@@ -147,7 +151,8 @@ def map_hillslope_to_reach(
         raise ValueError("Network must have 'mobidic_id' column")
 
     # Read flow direction grid
-    flowdir, xllcorner, yllcorner, cellsize = grid_to_matrix(flowdir_path)
+    flowdir_result = grid_to_matrix(flowdir_path)
+    flowdir = flowdir_result["data"]
 
     # Transform flow direction from GRASS/Arc to MOBIDIC notation
     flowdir = convert_to_mobidic_notation(flowdir, from_notation=flow_dir_type)

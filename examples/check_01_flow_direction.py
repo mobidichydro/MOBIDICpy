@@ -28,9 +28,10 @@ print("=" * 60)
 flow_dir_path = config.raster_files.flow_dir
 if flow_dir_path:
     print(f"\nReading flow direction: {flow_dir_path}")
-    flow_dir, xll, yll, cellsize = grid_to_matrix(flow_dir_path)
+    flow_dir_result = grid_to_matrix(flow_dir_path)
+    flow_dir = flow_dir_result["data"]
     print(f"  Grid shape: {flow_dir.shape}")
-    print(f"  Resolution: {cellsize} m")
+    print(f"  Resolution: {flow_dir_result['cellsize']} m")
 else:
     raise ValueError("Flow direction raster not specified in configuration")
 

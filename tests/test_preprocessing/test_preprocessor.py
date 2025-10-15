@@ -52,6 +52,8 @@ def mock_config():
     config.parameters.soil.kappa = 1.10e-7
     config.parameters.soil.beta = 7.62e-6
     config.parameters.soil.alpha = 2.50e-5
+    config.parameters.soil.ks_min = None
+    config.parameters.soil.ks_max = None
 
     config.parameters.energy.CH = 1e-3
     config.parameters.energy.Alb = 0.2
@@ -212,7 +214,12 @@ class TestPreprocessor:
     ):
         """Test run_preprocessing with no grid degradation."""
         # Setup mocks
-        mock_grid_to_matrix.return_value = (np.random.rand(10, 10), 5.0, 5.0, 10.0)
+        mock_grid_to_matrix.return_value = {
+            "data": np.random.rand(10, 10),
+            "xllcorner": 5.0,
+            "yllcorner": 5.0,
+            "cellsize": 10.0,
+        }
         mock_crs = Mock()
         mock_crs.crs = "EPSG:32632"
         mock_rasterio_open.return_value.__enter__.return_value = mock_crs
@@ -258,7 +265,12 @@ class TestPreprocessor:
         mock_config.simulation.resample = 2
 
         # Setup mocks
-        mock_grid_to_matrix.return_value = (np.random.rand(20, 20), 5.0, 5.0, 10.0)
+        mock_grid_to_matrix.return_value = {
+            "data": np.random.rand(20, 20),
+            "xllcorner": 5.0,
+            "yllcorner": 5.0,
+            "cellsize": 10.0,
+        }
         mock_crs = Mock()
         mock_crs.crs = "EPSG:32632"
         mock_rasterio_open.return_value.__enter__.return_value = mock_crs

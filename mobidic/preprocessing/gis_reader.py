@@ -99,7 +99,7 @@ def read_raster(
         raise RasterioIOError(f"Failed to read raster file {filepath}: {e}") from e
 
 
-def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, float]:
+def grid_to_matrix(gridname: str | Path) -> dict[str, Any]:
     """Read raster grid file and return data array with corner coordinates. This function
     replicates the behavior of MATLAB's function for GeoTIFF files.
 
@@ -110,11 +110,11 @@ def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, floa
         gridname: Path to the grid file (.tif, .tiff).
 
     Returns:
-        Tuple of (data, xllcorner, yllcorner, cellsize) where:
-            - data: 2D numpy array with raster values (NaN for nodata)
-            - xllcorner: X coordinate of lower-left corner (cell center)
-            - yllcorner: Y coordinate of lower-left corner (cell center)
-            - cellsize: Cell size in map units
+        Dictionary containing:
+            - 'data': 2D numpy array with raster values (NaN for nodata)
+            - 'xllcorner': X coordinate of lower-left corner (cell center)
+            - 'yllcorner': Y coordinate of lower-left corner (cell center)
+            - 'cellsize': Cell size in map units
 
     Raises:
         FileNotFoundError: If the grid file does not exist.
@@ -127,8 +127,9 @@ def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, floa
         - Very small values (< -1e32) are converted to NaN
 
     Examples:
-        >>> data, xll, yll, cellsize = grid_to_matrix('elevation.tif')
-        >>> print(f"Shape: {data.shape}, Resolution: {cellsize}m")
+        >>> result = grid_to_matrix('elevation.tif')
+        >>> data = result['data']
+        >>> print(f"Shape: {data.shape}, Resolution: {result['cellsize']}m")
     """
     gridname = Path(gridname)
     suffix_lower = gridname.suffix.lower()
@@ -173,7 +174,12 @@ def grid_to_matrix(gridname: str | Path) -> tuple[np.ndarray, float, float, floa
 
         logger.success(f"GeoTIFF read: shape={matgr.shape}, cellsize={cellsize}")
 
-        return matgr, xllcorner, yllcorner, cellsize
+        return {
+            "data": matgr,
+            "xllcorner": xllcorner,
+            "yllcorner": yllcorner,
+            "cellsize": cellsize,
+        }
 
     else:
         logger.error(f"Unsupported file format: {suffix_lower}")
