@@ -46,9 +46,9 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     resolution = gisdata.metadata["resolution"]
 
     # Create coordinate arrays
-    # Use cell centers following MOBIDIC convention
-    x = np.arange(ncols) * resolution[0] + gisdata.metadata["bounds"].left + resolution[0] / 2
-    y = np.arange(nrows) * resolution[1] + gisdata.metadata["bounds"].bottom + resolution[1] / 2
+    # Use cell centers following MOBIDIC convention (xllcorner and yllcorner are already at cell centers)
+    x = gisdata.metadata["xllcorner"] + np.arange(ncols) * resolution[0]
+    y = gisdata.metadata["yllcorner"] + np.arange(nrows) * resolution[1]
 
     # Create xarray Dataset
     data_vars = {}
@@ -80,9 +80,9 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     ds.attrs["nodata_value"] = np.nan
     ds.attrs["resample_factor"] = gisdata.config.simulation.resample
     ds.attrs["flow_dir_notation"] = "MOBIDIC"
-    ds.attrs["conventions"] = "CF-1.8"
+    ds.attrs["conventions"] = "CF-1.12"
     ds.attrs["title"] = f"MOBIDIC preprocessed GIS data for {gisdata.config.basin.id}"
-    ds.attrs["institution"] = "MOBIDIC hydrological model"
+    ds.attrs["institution"] = "University of Florence, Department of Civil and Environmental Engineering"
     ds.attrs["source"] = "MOBIDICpy preprocessing"
     ds.attrs["history"] = f"Created by MOBIDICpy preprocessing for basin {gisdata.config.basin.id}"
 
