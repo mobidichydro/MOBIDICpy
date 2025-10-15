@@ -163,6 +163,12 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         logger.warning("Flow accumulation values were < 1 and have been incremented by 1.")
     grids["flow_acc"] = flow_acc_data
 
+    # Get index of the cell with maximum flow accumulation
+    max_acc_idx = np.unravel_index(np.nanargmax(flow_acc_data), flow_acc_data.shape)
+
+    # Set outlet value to -1 in the flow direction grid
+    grids["flow_dir"][max_acc_idx] = -1
+
     # Load soil parameters (required)
     logger.debug(f"Loading Wc0 from {config.raster_files.Wc0}")
     wc0_data, _, _, _ = grid_to_matrix(config.raster_files.Wc0)
