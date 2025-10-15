@@ -72,6 +72,9 @@ def grid_to_matrix(gridname: str | Path) -> dict[str, Any]:
                 xllcorner = src.bounds.left
                 yllcorner = src.bounds.bottom
 
+                # Get CRS
+                crs = src.crs
+
         except Exception as e:
             logger.error(f"Error reading GeoTIFF file {gridname}: {e}")
             raise RuntimeError(f"Error reading GeoTIFF file: {e}") from e
@@ -93,6 +96,7 @@ def grid_to_matrix(gridname: str | Path) -> dict[str, Any]:
             "xllcorner": xllcorner,
             "yllcorner": yllcorner,
             "cellsize": cellsize,
+            "crs": crs,
         }
 
     else:

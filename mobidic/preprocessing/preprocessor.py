@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 import numpy as np
 import geopandas as gpd
-import rasterio
 from loguru import logger
 
 from mobidic.config.schema import MOBIDICConfig
@@ -139,10 +138,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     xllcorner = dtm_result["xllcorner"]
     yllcorner = dtm_result["yllcorner"]
     cellsize = dtm_result["cellsize"]
-
-    # Extract CRS from DTM using rasterio
-    with rasterio.open(config.raster_files.dtm) as src:
-        crs = src.crs
+    crs = dtm_result["crs"]
 
     # Store metadata extracted from DTM
     metadata["xllcorner"] = xllcorner
