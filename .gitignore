@@ -71,6 +71,9 @@ ENV/
 # Spyder project settings
 .spyderproject
 
+# Visual Studio Code
+.vscode/
+
 # Misc
 private/
 /matlab/
