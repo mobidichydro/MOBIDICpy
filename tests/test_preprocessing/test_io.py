@@ -127,8 +127,8 @@ class TestSaveGISData:
         # Check dimensions
         assert "x" in ds.dims
         assert "y" in ds.dims
-        assert ds.dims["x"] == 10
-        assert ds.dims["y"] == 10
+        assert ds.sizes["x"] == 10
+        assert ds.sizes["y"] == 10
 
         # Check variables
         assert "dtm" in ds

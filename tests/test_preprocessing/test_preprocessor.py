@@ -196,7 +196,6 @@ class TestPreprocessor:
         assert _get_default_parameter_value("Mf", mock_config) == 1.0
 
     @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
-    @patch("mobidic.preprocessing.preprocessor.rasterio.open")
     @patch("mobidic.preprocessing.preprocessor.convert_to_mobidic_notation")
     @patch("mobidic.preprocessing.preprocessor.process_river_network")
     @patch("mobidic.preprocessing.preprocessor.compute_hillslope_cells")
@@ -207,7 +206,6 @@ class TestPreprocessor:
         mock_compute_hillslope,
         mock_process_network,
         mock_convert_notation,
-        mock_rasterio_open,
         mock_grid_to_matrix,
         mock_config,
         mock_network,
@@ -219,10 +217,8 @@ class TestPreprocessor:
             "xllcorner": 5.0,
             "yllcorner": 5.0,
             "cellsize": 10.0,
+            "crs": "EPSG:32632",
         }
-        mock_crs = Mock()
-        mock_crs.crs = "EPSG:32632"
-        mock_rasterio_open.return_value.__enter__.return_value = mock_crs
         mock_convert_notation.return_value = np.random.randint(1, 9, size=(10, 10))
         mock_process_network.return_value = mock_network
         mock_compute_hillslope.return_value = mock_network
@@ -240,7 +236,6 @@ class TestPreprocessor:
         assert isinstance(gisdata.hillslope_reach_map, np.ndarray)
 
     @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
-    @patch("mobidic.preprocessing.preprocessor.rasterio.open")
     @patch("mobidic.preprocessing.preprocessor.degrade_raster")
     @patch("mobidic.preprocessing.preprocessor.degrade_flow_direction")
     @patch("mobidic.preprocessing.preprocessor.convert_to_mobidic_notation")
@@ -255,7 +250,6 @@ class TestPreprocessor:
         mock_convert_notation,
         mock_degrade_flowdir,
         mock_degrade_raster,
-        mock_rasterio_open,
         mock_grid_to_matrix,
         mock_config,
         mock_network,
@@ -270,10 +264,8 @@ class TestPreprocessor:
             "xllcorner": 5.0,
             "yllcorner": 5.0,
             "cellsize": 10.0,
+            "crs": "EPSG:32632",
         }
-        mock_crs = Mock()
-        mock_crs.crs = "EPSG:32632"
-        mock_rasterio_open.return_value.__enter__.return_value = mock_crs
         mock_degrade_raster.return_value = np.random.rand(10, 10)
         mock_degrade_flowdir.return_value = (
             np.random.randint(1, 9, size=(10, 10)),

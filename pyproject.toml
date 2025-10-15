@@ -65,6 +65,9 @@ packages = ["mobidic"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:numpy.ndarray size changed:RuntimeWarning",
+]
 
 [tool.coverage.run]
 branch = true
