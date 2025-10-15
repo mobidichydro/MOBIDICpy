@@ -51,9 +51,10 @@ def sample_metadata():
         "shape": (10, 10),
         "resolution": (10.0, 10.0),
         "crs": "EPSG:32632",
-        "nodata": -9999.0,
-        "bounds": Mock(left=0, bottom=0, right=100, top=100),
-        "transform": None,
+        "nodata": np.nan,
+        "xllcorner": 5.0,
+        "yllcorner": 5.0,
+        "cellsize": 10.0,
     }
 
 
