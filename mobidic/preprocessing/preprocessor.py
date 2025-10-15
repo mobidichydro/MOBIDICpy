@@ -158,20 +158,32 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     # Load flow accumulation (required)
     logger.debug(f"Loading flow accumulation from {config.raster_files.flow_acc}")
     flow_acc_data, _, _, _ = grid_to_matrix(config.raster_files.flow_acc)
+    if np.any((flow_acc_data[~np.isnan(flow_acc_data)] < 1)):
+        flow_acc_data[~np.isnan(flow_acc_data)] += 1
+        logger.warning("Flow accumulation values were < 1 and have been incremented by 1.")
     grids["flow_acc"] = flow_acc_data
 
     # Load soil parameters (required)
     logger.debug(f"Loading Wc0 from {config.raster_files.Wc0}")
     wc0_data, _, _, _ = grid_to_matrix(config.raster_files.Wc0)
-    grids["Wc0"] = wc0_data
+    grids["Wc0"] = wc0_data * 0.001  # Convert from mm to m
 
     logger.debug(f"Loading Wg0 from {config.raster_files.Wg0}")
     wg0_data, _, _, _ = grid_to_matrix(config.raster_files.Wg0)
-    grids["Wg0"] = wg0_data
+    grids["Wg0"] = wg0_data * 0.001  # Convert from mm to m
 
     logger.debug(f"Loading ks from {config.raster_files.ks}")
     ks_data, _, _, _ = grid_to_matrix(config.raster_files.ks)
-    grids["ks"] = ks_data
+    grids["ks"] = ks_data * 0.001 / 3600  # Convert from mm/h to m/s
+
+    # Check ranges of ks values (ks_min and ks_max in mm/h from config)
+    ks_min = config.parameters.soil.ks_min * 0.001 / 3600
+    ks_max = config.parameters.soil.ks_max * 0.001 / 3600
+    if np.any(grids["ks"] < ks_min):
+        logger.warning(f"Some ks values are below the minimum threshold: {ks_min} m/s")
+    if np.any(grids["ks"] > ks_max):
+        logger.warning(f"Some ks values are above the maximum threshold: {ks_max} m/s")
+    grids["ks"] = np.clip(grids["ks"], ks_min, ks_max)
 
     # Load optional raster files
     optional_rasters = {
