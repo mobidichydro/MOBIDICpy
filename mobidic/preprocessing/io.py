@@ -105,17 +105,17 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     }
     ds["Wc0"].attrs = {
         "long_name": "Capillary Water Holding Capacity",
-        "units": "mm",
+        "units": "m",
         "description": "Maximum water holding capacity in soil small pores",
     }
     ds["Wg0"].attrs = {
         "long_name": "Gravitational Water Holding Capacity",
-        "units": "mm",
+        "units": "m",
         "description": "Maximum water holding capacity in soil large pores",
     }
     ds["ks"].attrs = {
         "long_name": "Hydraulic Conductivity",
-        "units": "mm/h",
+        "units": "m/s",
         "description": "Soil hydraulic conductivity",
     }
     ds["hillslope_reach_map"].attrs = {
