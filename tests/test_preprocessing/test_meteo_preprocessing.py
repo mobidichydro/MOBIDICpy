@@ -8,6 +8,7 @@ from pathlib import Path
 from mobidic.preprocessing.meteo_preprocessing import (
     MeteoData,
     MATMeteoReader,
+    NetCDFMeteoReader,
     convert_mat_to_netcdf,
 )
 
@@ -338,3 +339,149 @@ class TestMeteoDataValidation:
         """Test that CSV reader raises NotImplementedError."""
         with pytest.raises(NotImplementedError):
             MeteoData.from_csv("test.csv", {})
+
+
+class TestNetCDFMeteoReader:
+    """Tests for NetCDF meteo data reader."""
+
+    @pytest.fixture
+    def sample_netcdf(self, mock_mat_file, tmp_path):
+        """Create a sample NetCDF file from mock MAT data."""
+        # Load mock data and save to NetCDF
+        meteo_data = MeteoData.from_mat(mock_mat_file)
+        nc_path = tmp_path / "test_meteo.nc"
+        meteo_data.to_netcdf(nc_path)
+        return nc_path
+
+    def test_reader_initialization(self, sample_netcdf):
+        """Test NetCDFMeteoReader initialization."""
+        reader = NetCDFMeteoReader(sample_netcdf)
+        assert reader.file_path == sample_netcdf
+
+    def test_reader_initialization_nonexistent_file(self):
+        """Test that reader raises error for nonexistent file."""
+        with pytest.raises(FileNotFoundError):
+            NetCDFMeteoReader("nonexistent.nc")
+
+    def test_read_netcdf_file(self, sample_netcdf):
+        """Test reading NetCDF meteo data file."""
+        reader = NetCDFMeteoReader(sample_netcdf)
+        meteo_data = reader.read()
+
+        assert isinstance(meteo_data, MeteoData)
+        assert len(meteo_data.variables) > 0
+
+        # Check expected variables from mock file
+        assert "precipitation" in meteo_data.variables
+        assert "temperature_min" in meteo_data.variables
+
+    def test_from_netcdf_classmethod(self, sample_netcdf):
+        """Test MeteoData.from_netcdf() classmethod."""
+        meteo_data = MeteoData.from_netcdf(sample_netcdf)
+
+        assert isinstance(meteo_data, MeteoData)
+        assert "precipitation" in meteo_data.variables
+        assert "temperature_min" in meteo_data.variables
+
+    def test_netcdf_station_structure(self, sample_netcdf):
+        """Test that station data loaded from NetCDF has correct structure."""
+        meteo_data = MeteoData.from_netcdf(sample_netcdf)
+
+        # Check each variable has stations
+        for var_name, stations in meteo_data.stations.items():
+            assert len(stations) > 0, f"No stations for {var_name}"
+
+            # Check first station structure
+            station = stations[0]
+            assert "code" in station
+            assert "x" in station
+            assert "y" in station
+            assert "elevation" in station
+            assert "name" in station
+            assert "time" in station
+            assert "data" in station
+
+            # Check data types
+            assert isinstance(station["code"], (int, np.integer))
+            assert isinstance(station["x"], (float, np.floating))
+            assert isinstance(station["y"], (float, np.floating))
+            assert isinstance(station["elevation"], (float, np.floating))
+            assert isinstance(station["name"], str)
+            assert isinstance(station["time"], pd.DatetimeIndex)
+            assert isinstance(station["data"], np.ndarray)
+
+    def test_netcdf_round_trip(self, mock_mat_file, tmp_path):
+        """Test round-trip: MAT -> MeteoData -> NetCDF -> MeteoData."""
+        # Load from MAT
+        meteo_original = MeteoData.from_mat(mock_mat_file)
+
+        # Save to NetCDF
+        nc_path = tmp_path / "roundtrip.nc"
+        meteo_original.to_netcdf(nc_path)
+
+        # Load from NetCDF
+        meteo_reloaded = MeteoData.from_netcdf(nc_path)
+
+        # Check variables match
+        assert set(meteo_original.variables) == set(meteo_reloaded.variables)
+
+        # Check number of stations matches
+        for var in meteo_original.variables:
+            assert len(meteo_original.stations[var]) == len(meteo_reloaded.stations[var])
+
+        # Check date ranges match (approximately, due to NaN filtering)
+        assert meteo_reloaded.start_date is not None
+        assert meteo_reloaded.end_date is not None
+
+    def test_netcdf_preserves_station_metadata(self, mock_mat_file, tmp_path):
+        """Test that station metadata is preserved through NetCDF round-trip."""
+        # Load from MAT
+        meteo_original = MeteoData.from_mat(mock_mat_file)
+
+        # Save to NetCDF and reload
+        nc_path = tmp_path / "metadata_test.nc"
+        meteo_original.to_netcdf(nc_path)
+        meteo_reloaded = MeteoData.from_netcdf(nc_path)
+
+        # Check first precipitation station metadata
+        orig_station = meteo_original.stations["precipitation"][0]
+        reload_station = meteo_reloaded.stations["precipitation"][0]
+
+        assert orig_station["code"] == reload_station["code"]
+        assert np.isclose(orig_station["x"], reload_station["x"])
+        assert np.isclose(orig_station["y"], reload_station["y"])
+        assert np.isclose(orig_station["elevation"], reload_station["elevation"])
+
+    def test_netcdf_handles_missing_variables(self, tmp_path):
+        """Test that reader handles NetCDF files with subset of variables."""
+        # Create a minimal NetCDF with only one variable
+        time = pd.date_range("2023-01-01", periods=5, freq="h")
+        ds = xr.Dataset(
+            {
+                "precipitation": (
+                    ["time", "station"],
+                    np.random.rand(5, 1),
+                    {"long_name": "precipitation", "units": "mm"},
+                )
+            },
+            coords={
+                "time": time,
+                "station": [0],
+                "station_code": (["station"], [1001]),
+                "x": (["station"], [1600000.0]),
+                "y": (["station"], [4800000.0]),
+                "elevation": (["station"], [500.0]),
+                "station_name": (["station"], ["Test"]),
+            },
+        )
+
+        nc_path = tmp_path / "minimal.nc"
+        ds.to_netcdf(nc_path)
+        ds.close()
+
+        # Load with NetCDFMeteoReader
+        meteo_data = MeteoData.from_netcdf(nc_path)
+
+        # Should only have precipitation
+        assert meteo_data.variables == ["precipitation"]
+        assert len(meteo_data.stations["precipitation"]) == 1
