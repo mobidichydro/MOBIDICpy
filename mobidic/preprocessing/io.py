@@ -11,6 +11,7 @@ import numpy as np
 import geopandas as gpd
 import xarray as xr
 from loguru import logger
+from mobidic import __version__
 
 if TYPE_CHECKING:
     from mobidic.preprocessing.preprocessor import GISData
@@ -101,10 +102,9 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     ds.attrs["resample_factor"] = gisdata.config.simulation.resample
     ds.attrs["flow_dir_notation"] = "MOBIDIC"
     ds.attrs["Conventions"] = "CF-1.12"
-    ds.attrs["title"] = f"MOBIDIC preprocessed GIS data for {gisdata.config.basin.id}"
-    ds.attrs["institution"] = "University of Florence, Department of Civil and Environmental Engineering"
+    ds.attrs["title"] = "MOBIDIC preprocessed GIS data"
     ds.attrs["source"] = "MOBIDICpy preprocessing"
-    ds.attrs["history"] = f"Created by MOBIDICpy preprocessing for basin {gisdata.config.basin.id}"
+    ds.attrs["history"] = f"Created by MOBIDICpy version {__version__}"
 
     # Add variable metadata
     ds["dtm"].attrs = {
