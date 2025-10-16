@@ -52,6 +52,31 @@ if len(meteo_data.stations["precipitation"]) > 0:
     print(f"  Elevation: {first_station['elevation']:.1f} m")
     print(f"  Data points: {len(first_station['data'])}")
 
+print("\n")
+
+# Example 3: Reading from NetCDF just written
+print("=" * 80)
+print("Example 3: Loading data from NetCDF file")
+print("=" * 80)
+
+# Load from NetCDF file
+meteo_from_nc = MeteoData.from_netcdf(output_file)
+
+# Verify data
+print(f"\n{meteo_from_nc}")
+print(f"\nDate range: {meteo_from_nc.start_date} to {meteo_from_nc.end_date}")
+print("\nStation counts by variable:")
+for var_name, stations in meteo_from_nc.stations.items():
+    print(f"  {var_name}: {len(stations)} stations")
+
+# Compare with original
+print("\nVerification:")
+print(f"  Variables match: {set(meteo_data.variables) == set(meteo_from_nc.variables)}")
+for var in meteo_data.variables:
+    orig_count = len(meteo_data.stations[var])
+    nc_count = len(meteo_from_nc.stations[var])
+    print(f"  {var}: {orig_count} stations (MAT) vs {nc_count} stations (NetCDF)")
+
 print("\n" + "=" * 80)
 print("Meteo preprocessing complete!")
 print("=" * 80)
