@@ -4,13 +4,11 @@ This module handles conversion of meteorological forcing data from various forma
 (MATLAB .mat, CSV, etc.) to CF-compliant NetCDF format for use in MOBIDIC simulations.
 
 The module provides:
-- Abstract base class for meteo data readers (extensible to multiple formats)
 - MAT file reader for MATLAB meteodata.mat files
 - NetCDF writer for CF-compliant output
 - Validation and gap-filling capabilities (planned)
 """
 
-from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 import numpy as np
@@ -230,34 +228,7 @@ class MeteoData:
         raise NotImplementedError("CSV reader not yet implemented")
 
 
-class MeteoReader(ABC):
-    """Abstract base class for meteorological data readers.
-
-    This class defines the interface for reading meteorological data from
-    various file formats. Subclasses must implement the read() method.
-    """
-
-    def __init__(self, file_path: str | Path):
-        """Initialize reader with file path.
-
-        Args:
-            file_path: Path to meteorological data file
-        """
-        self.file_path = Path(file_path)
-        if not self.file_path.exists():
-            raise FileNotFoundError(f"Meteorological data file not found: {self.file_path}")
-
-    @abstractmethod
-    def read(self) -> MeteoData:
-        """Read meteorological data from file.
-
-        Returns:
-            MeteoData object containing station observations
-        """
-        pass
-
-
-class MATMeteoReader(MeteoReader):
+class MATMeteoReader:
     """Reader for MATLAB .mat meteorological data files.
 
     This reader handles the specific MATLAB struct format used by MOBIDIC,
@@ -289,6 +260,19 @@ class MATMeteoReader(MeteoReader):
         "s_vv": "wind_speed",
         "s_ra": "radiation",
     }
+
+    def __init__(self, file_path: str | Path):
+        """Initialize MAT file reader.
+
+        Args:
+            file_path: Path to MATLAB .mat file containing meteodata
+
+        Raises:
+            FileNotFoundError: If the specified file does not exist
+        """
+        self.file_path = Path(file_path)
+        if not self.file_path.exists():
+            raise FileNotFoundError(f"Meteorological data file not found: {self.file_path}")
 
     def read(self) -> MeteoData:
         """Read MATLAB .mat file and extract meteorological station data.
