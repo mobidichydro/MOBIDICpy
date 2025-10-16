@@ -22,25 +22,27 @@ River network processing is a required preprocessing step that:
 
 ### River network I/O
 
-::: mobidic.preprocessing.river_network.export_network
+::: mobidic.preprocessing.io.save_network
 
-::: mobidic.preprocessing.river_network.load_network
+::: mobidic.preprocessing.io.load_network
 
 ## Examples
 
 ### Complete river network processing
 
 ```python
-from mobidic import process_river_network, export_network
+from mobidic import process_river_network, save_network
 
 # Process river network from shapefile
 network = process_river_network(
     shapefile_path="data/river_network.shp",
-    reach_id_field="ID",
     join_single_tributaries=True,
-    wcel=2.5,  # Celerity: 2.5 m/s
-    Br0=5.0,   # Base width: 5 m
-    NBr=0.5    # Width exponent
+    routing_params={
+        "wcel": 2.5,  # Celerity: 2.5 m/s
+        "Br0": 5.0,   # Base width: 5 m
+        "NBr": 0.5,   # Width exponent
+        "n_Man": 0.03  # Manning coefficient
+    }
 )
 
 # Inspect the processed network
@@ -49,10 +51,10 @@ print(f"Max Strahler order: {network['strahler_order'].max()}")
 print(f"Total length: {network['length_m'].sum() / 1000:.1f} km")
 
 # Export to GeoParquet (recommended)
-export_network(network, "output/network.parquet", format="parquet")
+save_network(network, "output/network.parquet", format="parquet")
 
 # Or export to Shapefile (for backward compatibility)
-export_network(network, "output/network.shp", format="shapefile")
+save_network(network, "output/network.shp", format="shapefile")
 ```
 
 ### Loading a processed Network
@@ -77,7 +79,7 @@ print(f"Number of headwater streams: {len(headwater_reaches)}")
 from mobidic import process_river_network
 import pandas as pd
 
-network = process_river_network("data/river_network.shp", reach_id_field="ID")
+network = process_river_network("data/river_network.shp")
 
 # Get summary statistics by Strahler order
 summary = network.groupby('strahler_order').agg({
@@ -93,10 +95,10 @@ junctions = network[network['upstream_2'].notna()]
 print(f"Number of junctions: {len(junctions)}")
 
 # Trace upstream from a specific reach
-def get_upstream_network(network, reach_id):
+def get_upstream_network(network, mobidic_id):
     """Recursively find all upstream reaches."""
     upstream = []
-    reach = network[network['reach_id'] == reach_id].iloc[0]
+    reach = network[network['mobidic_id'] == mobidic_id].iloc[0]
 
     for us_field in ['upstream_1', 'upstream_2']:
         us_id = reach[us_field]
@@ -108,7 +110,7 @@ def get_upstream_network(network, reach_id):
 
 # Get all reaches upstream of reach 100
 upstream_reaches = get_upstream_network(network, 100)
-print(f"Reaches upstream of 100: {len(upstream_reaches)}")
+print(f"Reaches upstream of reach 100: {len(upstream_reaches)}")
 ```
 
 ## River network schema
@@ -117,11 +119,11 @@ Processed networks contain the following fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `reach_id` | int | Unique reach identifier |
+| `mobidic_id` | int | Internal reach identifier (0-indexed for topology) |
 | `geometry` | LineString | Reach geometry |
-| `upstream_1` | int/NaN | First upstream reach ID |
-| `upstream_2` | int/NaN | Second upstream reach ID (if junction) |
-| `downstream` | int/NaN | Downstream reach ID (NaN for outlets) |
+| `upstream_1` | int/NaN | First upstream reach ID (references mobidic_id) |
+| `upstream_2` | int/NaN | Second upstream reach ID if junction (references mobidic_id) |
+| `downstream` | int/NaN | Downstream reach ID (references mobidic_id, NaN for outlets) |
 | `strahler_order` | int | Strahler stream order (1 = headwater) |
 | `calc_order` | int | Calculation order for routing (lower first) |
 | `length_m` | float | Reach length in meters |
@@ -129,6 +131,8 @@ Processed networks contain the following fields:
 | `lag_time_s` | float | Lag time in seconds |
 | `storage_coeff` | float | Storage coefficient (dimensionless) |
 | `n_manning` | float | Manning roughness coefficient |
+
+**Note**: All original shapefile fields are preserved in the output. The `mobidic_id` field is added for internal topology management and is separate from any original ID fields in the shapefile.
 
 ## Strahler ordering
 
@@ -254,6 +258,7 @@ This is useful for:
 
 - All lengths are in meters, times in seconds
 - Coordinate reference system (CRS) is preserved from input shapefile
-- Reach IDs must be unique integers
+- Original shapefile fields are preserved; `mobidic_id` is added for topology
 - Geometry must be LineString (not MultiLineString)
 - Network must be topologically connected (warns if not)
+- Fictitious reaches (added during binary tree enforcement) contain only MOBIDIC-specific fields

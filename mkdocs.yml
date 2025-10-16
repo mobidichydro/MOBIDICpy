@@ -18,6 +18,10 @@ nav:
     - GIS Data I/O: reference/gis_io.md
     - Grid Operations: reference/grid_ops.md
     - River Network: reference/network.md
+    - Hillslope Mapping: reference/hillslope_mapping.md
+    - Meteorological Data: reference/meteo.md
+    - Data I/O: reference/io.md
+    - Preprocessing Workflow: reference/preprocessing.md
 
 theme:
   name: "material"

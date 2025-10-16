@@ -6,7 +6,7 @@ The GIS I/O module provides functions for reading geospatial data in various for
 
 MOBIDICpy uses industry-standard libraries for geospatial data handling:
 
-- **Rasterio** for raster data (GeoTIFF, ASCII grids, etc.)
+- **Rasterio** for raster data (GeoTIFF)
 - **GeoPandas** for vector data (Shapefiles, GeoJSON, etc.)
 
 All functions provide comprehensive logging and error handling, converting nodata values to NaN for consistent numerical processing.
@@ -15,7 +15,7 @@ All functions provide comprehensive logging and error handling, converting nodat
 
 ### Raster I/O
 
-::: mobidic.preprocessing.gis_reader.read_raster
+::: mobidic.preprocessing.gis_reader.grid_to_matrix
 
 ### Vector I/O
 
@@ -26,20 +26,21 @@ All functions provide comprehensive logging and error handling, converting nodat
 ### Reading a Raster
 
 ```python
-from mobidic import read_raster
+from mobidic import grid_to_matrix
+import numpy as np
 
 # Read a Digital Terrain Model
-dtm = read_raster("path/to/dtm.tif")
+dtm = grid_to_matrix("path/to/dtm.tif")
 
 # Access raster data and metadata
 print(f"Shape: {dtm['data'].shape}")
-print(f"Resolution: {dtm['resolution']}")
+print(f"Cell size: {dtm['cellsize']} m")
+print(f"Lower-left corner: ({dtm['xllcorner']}, {dtm['yllcorner']})")
 print(f"CRS: {dtm['crs']}")
-print(f"Bounds: {dtm['bounds']}")
 
 # Access the data array (nodata converted to NaN)
 elevation = dtm['data']
-mean_elevation = elevation[~np.isnan(elevation)].mean()
+mean_elevation = np.nanmean(elevation)
 print(f"Mean elevation: {mean_elevation:.2f} m")
 ```
 
@@ -59,7 +60,7 @@ print(network.head())
 # Reproject to a different CRS
 network_utm = read_shapefile(
     "path/to/river_network.shp",
-    target_crs="EPSG:32632"  # WGS84 / UTM zone 32N
+    crs="EPSG:32632"  # WGS84 / UTM zone 32N
 )
 ```
 
@@ -67,13 +68,13 @@ network_utm = read_shapefile(
 
 ### Raster Data
 
-`read_raster()` returns a dictionary with:
+`grid_to_matrix()` returns a dictionary with:
 
-- `data` (numpy.ndarray): 2D array of raster values, nodata converted to NaN
-- `transform` (affine.Affine): Affine transformation matrix
+- `data` (numpy.ndarray): 2D array of raster values, nodata converted to NaN (flipped vertically to match MATLAB convention)
+- `xllcorner` (float): X coordinate of lower-left corner (cell center)
+- `yllcorner` (float): Y coordinate of lower-left corner (cell center)
+- `cellsize` (float): Cell size in map units
 - `crs` (rasterio.crs.CRS): Coordinate reference system
-- `bounds` (tuple): Bounding box (left, bottom, right, top)
-- `resolution` (tuple): Pixel size (x_res, y_res)
 
 ### Vector Data
 

@@ -51,11 +51,11 @@ config = load_config("config.yaml")
 print(f"Basin ID: {config.basin.id}")
 print(f"DTM path: {config.raster_files.dtm}")
 print(f"Soil scheme: {config.simulation.soil_scheme}")
-print(f"Time step: {config.simulation.dt} seconds")
+print(f"Time step: {config.simulation.timestep} seconds")
 
 # Access parameter values
-ksat = config.parameters.soil.ksat
-print(f"Hydraulic conductivity: {ksat} mm/h")
+ks = config.parameters.soil.ks
+print(f"Hydraulic conductivity: {ks} mm/h")
 ```
 
 ## Configuration Structure
