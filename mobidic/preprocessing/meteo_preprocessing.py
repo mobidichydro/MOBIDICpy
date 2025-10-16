@@ -1,11 +1,11 @@
 """Meteorological data preprocessing for MOBIDIC.
 
 This module handles conversion of meteorological forcing data from various formats
-(MATLAB .mat, CSV, etc.) to CF-compliant NetCDF format for use in MOBIDIC simulations.
+(MATLAB .mat, NetCDF, CSV, etc.) to CF-compliant NetCDF format for use in MOBIDIC simulations.
 
 The module provides:
 - MAT file reader for MATLAB meteodata.mat files
-- NetCDF writer for CF-compliant output
+- NetCDF reader/writer for CF-compliant input/output
 - Validation and gap-filling capabilities (planned)
 """
 
@@ -212,6 +212,23 @@ class MeteoData:
         return reader.read()
 
     @classmethod
+    def from_netcdf(cls, nc_path: str | Path) -> "MeteoData":
+        """Load meteorological data from NetCDF file.
+
+        Args:
+            nc_path: Path to NetCDF file containing meteodata
+
+        Returns:
+            MeteoData object with station data
+
+        Examples:
+            >>> meteo = MeteoData.from_netcdf("meteodata.nc")
+            >>> print(meteo)
+        """
+        reader = NetCDFMeteoReader(nc_path)
+        return reader.read()
+
+    @classmethod
     def from_csv(cls, csv_path: str | Path, config: dict[str, Any]) -> "MeteoData":
         """Load meteorological data from CSV file(s).
 
@@ -392,6 +409,98 @@ class MATMeteoReader:
             "time": time_pd,
             "data": data,
         }
+
+
+class NetCDFMeteoReader:
+    """Reader for NetCDF meteorological data files.
+
+    This reader handles NetCDF files created by the to_netcdf() method,
+    which follow the CF-1.12 convention and contain meteorological station data.
+
+    Expected structure in NetCDF file:
+    - Data variables: precipitation, temperature_min, temperature_max, humidity, wind_speed, radiation
+    - Coordinates: time, station, station_code, x, y, elevation, station_name
+    - Each variable has dimensions (time, station)
+    """
+
+    def __init__(self, file_path: str | Path):
+        """Initialize NetCDF file reader.
+
+        Args:
+            file_path: Path to NetCDF file containing meteodata
+
+        Raises:
+            FileNotFoundError: If the specified file does not exist
+        """
+        self.file_path = Path(file_path)
+        if not self.file_path.exists():
+            raise FileNotFoundError(f"Meteorological data file not found: {self.file_path}")
+
+    def read(self) -> MeteoData:
+        """Read NetCDF file and extract meteorological station data.
+
+        Returns:
+            MeteoData object with station data organized by variable
+        """
+        logger.info(f"Reading NetCDF meteo data from: {self.file_path}")
+
+        # Load NetCDF file using xarray
+        ds = xr.open_dataset(self.file_path)
+
+        stations = {}
+
+        # List of expected meteorological variables
+        expected_vars = ["precipitation", "temperature_min", "temperature_max", "humidity", "wind_speed", "radiation"]
+
+        # Process each variable
+        for var_name in expected_vars:
+            if var_name not in ds.data_vars:
+                logger.debug(f"Variable {var_name} not found in NetCDF file, skipping")
+                continue
+
+            # Extract data array and coordinates
+            data_var = ds[var_name]
+            n_stations = len(ds["station"])
+
+            var_stations = []
+
+            # Process each station
+            for i in range(n_stations):
+                station_code = int(ds["station_code"][i].values)
+                station_x = float(ds["x"][i].values)
+                station_y = float(ds["y"][i].values)
+                station_elevation = float(ds["elevation"][i].values)
+                station_name = str(ds["station_name"][i].values)
+
+                # Extract time series for this station
+                station_data = data_var[:, i].values
+                station_times = pd.DatetimeIndex(ds["time"].values)
+
+                # Filter out NaN values (missing data)
+                valid_mask = ~np.isnan(station_data)
+                valid_times = station_times[valid_mask]
+                valid_data = station_data[valid_mask]
+
+                station_dict = {
+                    "code": station_code,
+                    "x": station_x,
+                    "y": station_y,
+                    "elevation": station_elevation,
+                    "name": station_name,
+                    "time": valid_times,
+                    "data": valid_data,
+                }
+
+                var_stations.append(station_dict)
+
+            stations[var_name] = var_stations
+            logger.debug(f"Loaded {len(var_stations)} stations for {var_name}")
+
+        ds.close()
+
+        logger.success(f"Loaded meteorological data: {len(stations)} variables")
+
+        return MeteoData(stations)
 
 
 def _get_variable_longname(var_name: str) -> str:
