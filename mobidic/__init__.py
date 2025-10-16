@@ -19,6 +19,8 @@ from mobidic.preprocessing import (
     save_network,
     load_gisdata,
     save_gisdata,
+    MeteoData,
+    convert_mat_to_netcdf,
 )
 
 __all__ = [
@@ -39,4 +41,6 @@ __all__ = [
     "save_network",
     "load_gisdata",
     "save_gisdata",
+    "MeteoData",
+    "convert_mat_to_netcdf",
 ]
