@@ -1,4 +1,14 @@
-"""Logging configuration for MOBIDIC package."""
+"""Logging configuration for MOBIDIC package.
+
+The MOBIDIC package automatically configures logging with INFO level to stdout
+when imported. Users can reconfigure logging by calling configure_logger() with
+custom settings at any time.
+
+Default behavior (applied on package import):
+    - Level: INFO
+    - Output: stdout
+    - Format: Colorized with timestamp, level, and message
+"""
 
 import sys
 from pathlib import Path
@@ -16,6 +26,11 @@ def configure_logger(
 
     This function configures the loguru logger with a consistent format
     for use across the MOBIDIC package and example scripts.
+
+    Note:
+        The MOBIDIC package automatically calls this function with default
+        settings (INFO level) when imported. Call this function again to
+        reconfigure logging behavior.
 
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default: INFO.

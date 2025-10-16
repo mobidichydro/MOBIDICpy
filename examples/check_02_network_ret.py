@@ -6,6 +6,10 @@ import numpy as np
 from scipy.io import loadmat
 from mobidic import load_config
 from mobidic import process_river_network
+from mobidic.utils import configure_logger
+
+# Configure logging
+configure_logger(level="DEBUG")
 
 # Load configuration
 config = load_config("examples/Arno/Arno.yaml")

@@ -6,6 +6,7 @@ from mobidic.config import MOBIDICConfig
 from mobidic.config import load_config
 from mobidic.utils import configure_logger
 from mobidic.preprocessing import GISData
+
 from mobidic.preprocessing import (
     grid_to_matrix,
     degrade_raster,
@@ -22,6 +23,10 @@ from mobidic.preprocessing import (
     MeteoData,
     convert_mat_to_netcdf,
 )
+
+# Configure default logging behavior on package import
+# Users can reconfigure by calling configure_logger() with custom settings
+configure_logger(level="INFO")
 
 __all__ = [
     "__version__",
