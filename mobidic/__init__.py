@@ -23,6 +23,7 @@ from mobidic.preprocessing import (
     MeteoData,
     convert_mat_to_netcdf,
 )
+from mobidic.core import soil_mass_balance, capillary_rise
 
 # Configure default logging behavior on package import
 # Users can reconfigure by calling configure_logger() with custom settings
@@ -48,4 +49,6 @@ __all__ = [
     "save_gisdata",
     "MeteoData",
     "convert_mat_to_netcdf",
+    "soil_mass_balance",
+    "capillary_rise",
 ]
