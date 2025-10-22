@@ -56,6 +56,66 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
         logger.error(f"Configuration validation failed for {config_path}")
         raise ValueError(f"Configuration validation failed for {config_path}:\n{e}") from e
 
+    # Resolve all paths to absolute paths relative to the YAML file location
+    config_dir = config_path.parent.resolve()
+    logger.debug(f"Resolving paths relative to: {config_dir}")
+
+    def resolve_path(path_str: str) -> Path:
+        """Convert path to absolute, resolving relative paths from config directory."""
+        if not path_str:
+            return Path(path_str)
+        path = Path(path_str)
+        if path.is_absolute():
+            return path
+        else:
+            return (config_dir / path).resolve()
+
+    # Resolve paths in config.paths.*
+    config.paths.meteodata = resolve_path(config.paths.meteodata)
+    config.paths.gisdata = resolve_path(config.paths.gisdata)
+    config.paths.network = resolve_path(config.paths.network)
+    config.paths.states = resolve_path(config.paths.states)
+    config.paths.output = resolve_path(config.paths.output)
+
+    # Resolve vector file paths
+    config.vector_files.river_network.shp = resolve_path(config.vector_files.river_network.shp)
+
+    # Resolve raster file paths
+    config.raster_files.dtm = resolve_path(config.raster_files.dtm)
+    config.raster_files.flow_dir = resolve_path(config.raster_files.flow_dir)
+    config.raster_files.flow_acc = resolve_path(config.raster_files.flow_acc)
+    config.raster_files.Wc0 = resolve_path(config.raster_files.Wc0)
+    config.raster_files.Wg0 = resolve_path(config.raster_files.Wg0)
+    config.raster_files.ks = resolve_path(config.raster_files.ks)
+
+    # Resolve optional raster file paths
+    if config.raster_files.kf is not None:
+        config.raster_files.kf = resolve_path(config.raster_files.kf)
+    if config.raster_files.CH is not None:
+        config.raster_files.CH = resolve_path(config.raster_files.CH)
+    if config.raster_files.Alb is not None:
+        config.raster_files.Alb = resolve_path(config.raster_files.Alb)
+    if config.raster_files.Ma is not None:
+        config.raster_files.Ma = resolve_path(config.raster_files.Ma)
+    if config.raster_files.Mf is not None:
+        config.raster_files.Mf = resolve_path(config.raster_files.Mf)
+    if config.raster_files.gamma is not None:
+        config.raster_files.gamma = resolve_path(config.raster_files.gamma)
+    if config.raster_files.kappa is not None:
+        config.raster_files.kappa = resolve_path(config.raster_files.kappa)
+    if config.raster_files.beta is not None:
+        config.raster_files.beta = resolve_path(config.raster_files.beta)
+    if config.raster_files.alpha is not None:
+        config.raster_files.alpha = resolve_path(config.raster_files.alpha)
+
+    # Resolve output report settings sel_file
+    if config.output_report_settings and config.output_report_settings.sel_file is not None:
+        config.output_report_settings.sel_file = resolve_path(config.output_report_settings.sel_file)
+
+    # Resolve advanced log_file
+    if config.advanced and config.advanced.log_file is not None:
+        config.advanced.log_file = resolve_path(config.advanced.log_file)
+
     return config
 
 
