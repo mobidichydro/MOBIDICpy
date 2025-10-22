@@ -1,7 +1,7 @@
 """YAML configuration parser for MOBIDIC."""
 
 from pathlib import Path
-from typing import Union
+from typing import Union, get_args, get_origin
 
 import yaml
 from loguru import logger
@@ -60,7 +60,7 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
     config_dir = config_path.parent.resolve()
     logger.debug(f"Resolving paths relative to: {config_dir}")
 
-    def resolve_path(path_str: str) -> Path:
+    def resolve_path(path_str: Union[str, Path]) -> Path:
         """Convert path to absolute, resolving relative paths from config directory."""
         if not path_str:
             return Path(path_str)
@@ -70,51 +70,49 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
         else:
             return (config_dir / path).resolve()
 
-    # Resolve paths in config.paths.*
-    config.paths.meteodata = resolve_path(config.paths.meteodata)
-    config.paths.gisdata = resolve_path(config.paths.gisdata)
-    config.paths.network = resolve_path(config.paths.network)
-    config.paths.states = resolve_path(config.paths.states)
-    config.paths.output = resolve_path(config.paths.output)
+    def is_path_field(field_info) -> bool:
+        """Check if a field is a PathField type."""
+        annotation = field_info.annotation
 
-    # Resolve vector file paths
-    config.vector_files.river_network.shp = resolve_path(config.vector_files.river_network.shp)
+        # Check for Union[str, Path] pattern (our PathField after Pydantic processing)
+        origin = get_origin(annotation)
+        if origin is Union:
+            args = get_args(annotation)
+            # Remove NoneType if present (for Optional fields)
+            non_none_args = [arg for arg in args if arg is not type(None)]
+            # Check if it's exactly Union[str, Path]
+            if len(non_none_args) == 2 and str in non_none_args and Path in non_none_args:
+                return True
 
-    # Resolve raster file paths
-    config.raster_files.dtm = resolve_path(config.raster_files.dtm)
-    config.raster_files.flow_dir = resolve_path(config.raster_files.flow_dir)
-    config.raster_files.flow_acc = resolve_path(config.raster_files.flow_acc)
-    config.raster_files.Wc0 = resolve_path(config.raster_files.Wc0)
-    config.raster_files.Wg0 = resolve_path(config.raster_files.Wg0)
-    config.raster_files.ks = resolve_path(config.raster_files.ks)
+        return False
 
-    # Resolve optional raster file paths
-    if config.raster_files.kf is not None:
-        config.raster_files.kf = resolve_path(config.raster_files.kf)
-    if config.raster_files.CH is not None:
-        config.raster_files.CH = resolve_path(config.raster_files.CH)
-    if config.raster_files.Alb is not None:
-        config.raster_files.Alb = resolve_path(config.raster_files.Alb)
-    if config.raster_files.Ma is not None:
-        config.raster_files.Ma = resolve_path(config.raster_files.Ma)
-    if config.raster_files.Mf is not None:
-        config.raster_files.Mf = resolve_path(config.raster_files.Mf)
-    if config.raster_files.gamma is not None:
-        config.raster_files.gamma = resolve_path(config.raster_files.gamma)
-    if config.raster_files.kappa is not None:
-        config.raster_files.kappa = resolve_path(config.raster_files.kappa)
-    if config.raster_files.beta is not None:
-        config.raster_files.beta = resolve_path(config.raster_files.beta)
-    if config.raster_files.alpha is not None:
-        config.raster_files.alpha = resolve_path(config.raster_files.alpha)
+    def resolve_path_fields(obj):
+        """Recursively resolve all PathField attributes in a Pydantic model."""
+        if obj is None:
+            return
 
-    # Resolve output report settings sel_file
-    if config.output_report_settings and config.output_report_settings.sel_file is not None:
-        config.output_report_settings.sel_file = resolve_path(config.output_report_settings.sel_file)
+        # Get model fields metadata from the class, not the instance
+        obj_class = type(obj)
+        if hasattr(obj_class, "model_fields"):
+            for field_name, field_info in obj_class.model_fields.items():
+                field_value = getattr(obj, field_name)
 
-    # Resolve advanced log_file
-    if config.advanced and config.advanced.log_file is not None:
-        config.advanced.log_file = resolve_path(config.advanced.log_file)
+                # Skip None values
+                if field_value is None:
+                    continue
+
+                # Check if this field is a PathField
+                if is_path_field(field_info):
+                    # Resolve the path
+                    resolved = resolve_path(field_value)
+                    setattr(obj, field_name, resolved)
+                    logger.debug(f"Resolved {field_name}: {field_value} -> {resolved}")
+                # If it's a nested model, recurse
+                elif hasattr(type(field_value), "model_fields"):
+                    resolve_path_fields(field_value)
+
+    # Recursively resolve all path fields in the config
+    resolve_path_fields(config)
 
     return config
 
@@ -134,8 +132,8 @@ def save_config(config: MOBIDICConfig, output_path: Union[str, Path]) -> None:
 
     logger.info(f"Saving configuration to: {output_path}")
 
-    # Convert Pydantic model to dictionary
-    config_dict = config.model_dump(exclude_none=True, mode="python")
+    # Convert Pydantic model to dictionary with JSON-compatible types (converts Path to str)
+    config_dict = config.model_dump(exclude_none=True, mode="json")
 
     # Save to YAML file
     with open(output_path, "w", encoding="utf-8") as f:

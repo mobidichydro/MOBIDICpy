@@ -1,7 +1,12 @@
 """Pydantic models for MOBIDIC configuration validation."""
 
-from typing import Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pathlib import Path
+from typing import Annotated, Literal, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, field_validator, model_validator
+
+# Custom type for path fields that accepts str or Path, and serializes (back to YAML) as str
+PathField = Annotated[Union[str, Path], PlainSerializer(lambda x: str(x) if x else x, return_type=str)]
 
 
 class BasinBaricenter(BaseModel):
@@ -22,17 +27,17 @@ class Basin(BaseModel):
 class Paths(BaseModel):
     """File paths for input and output data."""
 
-    meteodata: str = Field(..., description="File where the meteo data files are stored")
-    gisdata: str = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
-    network: str = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
-    states: str = Field(..., description="Directory where the model states will be stored")
-    output: str = Field(..., description="Directory where output report files will be stored")
+    meteodata: PathField = Field(..., description="File where the meteo data files are stored")
+    gisdata: PathField = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
+    network: PathField = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
+    states: PathField = Field(..., description="Directory where the model states will be stored")
+    output: PathField = Field(..., description="Directory where output report files will be stored")
 
 
 class RiverNetworkVector(BaseModel):
     """River network shapefile configuration."""
 
-    shp: str = Field(..., description="Shape of river network")
+    shp: PathField = Field(..., description="Shape of river network")
 
 
 class VectorFiles(BaseModel):
@@ -44,21 +49,21 @@ class VectorFiles(BaseModel):
 class RasterFiles(BaseModel):
     """Raster file paths."""
 
-    dtm: str = Field(..., description="Grid of basin elevation in meters above sea level")
-    flow_dir: str = Field(..., description="Grid of flow directions")
-    flow_acc: str = Field(..., description="Grid of flow accumulation, as number of upstream cells")
-    Wc0: str = Field(..., description="Grid of maximum water holding capacity in soil small pores, in millimiters")
-    Wg0: str = Field(..., description="Grid of maximum water holding capacity in soil large pores, in millimiters")
-    ks: str = Field(..., description="Grids of soil hydraulic conductivity, in millimiters per hour")
-    kf: Optional[str] = Field(None, description="Grid of (real or ideal) aquifer conductivity, in meters per second")
-    CH: Optional[str] = Field(None, description="Grid of turbulent exchange coeff. for heat, non dimensional")
-    Alb: Optional[str] = Field(None, description="Grid of surface albedo, non dimensional")
-    Ma: Optional[str] = Field(None, description="Grid of binary mask (0,1) defining the artesian aquifer extension")
-    Mf: Optional[str] = Field(None, description="Grid of binary mask (0,1) defining the freatic aquifer extension")
-    gamma: Optional[str] = Field(None, description="Grid of percolation coefficient, in one over seconds")
-    kappa: Optional[str] = Field(None, description="Grid of adsorption coefficient, in one over seconds")
-    beta: Optional[str] = Field(None, description="Grid of hypodermic flow coefficient, in one over seconds")
-    alpha: Optional[str] = Field(None, description="Grid of hillslope flow coefficient, in one over seconds")
+    dtm: PathField = Field(..., description="Grid of basin elevation in meters above sea level")
+    flow_dir: PathField = Field(..., description="Grid of flow directions")
+    flow_acc: PathField = Field(..., description="Grid of flow accumulation, as number of upstream cells")
+    Wc0: PathField = Field(..., description="Grid of maximum water holding capacity in soil small pores, in millimiters")
+    Wg0: PathField = Field(..., description="Grid of maximum water holding capacity in soil large pores, in millimiters")
+    ks: PathField = Field(..., description="Grids of soil hydraulic conductivity, in millimiters per hour")
+    kf: Optional[PathField] = Field(None, description="Grid of (real or ideal) aquifer conductivity, in meters per second")
+    CH: Optional[PathField] = Field(None, description="Grid of turbulent exchange coeff. for heat, non dimensional")
+    Alb: Optional[PathField] = Field(None, description="Grid of surface albedo, non dimensional")
+    Ma: Optional[PathField] = Field(None, description="Grid of binary mask (0,1) defining the artesian aquifer extension")
+    Mf: Optional[PathField] = Field(None, description="Grid of binary mask (0,1) defining the freatic aquifer extension")
+    gamma: Optional[PathField] = Field(None, description="Grid of percolation coefficient, in one over seconds")
+    kappa: Optional[PathField] = Field(None, description="Grid of adsorption coefficient, in one over seconds")
+    beta: Optional[PathField] = Field(None, description="Grid of hypodermic flow coefficient, in one over seconds")
+    alpha: Optional[PathField] = Field(None, description="Grid of hillslope flow coefficient, in one over seconds")
 
 
 class RasterSettings(BaseModel):
@@ -311,7 +316,7 @@ class OutputReportSettings(BaseModel):
     reach_selection: Optional[Literal["all", "file", "list"]] = Field(
         "all", description="Method for selecting reaches to output"
     )
-    sel_file: Optional[str] = Field(None, description="Path to JSON file containing reach IDs to output")
+    sel_file: Optional[PathField] = Field(None, description="Path to JSON file containing reach IDs to output")
     sel_list: Optional[list[int]] = Field(None, description="List of reach IDs to output")
 
     @field_validator("report_interval")
@@ -336,7 +341,7 @@ class Advanced(BaseModel):
     """Advanced settings."""
 
     log_level: Optional[Literal["DEBUG", "INFO", "WARNING", "ERROR"]] = Field("INFO", description="Logging level")
-    log_file: Optional[str] = Field(None, description="Path to log file")
+    log_file: Optional[PathField] = Field(None, description="Path to log file")
 
 
 class MOBIDICConfig(BaseModel):
