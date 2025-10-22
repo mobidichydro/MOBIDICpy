@@ -23,7 +23,7 @@ from mobidic.preprocessing import (
     MeteoData,
     convert_mat_to_netcdf,
 )
-from mobidic.core import soil_mass_balance, capillary_rise
+from mobidic.core import soil_mass_balance, capillary_rise, hillslope_routing, linear_channel_routing
 
 # Configure default logging behavior on package import
 # Users can reconfigure by calling configure_logger() with custom settings
@@ -51,4 +51,6 @@ __all__ = [
     "convert_mat_to_netcdf",
     "soil_mass_balance",
     "capillary_rise",
+    "hillslope_routing",
+    "linear_channel_routing",
 ]
