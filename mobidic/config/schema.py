@@ -52,14 +52,24 @@ class RasterFiles(BaseModel):
     dtm: PathField = Field(..., description="Grid of basin elevation in meters above sea level")
     flow_dir: PathField = Field(..., description="Grid of flow directions")
     flow_acc: PathField = Field(..., description="Grid of flow accumulation, as number of upstream cells")
-    Wc0: PathField = Field(..., description="Grid of maximum water holding capacity in soil small pores, in millimiters")
-    Wg0: PathField = Field(..., description="Grid of maximum water holding capacity in soil large pores, in millimiters")
+    Wc0: PathField = Field(
+        ..., description="Grid of maximum water holding capacity in soil small pores, in millimiters"
+    )
+    Wg0: PathField = Field(
+        ..., description="Grid of maximum water holding capacity in soil large pores, in millimiters"
+    )
     ks: PathField = Field(..., description="Grids of soil hydraulic conductivity, in millimiters per hour")
-    kf: Optional[PathField] = Field(None, description="Grid of (real or ideal) aquifer conductivity, in meters per second")
+    kf: Optional[PathField] = Field(
+        None, description="Grid of (real or ideal) aquifer conductivity, in meters per second"
+    )
     CH: Optional[PathField] = Field(None, description="Grid of turbulent exchange coeff. for heat, non dimensional")
     Alb: Optional[PathField] = Field(None, description="Grid of surface albedo, non dimensional")
-    Ma: Optional[PathField] = Field(None, description="Grid of binary mask (0,1) defining the artesian aquifer extension")
-    Mf: Optional[PathField] = Field(None, description="Grid of binary mask (0,1) defining the freatic aquifer extension")
+    Ma: Optional[PathField] = Field(
+        None, description="Grid of binary mask (0,1) defining the artesian aquifer extension"
+    )
+    Mf: Optional[PathField] = Field(
+        None, description="Grid of binary mask (0,1) defining the freatic aquifer extension"
+    )
     gamma: Optional[PathField] = Field(None, description="Grid of percolation coefficient, in one over seconds")
     kappa: Optional[PathField] = Field(None, description="Grid of adsorption coefficient, in one over seconds")
     beta: Optional[PathField] = Field(None, description="Grid of hypodermic flow coefficient, in one over seconds")
