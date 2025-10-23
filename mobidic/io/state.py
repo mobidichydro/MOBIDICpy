@@ -110,7 +110,6 @@ def save_state(
     }
     ds["time"].attrs = {
         "long_name": "simulation time",
-        "units": "datetime",
     }
 
     # Add variable metadata
