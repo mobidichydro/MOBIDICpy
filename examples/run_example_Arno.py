@@ -16,10 +16,10 @@ Usage:
 
     Options (modify script directly):
     - force_preprocessing: Set to True to rerun preprocessing even if data exists
-    - simulation_days: Number of days to simulate (keep short for testing)
 """
 
 from pathlib import Path
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -36,7 +36,6 @@ from mobidic import (
 
 # Configuration
 force_preprocessing = False  # Set to True to force re-running preprocessing
-simulation_days = 5  # Number of days to simulate (keep short for example)
 
 example_dir = Path(__file__).parent / "Arno"
 config_file = example_dir / "Arno.yaml"
@@ -153,13 +152,17 @@ print()
 
 # Run simulation
 print("  Running simulation...")
+start_time = time.time()
 results = sim.run(
     start_date=start_date,
     end_date=end_date,
 )
+end_time = time.time()
+elapsed_time = end_time - start_time
 
 print()
 print("  [OK] Simulation completed successfully!")
+print(f"  Execution time: {elapsed_time:.2f} seconds ({elapsed_time / 60:.2f} minutes)")
 print()
 
 # =========================================================================
@@ -173,7 +176,7 @@ results.save_states(state_file)
 print(f"  [OK] Final state saved to: {state_file}")
 
 # Save discharge time series
-discharge_file = config.paths.outputs / f"discharge_{start_date}_{end_date}.parquet"
+discharge_file = config.paths.output / f"discharge_{start_date}_{end_date}.parquet"
 results.save_report(
     discharge_file,
     reach_selection=config.output_report_settings.reach_selection,
@@ -191,50 +194,36 @@ print("Step 7: Creating visualizations...")
 discharge_ts = results.time_series["discharge"]
 time_ts = results.time_series["time"]
 
-# Find outlet reach (reach with no downstream)
-outlet_mask = gisdata.network["downstream"].isna()
-outlet_reaches = gisdata.network[outlet_mask]
+# Use one reach for visualization
+reach_id = 329
 
-if len(outlet_reaches) > 0:
-    # Use first outlet for visualization
-    outlet_id = int(outlet_reaches.iloc[0]["mobidic_id"])
+# Create figure with subplots
+fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+fig.suptitle("MOBIDIC Simulation Results - Arno River Basin", fontsize=14, fontweight="bold")
 
-    # Create figure with subplots
-    fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-    fig.suptitle("MOBIDIC Simulation Results - Arno River Basin", fontsize=14, fontweight="bold")
+# Plot 1: Discharge hydrograph at outlet
+axes[0].plot(time_ts, discharge_ts[:, reach_id], "b-", linewidth=2, label=f"Outlet (reach {reach_id})")
+axes[0].set_xlabel("Time")
+axes[0].set_ylabel("Discharge [m³/s]")
+axes[0].set_title("Discharge Hydrograph at Basin Outlet")
+axes[0].grid(True, alpha=0.3)
+axes[0].legend()
 
-    # Plot 1: Discharge hydrograph at outlet
-    axes[0].plot(time_ts, discharge_ts[:, outlet_id], "b-", linewidth=2, label=f"Outlet (reach {outlet_id})")
-    axes[0].set_xlabel("Time")
-    axes[0].set_ylabel("Discharge [m³/s]")
-    axes[0].set_title("Discharge Hydrograph at Basin Outlet")
-    axes[0].grid(True, alpha=0.3)
-    axes[0].legend()
+# Plot 2: Network-wide discharge statistics
+q_mean = np.mean(discharge_ts, axis=1)
+q_max = np.max(discharge_ts, axis=1)
+q_min = np.min(discharge_ts, axis=1)
 
-    # Plot 2: Network-wide discharge statistics
-    q_mean = np.mean(discharge_ts, axis=1)
-    q_max = np.max(discharge_ts, axis=1)
-    q_min = np.min(discharge_ts, axis=1)
+axes[1].plot(time_ts, q_mean, "b-", linewidth=2, label="Mean")
+axes[1].fill_between(time_ts, q_min, q_max, alpha=0.3, label="Range (min-max)")
+axes[1].set_xlabel("Time")
+axes[1].set_ylabel("Discharge [m³/s]")
+axes[1].set_title("Network-Wide Discharge Statistics")
+axes[1].grid(True, alpha=0.3)
+axes[1].legend()
 
-    axes[1].plot(time_ts, q_mean, "b-", linewidth=2, label="Mean")
-    axes[1].fill_between(time_ts, q_min, q_max, alpha=0.3, label="Range (min-max)")
-    axes[1].set_xlabel("Time")
-    axes[1].set_ylabel("Discharge [m³/s]")
-    axes[1].set_title("Network-Wide Discharge Statistics")
-    axes[1].grid(True, alpha=0.3)
-    axes[1].legend()
-
-    plt.tight_layout()
-
-    # Save figure
-    plot_file = config.paths.outputs / f"discharge_hydrograph_{start_date}_{end_date}.png"
-    plt.savefig(plot_file, dpi=150, bbox_inches="tight")
-    print(f"  [OK] Discharge plot saved to: {plot_file}")
-
-    # Show plot
-    plt.show()
-else:
-    print("  ! No outlet reaches found for visualization")
+plt.tight_layout()
+plt.show()
 
 print()
 
@@ -248,16 +237,10 @@ print(f"Basin: {config.basin.id}")
 print(f"Period: {start_date} to {end_date}")
 print(f"Time step: {config.simulation.timestep} seconds")
 print(f"Number of time steps: {len(time_ts)}")
+print(f"Execution time: {elapsed_time:.2f} seconds ({elapsed_time / 60:.2f} minutes)")
 print(f"Grid size: {gisdata.metadata['shape'][0]} × {gisdata.metadata['shape'][1]}")
 print(f"Number of reaches: {len(gisdata.network)}")
 print()
-
-if len(outlet_reaches) > 0:
-    print(f"Discharge at outlet (reach {outlet_id}):")
-    print(f"  Mean: {np.mean(discharge_ts[:, outlet_id]):.2f} m³/s")
-    print(f"  Max:  {np.max(discharge_ts[:, outlet_id]):.2f} m³/s")
-    print(f"  Min:  {np.min(discharge_ts[:, outlet_id]):.2f} m³/s")
-    print()
 
 print("Network-wide statistics:")
 print(f"  Mean discharge: {np.mean(discharge_ts):.2f} m³/s")
