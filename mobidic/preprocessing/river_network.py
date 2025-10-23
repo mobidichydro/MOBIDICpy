@@ -196,13 +196,15 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     fictitious_id_counter = 1
     original_network_size = len(network)
     num_fictitious_added = 0
+    max_iterations = len(network) # Prevent infinite loops
 
     # Process each unique downstream node
     for downstream_node in unique_downstream:
         downstream_node = int(downstream_node)
 
         # Keep processing this node until it has <= 2 upstream reaches
-        while True:
+        iteration = 0
+        while iteration < max_iterations:
             # Find all reaches that flow into this downstream node
             reaches_to_node = network[network["downstream"] == downstream_node].index.tolist()
             num_upstream = len(reaches_to_node)
