@@ -196,7 +196,7 @@ def _enforce_binary_tree(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     fictitious_id_counter = 1
     original_network_size = len(network)
     num_fictitious_added = 0
-    max_iterations = len(network) # Prevent infinite loops
+    max_iterations = len(network)  # Prevent infinite loops
 
     # Process each unique downstream node
     for downstream_node in unique_downstream:
@@ -390,7 +390,7 @@ def _join_single_tributaries(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     # Mark reaches to keep (those with order >= 1)
     network["active"] = network["strahler_order"] >= 1
 
-    max_iterations = len(network) # Prevent infinite loops
+    max_iterations = len(network)  # Prevent infinite loops
     iteration = 0
 
     while iteration < max_iterations:
