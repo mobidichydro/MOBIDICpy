@@ -166,7 +166,6 @@ class MeteoData:
 
         # Add global attributes
         merged_ds.attrs["title"] = "MOBIDIC meteorological forcing data"
-        merged_ds.attrs["institution"] = "MOBIDIC"
         merged_ds.attrs["source"] = "Station observations"
         merged_ds.attrs["Conventions"] = "CF-1.12"
         merged_ds.attrs["history"] = f"Created by MOBIDICpy v{__version__}"
@@ -368,16 +367,18 @@ class MATMeteoReader:
         time_matlab = time_matlab_raw.flatten() if time_matlab_raw.size > 0 else np.array([])
 
         # Convert MATLAB datenum to pandas datetime (vectorized for speed)
-        # MATLAB datenum uses the proleptic Gregorian calendar with day 1 = Jan 1, year 1
-        # Python uses day 1 = Jan 1, year 1 as well in Timestamp.fromordinal()
-        # But MATLAB includes year 0, so we need to subtract 366 days (year 0 is a leap year)
+        # MATLAB datenum uses the proleptic Gregorian calendar with day 1 = Jan 1, year 0
+        # MATLAB datenum 367 = Jan 1, year 1 (year 0 has 366 days as a leap year)
+        # Python datetime64("0001-01-01") represents Jan 1, year 1
+        # When adding timedelta64[D](n), n=0 gives Jan 1, n=1 gives Jan 2, etc.
+        # Therefore: adjusted_days = matlab_datenum - 367
         if len(time_matlab) > 0:
             # Vectorized conversion: extract integer days and fractional days
             days_int = time_matlab.astype(int)
             days_frac = time_matlab - days_int
 
-            # Subtract 366 days offset (year 0 is a leap year)
-            adjusted_days = days_int - 366
+            # Subtract 367 days offset (MATLAB day 367 = Python day 0 from epoch 0001-01-01)
+            adjusted_days = days_int - 367
 
             # Vectorized datetime conversion using numpy datetime64
             # Convert to timedelta64[D] and add to epoch
