@@ -15,10 +15,11 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Any
 import numpy as np
-import xarray as xr
+import pandas as pd
 from loguru import logger
 
 from mobidic.config import MOBIDICConfig
+from mobidic.preprocessing.meteo_preprocessing import MeteoData
 from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.utils.interpolation import precipitation_interpolation, temperature_interpolation
@@ -142,10 +143,10 @@ class Simulation:
     - Saving results
 
     Examples:
-        >>> from mobidic import load_config, load_gisdata, Simulation
+        >>> from mobidic import load_config, load_gisdata, Simulation, MeteoData
         >>> config = load_config("Arno.yaml")
         >>> gisdata = load_gisdata("Arno_gisdata.nc", "Arno_network.parquet")
-        >>> forcing = xr.open_dataset("Arno_meteo.nc")
+        >>> forcing = MeteoData.from_netcdf("Arno_meteo.nc")
         >>> sim = Simulation(gisdata, forcing, config)
         >>> results = sim.run("2020-01-01", "2020-12-31")
         >>> results.save_report("Arno_discharge.parquet")
@@ -154,14 +155,14 @@ class Simulation:
     def __init__(
         self,
         gisdata: Any,  # GISData object
-        forcing: xr.Dataset,
+        forcing: MeteoData,
         config: MOBIDICConfig,
     ):
         """Initialize simulation.
 
         Args:
             gisdata: Preprocessed GIS data (from load_gisdata or run_preprocessing)
-            forcing: Meteorological forcing data as xarray Dataset
+            forcing: Meteorological forcing data as MeteoData container
             config: MOBIDIC configuration
         """
         self.gisdata = gisdata
@@ -243,21 +244,53 @@ class Simulation:
 
         Args:
             time: Current simulation time
-            variable: Variable name in forcing dataset
+            variable: Variable name ('precipitation', 'temperature_min', 'temperature_max', etc.)
 
         Returns:
             2D grid of interpolated values
         """
-        # Get station data for this time step
-        forcing_time = self.forcing.sel(time=time, method="nearest")
+        # Get station data for this variable
+        if variable not in self.forcing.stations:
+            raise ValueError(f"Variable '{variable}' not found in forcing data")
 
-        if variable not in forcing_time:
-            raise ValueError(f"Variable '{variable}' not found in forcing dataset")
+        var_stations = self.forcing.stations[variable]
 
-        # Get station coordinates and values
-        station_x = forcing_time[f"{variable}_x"].values
-        station_y = forcing_time[f"{variable}_y"].values
-        station_values = forcing_time[variable].values
+        if len(var_stations) == 0:
+            raise ValueError(f"No stations found for variable '{variable}'")
+
+        # Extract station coordinates and values for the given time
+        station_x = []
+        station_y = []
+        station_elevation = []
+        station_values = []
+
+        target_time = pd.Timestamp(time)
+
+        for station in var_stations:
+            # Find the value at the nearest time
+            if len(station["time"]) == 0:
+                continue
+
+            time_index = station["time"].get_indexer([target_time], method="nearest")[0]
+
+            if time_index >= 0 and time_index < len(station["data"]):
+                value = station["data"][time_index]
+
+                # Only include station if data is not NaN
+                if not np.isnan(value):
+                    station_x.append(station["x"])
+                    station_y.append(station["y"])
+                    station_elevation.append(station["elevation"])
+                    station_values.append(value)
+
+        if len(station_values) == 0:
+            raise ValueError(f"No valid data found for {variable} at time {time}")
+
+        # Convert to numpy arrays
+        station_x = np.array(station_x)
+        station_y = np.array(station_y)
+        station_elevation = np.array(station_elevation)
+        station_values = np.array(station_values)
 
         # Use single resolution value (assume square cells)
         resolution = self.resolution[0]
@@ -276,9 +309,6 @@ class Simulation:
             )
         else:
             # Use IDW with elevation correction for temperature and other variables (MATLAB: tempermap.m)
-            # Get station elevations
-            station_elevation = forcing_time[f"{variable}_elevation"].values
-
             grid_values = temperature_interpolation(
                 station_x,
                 station_y,
@@ -366,6 +396,11 @@ class Simulation:
     def _accumulate_lateral_inflow(self, lateral_flow: np.ndarray) -> np.ndarray:
         """Accumulate lateral flow contributions to each reach.
 
+        Following MATLAB's approach (mobidic_sid.m line 224):
+        - Only accumulate from cells where ch > 0 (valid reach IDs)
+        - Skip NaN cells (outside domain)
+        - Skip -9999 cells (inside domain but cannot reach river network)
+
         Args:
             lateral_flow: 2D grid of lateral flow [m³/s]
 
@@ -380,10 +415,13 @@ class Simulation:
         hillslope_map_flat = self.hillslope_reach_map.ravel()
 
         # Sum lateral flow for each reach
+        # MATLAB: ko = find(isfinite(zz) & (ch>0)); % contributing pixels
         for cell_idx, reach_id in enumerate(hillslope_map_flat):
-            if not np.isnan(reach_id):
+            # Skip NaN (outside domain) and negative values like -9999 (unassigned)
+            if not np.isnan(reach_id) and reach_id >= 0:
                 reach_id = int(reach_id)
-                if not np.isnan(lateral_flow_flat[cell_idx]):
+                # Additional safety check for valid reach index
+                if reach_id < n_reaches and not np.isnan(lateral_flow_flat[cell_idx]):
                     lateral_inflow[reach_id] += lateral_flow_flat[cell_idx]
 
         return lateral_inflow
@@ -456,46 +494,75 @@ class Simulation:
             # Convert precipitation to depth over time step [m]
             precip_depth = precip * self.dt
 
+            # Flatten 2D arrays to 1D (MATLAB: uses linear indexing with ko)
+            # soil_mass_balance expects 1D arrays as per MATLAB implementation
+            wc_flat = self.state.wc.ravel()
+            wg_flat = self.state.wg.ravel()
+            wp_flat = self.state.wp.ravel() if self.state.wp is not None else None
+            ws_flat = self.state.ws.ravel()
+            wc0_flat = self.wc0.ravel()
+            wg0_flat = self.wg0.ravel()
+            wtot0_flat = wtot0.ravel()
+            precip_flat = precip_depth.ravel()
+            pet_flat = pet.ravel()
+            ks_flat = soil_params["ks"].ravel()
+            gamma_flat = soil_params["gamma"].ravel()
+            kappa_flat = soil_params["kappa"].ravel()
+            beta_flat = soil_params["beta"].ravel()
+            alpha_flat = soil_params["alpha"].ravel()
+            cha_flat = soil_params["cha"].ravel()
+            f0_flat = soil_params["f0"].ravel()
+            surface_flow_param_flat = soil_params["surface_flow_param"].ravel()
+
+            # Call soil_mass_balance with flattened arrays
             # Pre-multiply parameters by dt (already done in _soil_parameters_to_grids)
             (
-                self.state.wc,
-                self.state.wg,
-                self.state.wp,
-                self.state.ws,
-                surface_runoff,
-                lateral_flow_depth,
-                et,
-                percolation,
-                capillary_flux,
-                wg_before,
+                wc_out_flat,
+                wg_out_flat,
+                wp_out_flat,
+                ws_out_flat,
+                surface_runoff_flat,
+                lateral_flow_depth_flat,
+                et_flat,
+                percolation_flat,
+                capillary_flux_flat,
+                wg_before_flat,
             ) = soil_mass_balance(
-                wc=self.state.wc,
-                wc0=self.wc0,
-                wg=self.state.wg,
-                wg0=self.wg0,
-                wp=self.state.wp,
+                wc=wc_flat,
+                wc0=wc0_flat,
+                wg=wg_flat,
+                wg0=wg0_flat,
+                wp=wp_flat,
                 wp0=None,  # Plant reservoir disabled for now
-                ws=self.state.ws,
+                ws=ws_flat,
                 ws0=None,
-                wtot0=wtot0,
-                precipitation=precip_depth,
-                surface_runoff_in=np.zeros((self.nrows, self.ncols)),  # No upstream for now
-                lateral_flow_in=np.zeros((self.nrows, self.ncols)),  # No upstream for now
-                potential_et=pet,
-                hydraulic_conductivity=soil_params["ks"],
+                wtot0=wtot0_flat,
+                precipitation=precip_flat,
+                surface_runoff_in=np.zeros_like(wc_flat),  # No upstream for now
+                lateral_flow_in=np.zeros_like(wc_flat),  # No upstream for now
+                potential_et=pet_flat,
+                hydraulic_conductivity=ks_flat,
                 hydraulic_conductivity_min=None,
                 hydraulic_conductivity_max=None,
-                channelized_fraction=soil_params["cha"],
-                surface_flow_exp=np.zeros((self.nrows, self.ncols)),  # Not used
-                lateral_flow_coeff=soil_params["beta"],
-                percolation_coeff=soil_params["gamma"],
-                absorption_coeff=soil_params["kappa"],
-                rainfall_fraction=soil_params["f0"],
+                channelized_fraction=cha_flat,
+                surface_flow_exp=np.zeros_like(wc_flat),  # Not used
+                lateral_flow_coeff=beta_flat,
+                percolation_coeff=gamma_flat,
+                absorption_coeff=kappa_flat,
+                rainfall_fraction=f0_flat,
                 et_shape=3.0,
                 capillary_rise_enabled=False,
                 test_mode=False,
-                surface_flow_param=soil_params["surface_flow_param"],
+                surface_flow_param=surface_flow_param_flat,
             )
+
+            # Reshape outputs back to 2D
+            self.state.wc = wc_out_flat.reshape((self.nrows, self.ncols))
+            self.state.wg = wg_out_flat.reshape((self.nrows, self.ncols))
+            self.state.wp = wp_out_flat.reshape((self.nrows, self.ncols)) if wp_out_flat is not None else None
+            self.state.ws = ws_out_flat.reshape((self.nrows, self.ncols))
+            surface_runoff = surface_runoff_flat.reshape((self.nrows, self.ncols))
+            lateral_flow_depth = lateral_flow_depth_flat.reshape((self.nrows, self.ncols))
 
             # 4. Hillslope routing
             logger.debug("Computing hillslope routing")

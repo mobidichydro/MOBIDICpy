@@ -268,7 +268,11 @@ def linear_channel_routing(
     if dt <= 0:
         raise ValueError(f"Time step dt must be positive, got {dt}")
 
-    # Initialize output arrays
+    # Create mapping from mobidic_id to DataFrame index (for array indexing)
+    # mobidic_ids may not be consecutive (e.g., after joining reaches), but DataFrame indices are always 0 to n-1
+    mobidic_id_to_idx = {int(network.at[idx, "mobidic_id"]): idx for idx in network.index}
+
+    # Initialize output arrays (indexed by DataFrame index, not mobidic_id)
     discharge_final = np.zeros(n_reaches)
     qL_total = lateral_inflow.copy()
 
@@ -282,17 +286,19 @@ def linear_channel_routing(
 
     # Route through network in topological order
     for _, reach in network_sorted.iterrows():
-        ki = int(reach["mobidic_id"])
+        mobidic_id = int(reach["mobidic_id"])
+        ki = mobidic_id_to_idx[mobidic_id]  # Get DataFrame index for this mobidic_id
 
         # Start with lateral inflow
         qL_total[ki] = lateral_inflow[ki]
 
         # Add contributions from upstream reaches
         for upstream_col in ["upstream_1", "upstream_2"]:
-            upstream_id = reach[upstream_col]
+            upstream_mobidic_id = reach[upstream_col]
 
-            if pd.notna(upstream_id):
-                jj = int(upstream_id)
+            if pd.notna(upstream_mobidic_id):
+                upstream_mobidic_id = int(upstream_mobidic_id)
+                jj = mobidic_id_to_idx[upstream_mobidic_id]  # Get DataFrame index for upstream reach
 
                 # Compute mean integral of upstream discharge over time step
                 # Formula from MATLAB: Qx(jj)/C4(jj) + (Qx(jj)-Q(jj,t-1)*C4(jj))/log(C3(jj))
