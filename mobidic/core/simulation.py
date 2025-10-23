@@ -103,6 +103,7 @@ class SimulationResults:
         output_path: str | Path,
         reach_selection: str = "all",
         selected_reaches: list[int] | None = None,
+        add_metadata: dict[str, Any] | None = None,
     ) -> None:
         """Save discharge time series to Parquet file.
 
@@ -126,10 +127,7 @@ class SimulationResults:
             output_path=output_path,
             reach_selection=reach_selection,
             selected_reaches=selected_reaches,
-            add_metadata={
-                "basin_id": self.config.basin.id,
-                "paramset_id": self.config.basin.paramset_id,
-            },
+            add_metadata=add_metadata,
         )
 
 
