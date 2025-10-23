@@ -145,6 +145,7 @@ sim = Simulation(gisdata, forcing, config)
 
 # Determine simulation period
 start_date = forcing.start_date
+# end_date = forcing.start_date + pd.Timedelta(hours=2) # For testing short runs
 end_date = forcing.end_date
 
 print(f"  Simulation period: {start_date} to {end_date}")
@@ -171,12 +172,14 @@ print()
 print("Step 6: Saving results...")
 
 # Save final state
-state_file = config.paths.states / f"final_state_{end_date}.nc"
+end_date_str = end_date.strftime("%Y%m%d_%H%M%S")
+state_file = config.paths.states / f"final_state_{end_date_str}.nc"
 results.save_states(state_file)
 print(f"  [OK] Final state saved to: {state_file}")
 
 # Save discharge time series
-discharge_file = config.paths.output / f"discharge_{start_date}_{end_date}.parquet"
+start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
+discharge_file = config.paths.output / f"discharge_{start_date_str}_{end_date_str}.parquet"
 results.save_report(
     discharge_file,
     reach_selection=config.output_report_settings.reach_selection,
@@ -205,7 +208,7 @@ fig.suptitle("MOBIDIC Simulation Results - Arno River Basin", fontsize=14, fontw
 axes[0].plot(time_ts, discharge_ts[:, reach_id], "b-", linewidth=2, label=f"Outlet (reach {reach_id})")
 axes[0].set_xlabel("Time")
 axes[0].set_ylabel("Discharge [m³/s]")
-axes[0].set_title("Discharge Hydrograph at Basin Outlet")
+axes[0].set_title(f"Discharge Hydrograph at reach {reach_id}")
 axes[0].grid(True, alpha=0.3)
 axes[0].legend()
 
@@ -238,7 +241,7 @@ print(f"Period: {start_date} to {end_date}")
 print(f"Time step: {config.simulation.timestep} seconds")
 print(f"Number of time steps: {len(time_ts)}")
 print(f"Execution time: {elapsed_time:.2f} seconds ({elapsed_time / 60:.2f} minutes)")
-print(f"Grid size: {gisdata.metadata['shape'][0]} × {gisdata.metadata['shape'][1]}")
+print(f"Grid size: {gisdata.metadata['shape'][0]} x {gisdata.metadata['shape'][1]}")
 print(f"Number of reaches: {len(gisdata.network)}")
 print()
 
