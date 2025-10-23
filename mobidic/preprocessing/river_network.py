@@ -441,6 +441,9 @@ def _join_single_tributaries(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     old_indices = network_filtered.index.tolist()
     network_filtered = network_filtered.reset_index(drop=True)
 
+    # Recreate mobidic_id indexing
+    network_filtered["mobidic_id"] = network_filtered.index
+
     # Create mapping from old indices to new indices
     old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(old_indices)}
 
