@@ -388,7 +388,7 @@ def _join_single_tributaries(network: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     # Mark reaches to keep (those with order >= 1)
     network["active"] = network["strahler_order"] >= 1
 
-    max_iterations = len(network)
+    max_iterations = len(network) # Prevent infinite loops
     iteration = 0
 
     while iteration < max_iterations:
