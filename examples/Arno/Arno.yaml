@@ -43,7 +43,7 @@ paths:
 
   # REQUIRED: Directory where output report files will be stored
   # [directory path including terminal /, eg: /blue_nile/outputs/]
-  output: outputs/
+  output: output/
 
 
 ######## VECTOR FILES
