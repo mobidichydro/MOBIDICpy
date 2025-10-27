@@ -420,7 +420,7 @@ class Simulation:
         param_grids["f0"] = np.full((self.nrows, self.ncols), f0_value)
         param_grids["f0"][np.isnan(self.dtm)] = np.nan
 
-        # Hydraulic conductivity [m/s] -> [m] for time step
+        # Hydraulic conductivity [m/s]
         ks_factor = self.config.parameters.multipliers.ks_factor
         if self.ks is not None:
             param_grids["ks"] = self.ks * ks_factor
@@ -449,8 +449,9 @@ class Simulation:
             param_grids["alpha"] = np.full((self.nrows, self.ncols), params.soil.alpha)
 
         # Channelized flow fraction cha [-]
-        # From buildgis_mysql_include.m line 656
+        # From buildgis_mysql_include.m line 655-656
         param_grids["cha"] = self.flow_acc / np.nanmax(self.flow_acc)
+        param_grids["cha"] = np.where(param_grids["cha"] > 0, param_grids["cha"], 0.0)
 
         # Surface flow parameter alpsur [m/s]
         param_grids["alpsur"] = self.alpsur 
@@ -537,6 +538,13 @@ class Simulation:
         # Cell area for unit conversion [m²]
         cell_area = self.resolution[0] * self.resolution[1]
 
+        # Create ko mask: contributing pixels only (matching MATLAB mobidic_sid.m:224)
+        # ko = find(isfinite(zz) & (ch>0));  % contributing pixels
+        ko_mask = np.isfinite(self.dtm) & (self.hillslope_reach_map > 0)
+        ko_indices = np.where(ko_mask.ravel())[0]
+        n_ko = len(ko_indices)
+        logger.info(f"Contributing pixels (ko): {n_ko} of {self.nrows * self.ncols} total cells")
+
         # Initialize flow variables for hillslope routing feedback (matching MATLAB mobidic_sid.m:1621-1625)
         # flr_prev: surface runoff from previous timestep [m/s] - will be routed to create pir
         # fld_prev: lateral flow from previous timestep [m/s] - will be routed to create pid
@@ -581,29 +589,35 @@ class Simulation:
             precip_depth = precip * self.dt
 
             # Flatten 2D arrays to 1D (MATLAB: uses linear indexing with ko)
-            # soil_mass_balance expects 1D arrays as per MATLAB implementation
-            wc_flat = self.state.wc.ravel()
-            wg_flat = self.state.wg.ravel()
-            wp_flat = self.state.wp.ravel() if self.state.wp is not None else None
-            ws_flat = self.state.ws.ravel()
-            wc0_flat = self.wc0.ravel()
-            wg0_flat = self.wg0.ravel()
-            wtot0_flat = wtot0.ravel()
-            precip_flat = precip_depth.ravel()
-            pet_flat = pet.ravel()
-            ks_flat = soil_params["ks"].ravel()
-            gamma_flat = soil_params["gamma"].ravel()
-            kappa_flat = soil_params["kappa"].ravel()
-            beta_flat = soil_params["beta"].ravel()
-            alpha_flat = soil_params["alpha"].ravel()
-            cha_flat = soil_params["cha"].ravel()
-            f0_flat = soil_params["f0"].ravel()
-            alpsur_flat = soil_params["alpsur"].ravel()
+            # Extract only contributing pixels (ko) for processing (matching MATLAB mobidic_sid.m:733-736)
+            wc_flat_full = self.state.wc.ravel()
+            wg_flat_full = self.state.wg.ravel()
+            wp_flat_full = self.state.wp.ravel() if self.state.wp is not None else None
+            ws_flat_full = self.state.ws.ravel()
+
+            # Extract ko cells only (matching MATLAB: Wc_ko = Wc(ko))
+            wc_flat = wc_flat_full[ko_indices]
+            wg_flat = wg_flat_full[ko_indices]
+            wp_flat = wp_flat_full[ko_indices] if wp_flat_full is not None else None
+            ws_flat = ws_flat_full[ko_indices]
+            wc0_flat = self.wc0.ravel()[ko_indices]
+            wg0_flat = self.wg0.ravel()[ko_indices]
+            wtot0_flat = wtot0.ravel()[ko_indices]
+            precip_flat = precip_depth.ravel()[ko_indices]
+            pet_flat = pet.ravel()[ko_indices]
+            ks_flat = soil_params["ks"].ravel()[ko_indices]
+            gamma_flat = soil_params["gamma"].ravel()[ko_indices]
+            kappa_flat = soil_params["kappa"].ravel()[ko_indices]
+            beta_flat = soil_params["beta"].ravel()[ko_indices]
+            alpha_flat = soil_params["alpha"].ravel()[ko_indices]
+            cha_flat = soil_params["cha"].ravel()[ko_indices]
+            f0_flat = soil_params["f0"].ravel()[ko_indices]
+            alpsur_flat = soil_params["alpsur"].ravel()[ko_indices]
 
             # Prepare routed flows from previous timestep (matching MATLAB mobidic_sid.m:1680)
             # Convert from [m/s] to [m] by multiplying by dt
-            pir_flat = pir.ravel() * self.dt
-            pid_flat = pid.ravel() * self.dt
+            pir_flat = pir.ravel()[ko_indices] * self.dt
+            pid_flat = pid.ravel()[ko_indices] * self.dt
 
             # Call soil_mass_balance with flattened arrays
             # Pre-multiply parameters by dt (already done in _soil_parameters_to_grids)
@@ -647,13 +661,30 @@ class Simulation:
                 alpsur=alpsur_flat,
             )
 
+            # Write ko results back to full grids (matching MATLAB: Wc(ko) = Wc_ko)
+            wc_flat_full[ko_indices] = wc_out_flat
+            wg_flat_full[ko_indices] = wg_out_flat
+            if wp_out_flat is not None:
+                wp_flat_full[ko_indices] = wp_out_flat
+            ws_flat_full[ko_indices] = ws_out_flat
+
+            # Initialize full output arrays for fluxes (preserve NaN for cells outside domain)
+            surface_runoff_full = np.full(self.nrows * self.ncols, np.nan)
+            lateral_flow_depth_full = np.full(self.nrows * self.ncols, np.nan)
+            # Set non-ko cells within basin to zero
+            surface_runoff_full[np.isfinite(self.dtm.ravel())] = 0.0
+            lateral_flow_depth_full[np.isfinite(self.dtm.ravel())] = 0.0
+            # Update ko cells with computed values
+            surface_runoff_full[ko_indices] = surface_runoff_flat
+            lateral_flow_depth_full[ko_indices] = lateral_flow_depth_flat
+
             # Reshape outputs back to 2D
-            self.state.wc = wc_out_flat.reshape((self.nrows, self.ncols))
-            self.state.wg = wg_out_flat.reshape((self.nrows, self.ncols))
-            self.state.wp = wp_out_flat.reshape((self.nrows, self.ncols)) if wp_out_flat is not None else None
-            self.state.ws = ws_out_flat.reshape((self.nrows, self.ncols))
-            surface_runoff = surface_runoff_flat.reshape((self.nrows, self.ncols))
-            lateral_flow_depth = lateral_flow_depth_flat.reshape((self.nrows, self.ncols))
+            self.state.wc = wc_flat_full.reshape((self.nrows, self.ncols))
+            self.state.wg = wg_flat_full.reshape((self.nrows, self.ncols))
+            self.state.wp = wp_flat_full.reshape((self.nrows, self.ncols)) if wp_flat_full is not None else None
+            self.state.ws = ws_flat_full.reshape((self.nrows, self.ncols))
+            surface_runoff = surface_runoff_full.reshape((self.nrows, self.ncols))
+            lateral_flow_depth = lateral_flow_depth_full.reshape((self.nrows, self.ncols))
 
             # 5. Convert outputs from depth [m] to rate [m/s] (matching MATLAB mobidic_sid.m:1684)
             # flr: surface runoff rate [m/s] - analogous to MATLAB flr after division by dt
