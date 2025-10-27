@@ -24,6 +24,7 @@ from mobidic.preprocessing import (
     convert_mat_to_netcdf,
 )
 from mobidic.core import (
+    constants,
     soil_mass_balance,
     capillary_rise,
     hillslope_routing,
@@ -40,6 +41,7 @@ configure_logger(level="INFO")
 
 __all__ = [
     "__version__",
+    "constants",
     "MOBIDICConfig",
     "load_config",
     "configure_logger",
