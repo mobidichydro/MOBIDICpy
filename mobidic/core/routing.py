@@ -56,6 +56,10 @@ def hillslope_routing(
             4: (0, 1) east,         5: (1, 1) southeast, 6: (1, 0) south,
             7: (1, -1) southwest,   8: (0, -1) west
 
+        Special values:
+            0: Outlet cell (no downstream neighbor)
+            -1: Basin outlet marker (set by preprocessor at cell with max flow accumulation)
+
     Examples:
         >>> # Simple 3x3 grid - all cells flow to center
         >>> lateral_flow = np.ones((3, 3)) * 0.1  # 0.1 m³/s from each cell
@@ -126,8 +130,9 @@ def hillslope_routing(
                 continue
 
             flow_dir = int(flow_direction[i, j])
-            if flow_dir == 0:
+            if flow_dir == 0 or flow_dir == -1:
                 # Outlet cell (no downstream direction)
+                # -1 is special marker for basin outlet (matching MATLAB buildgis line 645: zp(ifoc)=-1)
                 continue
 
             if flow_dir not in dir_map:
