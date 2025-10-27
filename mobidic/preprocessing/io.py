@@ -152,6 +152,14 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
         "_FillValue": np.nan,
     }
 
+    ds["alpsur"].attrs = {
+        "long_name": "Surface Routing Coefficient",
+        "units": "1",
+        "description": "Coefficient for surface routing",
+        "grid_mapping": "crs",
+        "_FillValue": np.nan,
+    }
+
     # Add optional parameter metadata
     if "kf" in gisdata.grids:
         ds["kf"].attrs = {
@@ -320,6 +328,7 @@ def load_gisdata(gisdata_path: str | Path, network_path: str | Path) -> "GISData
         "kappa",
         "beta",
         "alpha",
+        "alpsur",
     ]
 
     for var in grid_vars:

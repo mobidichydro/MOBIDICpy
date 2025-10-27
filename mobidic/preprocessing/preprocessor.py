@@ -28,6 +28,72 @@ from mobidic.preprocessing.hillslope_reach_mapping import (
 )
 
 
+def _calculate_slopes(dtm: np.ndarray, grid_size: float, pmin: float = 1e-5) -> np.ndarray:
+    """Calculate slope from DTM using finite differences.
+
+    Translated from MATLAB: pendenzez.m
+
+    Args:
+        dtm: Digital terrain model [m]
+        grid_size: Grid cell size [m]
+        pmin: Minimum slope [-]
+
+    Returns:
+        Slope grid [-]
+    """
+    n, m = dtm.shape
+    slopes = np.full_like(dtm, np.nan)
+
+    # Pad DTM with NaN around edges
+    dtm_padded = np.full((n + 2, m + 2), np.nan)
+    dtm_padded[1:n + 1, 1:m + 1] = dtm
+
+    # Calculate slopes for each cell
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            if np.isfinite(dtm_padded[i, j]):
+                # Find valid neighboring cells in x direction
+                if np.isfinite(dtm_padded[i, j + 1]):
+                    jp = j + 1
+                else:
+                    jp = j
+
+                if np.isfinite(dtm_padded[i, j - 1]):
+                    jm = j - 1
+                else:
+                    jm = j
+
+                # Find valid neighboring cells in y direction
+                if np.isfinite(dtm_padded[i + 1, j]):
+                    ip = i + 1
+                else:
+                    ip = i
+
+                if np.isfinite(dtm_padded[i - 1, j]):
+                    im = i - 1
+                else:
+                    im = i
+
+                # Calculate x gradient
+                dzx = dtm_padded[i, jp] - dtm_padded[i, jm]
+                if abs(dzx) < pmin * 2 * grid_size:
+                    dzx = pmin
+                else:
+                    dzx = dzx / grid_size / (jp - jm)
+
+                # Calculate y gradient
+                dzy = dtm_padded[ip, j] - dtm_padded[im, j]
+                if abs(dzy) < pmin * 2 * grid_size:
+                    dzy = pmin
+                else:
+                    dzy = dzy / grid_size / (ip - im)
+
+                # Combined slope
+                slopes[i - 1, j - 1] = np.sqrt(dzx**2 + dzy**2)
+
+    return slopes
+
+
 class GISData:
     """Container for preprocessed GIS data.
 
@@ -221,6 +287,14 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
             # Create grid filled with default parameter value
             default_value = _get_default_parameter_value(name, config)
             grids[name] = np.full_like(grids["dtm"], default_value, dtype=float)
+
+    # Calculate alpsur (surface routing parameter based on slope)
+    # From buildgis_mysql_include.m lines 647-651
+    logger.debug("Calculating alpsur from DTM slopes")
+    slopes = _calculate_slopes(grids["dtm"], cellsize, pmin=1e-5)
+    alpsur = np.sqrt(slopes)
+    alpsur = alpsur / np.nanmean(alpsur)
+    grids["alpsur"] = alpsur
 
     logger.success(f"Loaded {len(grids)} raster grids")
     logger.info("")
