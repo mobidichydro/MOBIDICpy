@@ -41,6 +41,7 @@ def sample_grids():
         "kf": np.full((10, 10), 1e-7),
         "CH": np.full((10, 10), 1e-3),
         "Alb": np.full((10, 10), 0.2),
+        "alpsur": np.random.rand(10, 10) * 2,
     }
 
 
@@ -134,6 +135,7 @@ class TestSaveGISData:
         assert "dtm" in ds
         assert "flow_dir" in ds
         assert "Wc0" in ds
+        assert "alpsur" in ds
         assert "hillslope_reach_map" in ds
         assert "crs" in ds  # CF-1.12: grid mapping variable
 
