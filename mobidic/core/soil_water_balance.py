@@ -109,7 +109,7 @@ def soil_mass_balance(
     capillary_multiplier: NDArray[np.float64] | None = None,
     # Other parameters
     test_mode: bool = False,
-    surface_flow_param: NDArray[np.float64] | None = None,
+    alpsur: NDArray[np.float64] | None = None,
     no_aquifer_indices: NDArray[np.int_] | None = None,
     assimilation_variable: str = "",
 ) -> tuple[
@@ -166,7 +166,7 @@ def soil_mass_balance(
         capillary_param_n: Capillary rise parameter n [-]
         capillary_multiplier: Binary multiplier for capillary rise [-]
         test_mode: Enable mass balance checking (default=False)
-        surface_flow_param: Surface flow parameter (alpsur*dt) [-]
+        alpsur: Surface flow parameter (alpsur*dt) [-]
         no_aquifer_indices: Indices of cells outside aquifer
         assimilation_variable: Data assimilation variable ('LST' or '')
 
@@ -423,12 +423,12 @@ def soil_mass_balance(
     total_surface_runoff = horton_runoff + dunne_runoff + surface_runoff_channelized
     ws = ws + total_surface_runoff
 
-    if surface_flow_param is not None:
+    if alpsur is not None:
         # Use surface flow parameter directly
-        surface_runoff_out = np.minimum(ws * surface_flow_param, ws)
+        surface_runoff_out = np.minimum(ws * alpsur, ws)
     else:
         # Use exponential decay (original MATLAB version - currently not used)
-        logger.warning("surface_flow_exp parameter used but surface_flow_param is None")
+        logger.warning("surface_flow_exp parameter used but alpsur is None")
         surface_runoff_out = total_surface_runoff
 
     ws = ws - surface_runoff_out

@@ -3,7 +3,7 @@
 This module implements the main time-stepping loop for the MOBIDIC hydrological model.
 It orchestrates the water balance calculations, routing, and I/O operations.
 
-For Phase 1, this implements a simplified version without:
+Currently, this implements a simplified version without:
 - Energy balance (uses simple PET instead)
 - Groundwater models (percolation goes to baseflow)
 - Reservoir routing
@@ -19,11 +19,12 @@ import pandas as pd
 from loguru import logger
 
 from mobidic.config import MOBIDICConfig
+from mobidic.core import constants as const
 from mobidic.preprocessing.meteo_preprocessing import MeteoData
 from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
-from mobidic.utils.interpolation import precipitation_interpolation, temperature_interpolation
-from mobidic.utils.pet import calculate_pet
+from mobidic.core.interpolation import precipitation_interpolation, temperature_interpolation
+from mobidic.core.pet import calculate_pet
 
 
 class SimulationState:
@@ -173,6 +174,9 @@ class Simulation:
         self.xllcorner = gisdata.metadata["xllcorner"]
         self.yllcorner = gisdata.metadata["yllcorner"]
 
+        # Flow direction type from config
+        self.flow_dir_type = config.raster_settings.flow_dir_type
+
         # Extract grids
         self.dtm = gisdata.grids["dtm"]
         self.flow_dir = gisdata.grids["flow_dir"]
@@ -180,9 +184,15 @@ class Simulation:
         self.wc0 = gisdata.grids["Wc0"]
         self.wg0 = gisdata.grids["Wg0"]
         self.ks = gisdata.grids["ks"]
+        self.alpsur = gisdata.grids["alpsur"]
         self.hillslope_reach_map = gisdata.hillslope_reach_map
 
+        # Create channel mask
+        # See glob_route_day.m line 24-35
+        self.channel_mask = self._create_channel_mask(gisdata.network)
+
         # Optional grids
+        # These may be None if not provided: use get() to avoid KeyError
         self.kf = gisdata.grids.get("kf")
         self.gamma = gisdata.grids.get("gamma")
         self.kappa = gisdata.grids.get("kappa")
@@ -203,29 +213,81 @@ class Simulation:
             f"dt={self.dt}s, network={len(self.network)} reaches"
         )
 
-    def _initialize_state(self) -> SimulationState:
-        """Initialize simulation state variables.
+    def _create_channel_mask(self, network) -> np.ndarray:
+        """Create a boolean mask identifying cells that are directly ON river channels.
+
+        This is distinct from hillslope_reach_map which identifies which reach each cell
+        drains to (including hillslope cells). Only cells ON channels should have their
+        flow zeroed after contributing to channels (matching MATLAB glob_route_day.m line 33).
+
+        Args:
+            network: River network GeoDataFrame with 'hillslope_cells' column
+
+        Returns:
+            Boolean array (nrows x ncols) where True = cell is ON a channel
+        """
+        logger.debug("Creating channel mask from network hillslope_cells")
+
+        channel_mask = np.zeros((self.nrows, self.ncols), dtype=bool)
+
+        for _, row in network.iterrows():
+            if "hillslope_cells" in row and isinstance(row["hillslope_cells"], (list, np.ndarray)):
+                for cell_idx in row["hillslope_cells"]:
+                    if not np.isnan(cell_idx):
+                        # Convert linear index to 2D coordinates
+                        i, j = divmod(int(cell_idx), self.ncols)
+                        if 0 <= i < self.nrows and 0 <= j < self.ncols:
+                            channel_mask[i, j] = True
+
+        n_channel_cells = np.sum(channel_mask)
+        logger.success(f"Channel mask created: {n_channel_cells} cells directly on channels")
+
+        return channel_mask
+
+    def _initial_state(self) -> SimulationState:
+        """Initialize the initial simulation state variables with initial conditions from configuration.
 
         Returns:
             Initial simulation state
         """
-        logger.info("Initializing simulation state")
+        logger.info("Initial simulation state")
 
         # Initialize soil water content from configuration
-        wcsat = self.config.initial_conditions.Wcsat
-        wgsat = self.config.initial_conditions.Wgsat
-        ws_init = self.config.initial_conditions.Ws
+        wcsat = self.config.initial_conditions.Wcsat  # Fraction of capillary saturation
+        wgsat = self.config.initial_conditions.Wgsat  # Fraction of gravitational saturation
+        ws_init = self.config.initial_conditions.Ws  # Initial surface water depth [m]
 
-        wc = self.wc0 * wcsat
-        wg = self.wg0 * wgsat
-        wp = np.zeros((self.nrows, self.ncols))  # Plant reservoir (if used)
+        wc = self.wc0 * self.config.parameters.multipliers.Wc_factor
+        wg = self.wg0 * self.config.parameters.multipliers.Wg_factor
+        wp = np.zeros((self.nrows, self.ncols))
         ws = np.full((self.nrows, self.ncols), ws_init)
+
+        # Apply minumum limits
+        wc = np.maximum(wc, const.W_MIN)
+        wg = np.maximum(wg, const.W_MIN)
+
+        # Transition factor between gravitational and capillary storage
+        Wg_Wc_tr = self.config.parameters.multipliers.Wg_Wc_tr
+        if Wg_Wc_tr >= 0:
+            wtot = wc + wg
+            wg = np.minimum(Wg_Wc_tr * wg, wtot)
+            wc = wtot - wg
+
+        # Initial values
+        wc = wc * wcsat
+        wg = wg * wgsat
+
+        # Set NaN outside domain
+        wc[np.isnan(self.dtm)] = np.nan
+        wg[np.isnan(self.dtm)] = np.nan
+        ws[np.isnan(self.dtm)] = np.nan
+        wp[np.isnan(self.dtm)] = np.nan
 
         # Initialize river discharge
         discharge = np.zeros(len(self.network))
 
         logger.success(
-            f"State initialized: "
+            f"State initialized. Initial conditions (average): "
             f"Wc={np.nanmean(wc) * 1000:.1f} mm, "
             f"Wg={np.nanmean(wg) * 1000:.1f} mm, "
             f"Ws={np.nanmean(ws) * 1000:.1f} mm"
@@ -235,10 +297,6 @@ class Simulation:
 
     def _interpolate_forcing(self, time: datetime, variable: str) -> np.ndarray:
         """Interpolate meteorological forcing data to grid.
-
-        Uses MATLAB-equivalent methods:
-        - Precipitation: nearest neighbor (pluviomap.m)
-        - Temperature: IDW with elevation correction (tempermap.m)
 
         Args:
             time: Current simulation time
@@ -305,6 +363,9 @@ class Simulation:
                 self.yllcorner,
                 resolution,
             )
+            # Convert from mm (over dt) to m/s, matching MATLAB line 1240 (mobidic_sid.m):
+            # pp=pp/1000/dt; % average intensity during dt [m/s]
+            grid_values = grid_values / 1000.0 / self.dt
         else:
             # Use IDW with elevation correction for temperature and other variables (MATLAB: tempermap.m)
             grid_values = temperature_interpolation(
@@ -326,7 +387,7 @@ class Simulation:
     def _calculate_pet(self, time: datetime) -> np.ndarray:
         """Calculate potential evapotranspiration.
 
-        For Phase 1 (no energy balance), uses MATLAB approach: constant 1 mm/day.
+        Currently energy balance is not implemented -> uses MATLAB approach: constant 1 mm/day.
         MATLAB: etp = Mones/(1000*3600*24) [mobidic_sid.m line 332]
 
         Args:
@@ -340,8 +401,8 @@ class Simulation:
 
         return pet
 
-    def _soil_parameters_to_grids(self) -> dict[str, np.ndarray]:
-        """Convert soil parameters from config to grids.
+    def _prepare_grids(self) -> dict[str, np.ndarray]:
+        """Prepare grids for simulation.
 
         Returns:
             Dictionary of parameter grids
@@ -353,41 +414,46 @@ class Simulation:
         # If raster exists, use it; otherwise use scalar value
         param_grids = {}
 
+        # Rainfall fraction f0: fraction of time step without rain [-]
+        # Time-dependent parameter from mobidic_sid.m line 213
+        f0_value = 0.85 * (1 - np.exp(-self.dt / (24 * 3600) * np.log(0.85 / 0.10)))
+        param_grids["f0"] = np.full((self.nrows, self.ncols), f0_value)
+        param_grids["f0"][np.isnan(self.dtm)] = np.nan
+
         # Hydraulic conductivity [m/s] -> [m] for time step
+        ks_factor = self.config.parameters.multipliers.ks_factor
         if self.ks is not None:
-            param_grids["ks"] = self.ks * self.dt
+            param_grids["ks"] = self.ks * ks_factor
         else:
-            param_grids["ks"] = np.full((self.nrows, self.ncols), params.soil.ks) * self.dt
+            param_grids["ks"] = np.full((self.nrows, self.ncols), params.soil.ks) * ks_factor
 
         # Flow coefficients
         if self.gamma is not None:
-            param_grids["gamma"] = self.gamma * self.dt
+            param_grids["gamma"] = self.gamma
         else:
-            param_grids["gamma"] = np.full((self.nrows, self.ncols), params.soil.gamma) * self.dt
+            param_grids["gamma"] = np.full((self.nrows, self.ncols), params.soil.gamma)
 
         if self.kappa is not None:
-            param_grids["kappa"] = self.kappa * self.dt
+            param_grids["kappa"] = self.kappa
         else:
-            param_grids["kappa"] = np.full((self.nrows, self.ncols), params.soil.kappa) * self.dt
+            param_grids["kappa"] = np.full((self.nrows, self.ncols), params.soil.kappa)
 
         if self.beta is not None:
-            param_grids["beta"] = self.beta * self.dt
+            param_grids["beta"] = self.beta
         else:
-            param_grids["beta"] = np.full((self.nrows, self.ncols), params.soil.beta) * self.dt
+            param_grids["beta"] = np.full((self.nrows, self.ncols), params.soil.beta)
 
         if self.alpha is not None:
-            param_grids["alpha"] = self.alpha * self.dt
+            param_grids["alpha"] = self.alpha
         else:
-            param_grids["alpha"] = np.full((self.nrows, self.ncols), params.soil.alpha) * self.dt
+            param_grids["alpha"] = np.full((self.nrows, self.ncols), params.soil.alpha)
 
-        # Other parameters
-        param_grids["f0"] = np.full((self.nrows, self.ncols), 0.5)  # Rainfall fraction
-        param_grids["cha"] = np.full((self.nrows, self.ncols), self.config.parameters.multipliers.chan_factor)
+        # Channelized flow fraction cha [-]
+        # From buildgis_mysql_include.m line 656
+        param_grids["cha"] = self.flow_acc / np.nanmax(self.flow_acc)
 
-        # Calculate surface flow parameter (from alpha)
-        # alpsur = surface flow velocity, exp_alp = exp(-alpha * alpsur * dt)
-        alpsur = 0.01  # m/s, typical hillslope velocity
-        param_grids["surface_flow_param"] = alpsur * param_grids["alpha"]
+        # Surface flow parameter alpsur [m/s]
+        param_grids["alpsur"] = self.alpsur 
 
         return param_grids
 
@@ -451,10 +517,10 @@ class Simulation:
         logger.info(f"Starting simulation: {start_date} to {end_date}, dt={self.dt}s")
 
         # Initialize state
-        self.state = self._initialize_state()
+        self.state = self._initial_state()
 
-        # Get soil parameters
-        soil_params = self._soil_parameters_to_grids()
+        # Get grids
+        soil_params = self._prepare_grids()
 
         # Initialize results container
         results = SimulationResults(self.config, simulation=self)
@@ -471,6 +537,12 @@ class Simulation:
         # Cell area for unit conversion [m²]
         cell_area = self.resolution[0] * self.resolution[1]
 
+        # Initialize flow variables for hillslope routing feedback (matching MATLAB mobidic_sid.m:1621-1625)
+        # flr_prev: surface runoff from previous timestep [m/s] - will be routed to create pir
+        # fld_prev: lateral flow from previous timestep [m/s] - will be routed to create pid
+        flr_prev = np.zeros((self.nrows, self.ncols))
+        fld_prev = np.zeros((self.nrows, self.ncols))
+
         # Main time loop
         current_time = start_date
         for step in range(n_steps):
@@ -486,7 +558,23 @@ class Simulation:
             # 2. Calculate PET
             pet = self._calculate_pet(current_time)
 
-            # 3. Soil water balance (cell-by-cell)
+            # 3. Hillslope routing of previous timestep's flows (matching MATLAB mobidic_sid.m:1621-1625)
+            # This must happen BEFORE soil mass balance to provide upstream contributions
+            logger.debug("Routing previous timestep's flows through hillslope")
+
+            # Convert to discharge for routing
+            flr_prev_discharge = flr_prev * cell_area
+            fld_prev_discharge = fld_prev * cell_area
+
+            # Route through hillslope
+            pir_discharge = hillslope_routing(flr_prev_discharge, self.flow_dir, flow_dir_type=self.flow_dir_type)
+            pid_discharge = hillslope_routing(fld_prev_discharge, self.flow_dir, flow_dir_type=self.flow_dir_type)
+
+            # Convert back to rates
+            pir = pir_discharge / cell_area
+            pid = pid_discharge / cell_area
+
+            # 4. Soil water balance (cell-by-cell)
             logger.debug("Computing soil water balance")
 
             # Convert precipitation to depth over time step [m]
@@ -510,7 +598,12 @@ class Simulation:
             alpha_flat = soil_params["alpha"].ravel()
             cha_flat = soil_params["cha"].ravel()
             f0_flat = soil_params["f0"].ravel()
-            surface_flow_param_flat = soil_params["surface_flow_param"].ravel()
+            alpsur_flat = soil_params["alpsur"].ravel()
+
+            # Prepare routed flows from previous timestep (matching MATLAB mobidic_sid.m:1680)
+            # Convert from [m/s] to [m] by multiplying by dt
+            pir_flat = pir.ravel() * self.dt
+            pid_flat = pid.ravel() * self.dt
 
             # Call soil_mass_balance with flattened arrays
             # Pre-multiply parameters by dt (already done in _soil_parameters_to_grids)
@@ -536,8 +629,8 @@ class Simulation:
                 ws0=None,
                 wtot0=wtot0_flat,
                 precipitation=precip_flat,
-                surface_runoff_in=np.zeros_like(wc_flat),  # No upstream for now
-                lateral_flow_in=np.zeros_like(wc_flat),  # No upstream for now
+                surface_runoff_in=pir_flat,  # Routed surface runoff from previous timestep
+                lateral_flow_in=pid_flat,  # Routed lateral flow from previous timestep
                 potential_et=pet_flat,
                 hydraulic_conductivity=ks_flat,
                 hydraulic_conductivity_min=None,
@@ -551,7 +644,7 @@ class Simulation:
                 et_shape=3.0,
                 capillary_rise_enabled=False,
                 test_mode=False,
-                surface_flow_param=surface_flow_param_flat,
+                alpsur=alpsur_flat,
             )
 
             # Reshape outputs back to 2D
@@ -562,23 +655,28 @@ class Simulation:
             surface_runoff = surface_runoff_flat.reshape((self.nrows, self.ncols))
             lateral_flow_depth = lateral_flow_depth_flat.reshape((self.nrows, self.ncols))
 
-            # 4. Hillslope routing
-            logger.debug("Computing hillslope routing")
+            # 5. Convert outputs from depth [m] to rate [m/s] (matching MATLAB mobidic_sid.m:1684)
+            # flr: surface runoff rate [m/s] - analogous to MATLAB flr after division by dt
+            # fld: lateral flow rate [m/s] - analogous to MATLAB fld after division by dt
+            flr = surface_runoff / self.dt
+            fld = lateral_flow_depth / self.dt
 
-            # Convert lateral flow from depth [m] to discharge [m³/s]
-            lateral_flow_discharge = lateral_flow_depth / self.dt * cell_area
+            # 6. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m)
+            # Convert to discharge for accumulation
+            flr_discharge = flr * cell_area
+            lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
 
-            # Route hillslope flow
-            accumulated_flow = hillslope_routing(
-                lateral_flow_discharge,
-                self.flow_dir,
-                flow_dir_type="Grass",  # MOBIDIC notation
-            )
+            # CRITICAL: Zero out flr ONLY for cells directly ON channels (matching MATLAB glob_route_day.m line 33)
+            # This prevents double-counting - flows from channel cells are consumed and don't route to next timestep
+            # Hillslope cells keep their flr and it routes gradually toward channels over multiple timesteps
+            flr[self.channel_mask] = 0.0
+            # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
 
-            # 5. Accumulate lateral inflow to reaches
-            lateral_inflow = self._accumulate_lateral_inflow(accumulated_flow)
+            # Store flr and fld for next timestep's routing (at step 3)
+            flr_prev = flr.copy()
+            fld_prev = fld.copy()
 
-            # 6. Channel routing
+            # 7. Channel routing
             logger.debug("Computing channel routing")
 
             self.state.discharge, routing_state = linear_channel_routing(
@@ -589,7 +687,7 @@ class Simulation:
                 storage_coeff="storage_coeff",
             )
 
-            # 7. Store results
+            # 8. Store results
             discharge_ts.append(self.state.discharge.copy())
             time_ts.append(current_time)
 

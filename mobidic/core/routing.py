@@ -23,11 +23,14 @@ def hillslope_routing(
     flow_dir_type: str = "Grass",
 ) -> np.ndarray:
     """
-    Route lateral flow from upslope cells to downslope cells following flow direction.
+    Route lateral flow ONE STEP from upslope cells to immediate downstream neighbors.
 
-    This function accumulates lateral flow contributions by traversing the flow direction
-    grid. Each cell receives flow from all upslope cells that drain into it, following
-    the D8 flow direction algorithm.
+    This function performs ONE-STEP routing matching MATLAB's hill_route.m behavior.
+    Each cell receives flow ONLY from its immediate upstream neighbors, NOT from all
+    upslope cells. Water moves gradually cell-by-cell over multiple timesteps.
+
+    CRITICAL: This is NOT cumulative routing! To move water from headwaters to outlets
+    requires calling this function once per timestep for many timesteps.
 
     Args:
         lateral_flow: 2D array of lateral flow from each cell [m³/s].
@@ -38,25 +41,31 @@ def hillslope_routing(
             "Arc" (1,2,4,8,16,32,64,128 coding). Default: "Grass".
 
     Returns:
-        Accumulated flow array with same shape as lateral_flow [m³/s].
-        Each cell contains its own lateral flow plus contributions from all upslope cells.
+        Upstream contribution array with same shape as lateral_flow [m³/s].
+        Each cell contains ONLY flow from immediate upstream neighbors (NOT its own flow).
 
     Notes:
-        Flow direction coding (D8):
-            Grass notation:     Arc notation:
-            7  6  5             64  128  32
-            8  ·  4             16   ·    8
-            1  2  3              1   2    4
+        Flow direction coding (D8) - MOBIDIC convention from MATLAB stack8point.m:
+            Grass/MOBIDIC notation:   Arc notation:
+            7  6  5                   64  128  32
+            8  ·  4                   16   ·    8
+            1  2  3                    1   2    4
+
+        Direction number → (row_offset, col_offset) in matrix coordinates:
+            1: (-1, -1) northwest,  2: (-1, 0) north,    3: (-1, 1) northeast,
+            4: (0, 1) east,         5: (1, 1) southeast, 6: (1, 0) south,
+            7: (1, -1) southwest,   8: (0, -1) west
 
     Examples:
-        >>> # Simple 3x3 grid with center cell receiving flow from all neighbors
+        >>> # Simple 3x3 grid - all cells flow to center
         >>> lateral_flow = np.ones((3, 3)) * 0.1  # 0.1 m³/s from each cell
+        >>> # Flow directions in MOBIDIC notation (all point toward center at [1,1])
         >>> flow_direction = np.array([[5, 6, 7],
-        ...                            [4, 0, 8],  # center cell is outlet
-        ...                            [3, 2, 1]])  # all cells drain to center
-        >>> accumulated = hillslope_routing(lateral_flow, flow_direction, "Grass")
-        >>> accumulated[1, 1]  # Center cell receives flow from all 8 neighbors + itself
-        0.9
+        ...                            [4, 0, 8],  # center [1,1] is outlet (0 = no flow out)
+        ...                            [3, 2, 1]])  # all 8 neighbors drain to center
+        >>> upstream = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        >>> upstream[1, 1]  # Center receives flow from all 8 neighbors (one-step)
+        0.8  # 8 neighbors × 0.1 m³/s each = 0.8 m³/s (does NOT include center's own 0.1)
     """
     logger.debug(f"Starting hillslope routing with flow_dir_type={flow_dir_type}, grid shape={lateral_flow.shape}")
 
@@ -71,38 +80,45 @@ def hillslope_routing(
 
     nrows, ncols = lateral_flow.shape
 
-    # Initialize accumulated flow with lateral flow
-    accumulated_flow = lateral_flow.copy()
+    # Initialize upstream contribution to ZERO (matching MATLAB line 19: uf=0*fl)
+    # MATLAB hill_route does NOT include cell's own flow - only upstream contributions
+    upstream_contribution = np.zeros_like(lateral_flow)
 
     # Define flow direction mappings (direction -> row/col offsets)
+    # MOBIDIC convention matches MATLAB stack8point.m (lines 8-9):
+    # i8=[-1 -1 -1 0 1 1 1 0]
+    # j8=[-1 0 1 1 1 0 -1 -1]
+    # This is the convention stored in gisdata after preprocessing
     if flow_dir_type == "Grass":
-        # Grass notation: 1-8, clockwise from bottom-left
+        # MOBIDIC/Grass convention (gisdata contains MOBIDIC notation)
         dir_map = {
-            1: (1, -1),  # bottom-left
-            2: (1, 0),  # bottom
-            3: (1, 1),  # bottom-right
-            4: (0, 1),  # right
-            5: (-1, 1),  # top-right
-            6: (-1, 0),  # top
-            7: (-1, -1),  # top-left
-            8: (0, -1),  # left
+            1: (-1, -1),  # up-left (i8[0]=-1, j8[0]=-1)
+            2: (-1, 0),  # up (i8[1]=-1, j8[1]=0)
+            3: (-1, 1),  # up-right (i8[2]=-1, j8[2]=1)
+            4: (0, 1),  # right (i8[3]=0, j8[3]=1)
+            5: (1, 1),  # down-right (i8[4]=1, j8[4]=1)
+            6: (1, 0),  # down (i8[5]=1, j8[5]=0)
+            7: (1, -1),  # down-left (i8[6]=1, j8[6]=-1)
+            8: (0, -1),  # left (i8[7]=0, j8[7]=-1)
         }
     else:  # Arc notation
-        # Arc notation: powers of 2
+        # Arc notation: powers of 2 (if used in original data)
         dir_map = {
-            1: (1, 0),  # bottom
-            2: (1, 1),  # bottom-right
+            1: (1, 0),  # down
+            2: (1, 1),  # down-right
             4: (0, 1),  # right
-            8: (-1, 1),  # top-right
-            16: (-1, 0),  # top
-            32: (-1, -1),  # top-left
+            8: (-1, 1),  # up-right
+            16: (-1, 0),  # up
+            32: (-1, -1),  # up-left
             64: (0, -1),  # left
-            128: (1, -1),  # bottom-left
+            128: (1, -1),  # down-left
         }
 
-    # Build a reverse map: for each cell, track which cells flow into it
-    # This requires scanning the entire grid
-    inflow_cells = [[[] for _ in range(ncols)] for _ in range(nrows)]
+    # MATLAB hill_route does ONE-STEP routing: each cell receives flow from immediate upstream neighbors
+    # NOT cumulative routing! Water moves cell-by-cell over multiple timesteps.
+    #
+    # For each cell, find its upstream neighbors and add their flow
+    # Matching MATLAB lines 20-35: uf(k1) = uf(k1) + fl(st(k1))
 
     for i in range(nrows):
         for j in range(ncols):
@@ -118,57 +134,20 @@ def hillslope_routing(
                 logger.warning(f"Invalid flow direction {flow_dir} at cell ({i}, {j}), skipping")
                 continue
 
-            # Find downstream cell
+            # Find downstream cell - cell (i,j) flows INTO (down_i, down_j)
             di, dj = dir_map[flow_dir]
             down_i, down_j = i + di, j + dj
 
             # Check bounds
             if 0 <= down_i < nrows and 0 <= down_j < ncols:
-                # Record that cell (i,j) flows into (down_i, down_j)
-                inflow_cells[down_i][down_j].append((i, j))
+                # Add this cell's flow to its downstream neighbor (one-step routing)
+                # Matching MATLAB: uf(downstream) += fl(upstream)
+                if not np.isnan(lateral_flow[i, j]):
+                    upstream_contribution[down_i, down_j] += lateral_flow[i, j]
 
-    # Accumulate flow by traversing from headwaters to outlets
-    # We need to process cells in topological order (upstream to downstream)
-    # Since we don't have explicit ordering, we iterate until convergence
+    logger.debug("Hillslope routing completed (one-step)")
 
-    # Create a processing order based on flow accumulation concept
-    # Process cells with fewer upstream contributors first
-    processed = np.zeros((nrows, ncols), dtype=bool)
-    max_iterations = nrows * ncols  # Safety limit
-
-    for iteration in range(max_iterations):
-        any_processed = False
-
-        for i in range(nrows):
-            for j in range(ncols):
-                if processed[i, j]:
-                    continue
-
-                if np.isnan(lateral_flow[i, j]):
-                    processed[i, j] = True
-                    continue
-
-                # Check if all upstream cells have been processed
-                upstream_cells = inflow_cells[i][j]
-                if all(processed[ui, uj] for ui, uj in upstream_cells):
-                    # Accumulate flow from upstream cells
-                    for ui, uj in upstream_cells:
-                        if not np.isnan(accumulated_flow[ui, uj]):
-                            accumulated_flow[i, j] += accumulated_flow[ui, uj]
-
-                    processed[i, j] = True
-                    any_processed = True
-
-        if not any_processed:
-            # No more cells can be processed
-            break
-
-    if iteration == max_iterations - 1:
-        logger.warning("Hillslope routing reached maximum iterations")
-
-    logger.debug(f"Hillslope routing completed in {iteration + 1} iterations")
-
-    return accumulated_flow
+    return upstream_contribution
 
 
 def linear_channel_routing(

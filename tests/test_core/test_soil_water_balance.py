@@ -95,7 +95,7 @@ class TestSoilMassBalance:
         self.absorption_coeff = np.full(self.n_cells, 0.3, dtype=np.float64)
         self.rainfall_fraction = np.full(self.n_cells, 0.5, dtype=np.float64)
         self.et_shape = 0.0
-        self.surface_flow_param = np.full(self.n_cells, 0.5, dtype=np.float64)
+        self.alpsur = np.full(self.n_cells, 0.5, dtype=np.float64)
 
     def test_basic_mass_balance(self):
         """Test basic mass balance without capillary rise."""
@@ -136,7 +136,7 @@ class TestSoilMassBalance:
             self.et_shape,
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # Check mass balance
@@ -191,7 +191,7 @@ class TestSoilMassBalance:
             self.et_shape,
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # Check mass balance
@@ -243,7 +243,7 @@ class TestSoilMassBalance:
             self.et_shape,
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # wp_out should be None
@@ -291,7 +291,7 @@ class TestSoilMassBalance:
             0.0,  # ET shape = 0
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # Run with ET shape = 3 (recommended)
@@ -321,7 +321,7 @@ class TestSoilMassBalance:
             3.0,  # ET shape = 3
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # ET should be different (shaped ET reduces soil ET for low saturation)
@@ -371,7 +371,7 @@ class TestSoilMassBalance:
             self.et_shape,
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # Check mass balance
@@ -443,7 +443,7 @@ class TestSoilMassBalance:
             capillary_param_n=capillary_param_n,
             capillary_multiplier=capillary_multiplier,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # Capillary flux should be finite (may be positive or negative)
@@ -500,7 +500,7 @@ class TestSoilMassBalance:
             self.et_shape,
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # With no precipitation, total soil water should decrease or stay same
@@ -560,7 +560,7 @@ class TestSoilMassBalance:
             self.et_shape,
             capillary_rise_enabled=False,
             test_mode=False,
-            surface_flow_param=self.surface_flow_param,
+            alpsur=self.alpsur,
         )
 
         # Large precipitation should produce surface runoff
