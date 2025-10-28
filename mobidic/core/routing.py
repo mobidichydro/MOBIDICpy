@@ -264,10 +264,17 @@ def linear_channel_routing(
         mobidic_id = int(reach["mobidic_id"])
         ki = mobidic_id_to_idx[mobidic_id]  # Get DataFrame index for this mobidic_id
 
-        # Start with lateral inflow
+        # Count number of upstream reaches (nm in MATLAB)
+        nm = 0
+        if pd.notna(reach["upstream_1"]):
+            nm += 1
+        if pd.notna(reach["upstream_2"]):
+            nm += 1
+
+        # Start with lateral inflow (MATLAB line 66: Qx(ki) = qL(ki))
         qL_total[ki] = lateral_inflow[ki]
 
-        # Add contributions from upstream reaches
+        # Add contributions from upstream reaches (MATLAB lines 67-74)
         for upstream_col in ["upstream_1", "upstream_2"]:
             upstream_mobidic_id = reach[upstream_col]
 
@@ -276,32 +283,60 @@ def linear_channel_routing(
                 jj = mobidic_id_to_idx[upstream_mobidic_id]  # Get DataFrame index for upstream reach
 
                 # Compute mean integral of upstream discharge over time step
-                # Formula from MATLAB go_route_ord.m line 70 (simplified for LINEAR routing):
-                # mean = qL_total + C4 * (qL_total - Q_initial) / log(C3)
-                # This integrates the exponential decay from upstream reach
+                # Formula from MATLAB go_route_ord.m line 70 (LINEAR routing):
+                # mean_upstream = Qx(jj)/C4(jj) + (Qx(jj) - Q(jj,tt-1)*C4(jj))/log(C3(jj))
+                # where Qx(jj) = C4(jj) * qL_total(jj) from previous reach computation
+                # This integrates the exponential decay from upstream reach over the time step
 
                 if C3[jj] == 1.0:
                     # Special case: no decay (K → ∞)
-                    # Mean = Qx(jj)
-                    mean_upstream = qL_total[jj]
+                    # Mean = Qx(jj) / C4(jj)
+                    mean_upstream = qL_total[jj] / C4[jj]
                 elif abs(C3[jj]) < 1e-10:
                     # Special case: instant decay (K → 0)
                     # Only lateral inflow contributes
                     mean_upstream = qL_total[jj] / C4[jj]
                 else:
                     # General case: compute integral mean
-                    # ∫[Q(t)] dt from 0 to dt where Q(t) = C3^(t/dt) * Q(0) + (1-C3^(t/dt)) * qL
-                    # After integration and division by dt:
-                    # Formula from MATLAB go_route_ord.m line 70:
-                    # mean = qL_total + C4 * (qL_total - Q_initial) / log(C3)
-                    term1 = qL_total[jj]
-                    term2 = C4[jj] * (qL_total[jj] - discharge_initial[jj]) / np.log(C3[jj])
-                    mean_upstream = term1 + term2
+                    # Exact translation from MATLAB go_route_ord.m line 70:
+                    # Qx(ki) = Qx(ki) + Qx(jj)/C4(jj) + (Qx(jj) - Q(jj,tt-1)*C4(jj))/log(C3(jj))
+                    # Note: qL_total[jj] in Python = Qx(jj) in MATLAB (already multiplied by C4)
+                    mean_upstream = qL_total[jj] / C4[jj] + (qL_total[jj] - discharge_initial[jj] * C4[jj]) / np.log(C3[jj])
 
                 qL_total[ki] += mean_upstream
 
-        # Apply routing equation: Q_out(t+dt) = C3 * Q_out(t) + C4 * qL
-        discharge_final[ki] = C3[ki] * discharge_initial[ki] + C4[ki] * qL_total[ki]
+        # MATLAB line 75: Qx(ki) = Qx(ki) * C4(ki)
+        qL_total[ki] = qL_total[ki] * C4[ki]
+
+        # MATLAB line 79: Qpast = Q(ki, tt-1)
+        Qpast = discharge_initial[ki]
+
+        # Check if reach is too short (MATLAB lines 120-130)
+        # For LINEAR routing this should never happen (nt is always 1, never NaN)
+        # But we keep this check for robustness and consistency with MATLAB structure
+        if np.isnan(K[ki]) or K[ki] <= 0:
+            # Reach too short - flow passes directly through
+            if nm > 0:
+                # Sum upstream discharges (MATLAB line 122)
+                upstream_sum = 0.0
+                for upstream_col in ["upstream_1", "upstream_2"]:
+                    upstream_mobidic_id = reach[upstream_col]
+                    if pd.notna(upstream_mobidic_id):
+                        upstream_mobidic_id = int(upstream_mobidic_id)
+                        jj = mobidic_id_to_idx[upstream_mobidic_id]
+                        upstream_sum += discharge_final[jj]
+                discharge_final[ki] = lateral_inflow[ki] + upstream_sum
+            else:
+                # No upstream reaches (MATLAB line 124)
+                discharge_final[ki] = lateral_inflow[ki]
+        else:
+            # Normal routing (MATLAB lines 150-154)
+            # MATLAB line 151: QQ(1,1) = Qx(ki) + C3(ki) * Qpast(1)
+            QQ = qL_total[ki] + C3[ki] * Qpast
+
+            # MATLAB line 154: Q(ki,tt) = QQ(nx(ki), nt(ki))
+            # For LINEAR, nx=1 and nt=1, so this is just QQ(1,1)
+            discharge_final[ki] = QQ
 
     # Check for negative discharges
     negative_mask = discharge_final < 0
