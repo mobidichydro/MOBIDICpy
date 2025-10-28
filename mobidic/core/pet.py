@@ -29,7 +29,7 @@ def calculate_pet(
         pet_rate_mm_day: PET rate [mm/day] (default: 1.0, matching MATLAB)
 
     Returns:
-        Potential evapotranspiration [m] over time step dt
+        Potential evapotranspiration rate [m/s]
 
     Notes:
         - MATLAB default: etp = 1/(1000*3600*24) m/s = 1 mm/day
@@ -48,10 +48,9 @@ def calculate_pet(
     # Convert from mm/day to m/timestep
     # pet_rate_mm_day [mm/day] -> m/s -> m/timestep
     pet_rate_m_s = pet_rate_mm_day / (1000.0 * 86400.0)  # mm/day to m/s
-    pet_m = pet_rate_m_s * dt  # m/s to m over dt
 
     # Create constant PET grid
-    pet = np.full(grid_shape, pet_m, dtype=np.float64)
+    pet = np.full(grid_shape, pet_rate_m_s, dtype=np.float64)
 
     logger.debug(f"Constant PET: {pet_rate_mm_day:.2f} mm/day, {pet[0, 0] * 1000:.4f} mm over {dt / 3600:.2f} hours")
 
