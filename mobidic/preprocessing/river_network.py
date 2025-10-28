@@ -38,12 +38,11 @@ def process_river_network(
 
     Raises:
         FileNotFoundError: If shapefile does not exist
-        ValueError: If id_field is not found in shapefile or network is invalid
+        ValueError: If network is invalid
 
     Examples:
         >>> network = process_river_network(
         ...     "river_network.shp",
-        ...     "REACH_ID",
         ...     routing_params={"wcel": 3.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03}
         ... )
     """
@@ -495,9 +494,6 @@ def _calculate_routing_parameters(network: gpd.GeoDataFrame, params: dict) -> gp
 
     # Calculate lag time: tau = L / wcel
     network["lag_time_s"] = network["length_m"] / wcel
-
-    # Calculate storage coefficient: K = 0.5 * exp(-L/10000)
-    network["storage_coeff"] = 0.5 * np.exp(-network["length_m"] / 10000)
 
     # Store Manning coefficient
     network["n_manning"] = n_Man

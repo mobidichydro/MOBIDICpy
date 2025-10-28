@@ -128,8 +128,7 @@ Processed networks contain the following fields:
 | `calc_order` | int | Calculation order for routing (lower first) |
 | `length_m` | float | Reach length in meters |
 | `width_m` | float | Channel width in meters |
-| `lag_time_s` | float | Lag time in seconds |
-| `storage_coeff` | float | Storage coefficient (dimensionless) |
+| `lag_time_s` | float | Lag time in seconds (used as K in routing) |
 | `n_manning` | float | Manning roughness coefficient |
 
 **Note**: All original shapefile fields are preserved in the output. The `mobidic_id` field is added for internal topology management and is separate from any original ID fields in the shapefile.

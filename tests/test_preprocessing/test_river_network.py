@@ -189,14 +189,12 @@ def test_calculate_routing_parameters(simple_network_gdf):
     assert "length_m" in network.columns
     assert "width_m" in network.columns
     assert "lag_time_s" in network.columns
-    assert "storage_coeff" in network.columns
     assert "n_manning" in network.columns
 
     # Check that values are positive
     assert (network["length_m"] > 0).all()
     assert (network["width_m"] > 0).all()
     assert (network["lag_time_s"] > 0).all()
-    assert (network["storage_coeff"] > 0).all()
     assert (network["n_manning"] == 0.03).all()
 
     # Check width calculation: B = Br0 * order^NBr
@@ -253,7 +251,6 @@ def test_process_river_network_simple(simple_network_gdf, tmp_path):
         "length_m",
         "width_m",
         "lag_time_s",
-        "storage_coeff",
         "n_manning",
         "calc_order",
     ]
