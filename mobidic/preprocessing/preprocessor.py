@@ -46,7 +46,7 @@ def _calculate_slopes(dtm: np.ndarray, grid_size: float, pmin: float = 1e-5) -> 
 
     # Pad DTM with NaN around edges
     dtm_padded = np.full((n + 2, m + 2), np.nan)
-    dtm_padded[1:n + 1, 1:m + 1] = dtm
+    dtm_padded[1 : n + 1, 1 : m + 1] = dtm
 
     # Calculate slopes for each cell
     for i in range(1, n + 1):

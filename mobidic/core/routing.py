@@ -301,7 +301,9 @@ def linear_channel_routing(
                     # Exact translation from MATLAB go_route_ord.m line 70:
                     # Qx(ki) = Qx(ki) + Qx(jj)/C4(jj) + (Qx(jj) - Q(jj,tt-1)*C4(jj))/log(C3(jj))
                     # Note: qL_total[jj] in Python = Qx(jj) in MATLAB (already multiplied by C4)
-                    mean_upstream = qL_total[jj] / C4[jj] + (qL_total[jj] - discharge_initial[jj] * C4[jj]) / np.log(C3[jj])
+                    mean_upstream = qL_total[jj] / C4[jj] + (qL_total[jj] - discharge_initial[jj] * C4[jj]) / np.log(
+                        C3[jj]
+                    )
 
                 qL_total[ki] += mean_upstream
 

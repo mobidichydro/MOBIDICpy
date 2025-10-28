@@ -280,7 +280,6 @@ def soil_mass_balance(
         effective_saturation[effective_saturation > 1] = 1
         remaining_et = remaining_et / (1 + np.exp(et_shape - 10 * effective_saturation))
 
-
     # Standard absorption model
     capillary_absorption = absorption_coeff * (wc0 - wc)
     capillary_absorption = np.minimum.reduce([wg, capillary_absorption, wc0 - wc + remaining_et])
