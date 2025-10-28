@@ -111,7 +111,6 @@ def soil_mass_balance(
     test_mode: bool = False,
     alpsur: NDArray[np.float64] | None = None,
     no_aquifer_indices: NDArray[np.int_] | None = None,
-    assimilation_variable: str = "",
 ) -> tuple[
     NDArray[np.float64],
     NDArray[np.float64],
@@ -168,7 +167,6 @@ def soil_mass_balance(
         test_mode: Enable mass balance checking (default=False)
         alpsur: Surface flow parameter (alpsur*dt) [-]
         no_aquifer_indices: Indices of cells outside aquifer
-        assimilation_variable: Data assimilation variable ('LST' or '')
 
     Returns:
         Tuple containing:
@@ -282,18 +280,10 @@ def soil_mass_balance(
         effective_saturation[effective_saturation > 1] = 1
         remaining_et = remaining_et / (1 + np.exp(et_shape - 10 * effective_saturation))
 
-    # Capillary absorption (Wg -> Wc)
-    if assimilation_variable == "LST":
-        # Absorption approximated by sigmoid function (revised)
-        aaa = 1.0 / (1 + np.exp(1000 * (0.5 - absorption_coeff / wg * (wc0 - wc) - 0.35)))
-        bbb = 1.0 / (1 + np.exp(1000 * (0.5 - absorption_coeff / wg * (wc0 - wc) - 0.5)))
-        capillary_absorption = (
-            wg / (1 + np.exp(2.5 - 5 * absorption_coeff / wg * (wc0 - wc)))
-        ) * aaa + absorption_coeff * (wc0 - wc) * (1 - aaa) * bbb
-    else:
-        # Standard absorption model
-        capillary_absorption = absorption_coeff * (wc0 - wc)
-        capillary_absorption = np.minimum.reduce([wg, capillary_absorption, wc0 - wc + remaining_et])
+
+    # Standard absorption model
+    capillary_absorption = absorption_coeff * (wc0 - wc)
+    capillary_absorption = np.minimum.reduce([wg, capillary_absorption, wc0 - wc + remaining_et])
 
     # Store Wg before absorption (for data assimilation)
     wg_before_absorption = wg.copy()

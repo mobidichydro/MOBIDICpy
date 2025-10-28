@@ -457,7 +457,7 @@ class Simulation:
         param_grids["cha"] = np.where(param_grids["cha"] > 0, param_grids["cha"], 0.0)
 
         # Surface flow parameter alpsur [m/s]
-        param_grids["alpsur"] = self.alpsur 
+        param_grids["alpsur"] = self.alpsur * param_grids["alpha"]
 
         return param_grids
 
