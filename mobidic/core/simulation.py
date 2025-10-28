@@ -177,7 +177,7 @@ class Simulation:
         # Flow direction type from config
         self.flow_dir_type = config.raster_settings.flow_dir_type
 
-        # Extract grids
+        # Extract grids from gisdata
         self.dtm = gisdata.grids["dtm"]
         self.flow_dir = gisdata.grids["flow_dir"]
         self.flow_acc = gisdata.grids["flow_acc"]
@@ -204,6 +204,9 @@ class Simulation:
 
         # Time step
         self.dt = config.simulation.timestep
+
+        # Prepare parameter grids
+        self.param_grids = self._prepare_grids()
 
         # Initialize state
         self.state = None
@@ -520,9 +523,6 @@ class Simulation:
         # Initialize state
         self.state = self._initial_state()
 
-        # Get grids
-        soil_params = self._prepare_grids()
-
         # Initialize results container
         results = SimulationResults(self.config, simulation=self)
         discharge_ts = []
@@ -540,6 +540,8 @@ class Simulation:
 
         # Create ko mask: contributing pixels only (matching MATLAB mobidic_sid.m:224)
         # ko = find(isfinite(zz) & (ch>0));  % contributing pixels
+        konoch = np.isfinite(self.dtm) 
+        konoch_indices = np.where(konoch.ravel())[0]
         ko_mask = np.isfinite(self.dtm) & (self.hillslope_reach_map > 0)
         ko_indices = np.where(ko_mask.ravel())[0]
         n_ko = len(ko_indices)
@@ -604,15 +606,16 @@ class Simulation:
             wg0_flat = self.wg0.ravel()[ko_indices]
             wtot0_flat = wtot0.ravel()[ko_indices]
             precip_flat = precip_depth.ravel()[ko_indices]
-            pet_flat = pet.ravel()[ko_indices]
-            ks_flat = soil_params["ks"].ravel()[ko_indices]
-            gamma_flat = soil_params["gamma"].ravel()[ko_indices]
-            kappa_flat = soil_params["kappa"].ravel()[ko_indices]
-            beta_flat = soil_params["beta"].ravel()[ko_indices]
-            alpha_flat = soil_params["alpha"].ravel()[ko_indices]
-            cha_flat = soil_params["cha"].ravel()[ko_indices]
-            f0_flat = soil_params["f0"].ravel()[ko_indices]
-            alpsur_flat = soil_params["alpsur"].ravel()[ko_indices]
+            pet_flat = pet.ravel()[ko_indices] * self.dt
+            # Multiply rate parameters by dt (matching MATLAB mobidic_sid.m:1681-1682)
+            ks_flat = self.param_grids["ks"].ravel()[ko_indices] * self.dt
+            gamma_flat = self.param_grids["gamma"].ravel()[ko_indices] * self.dt
+            kappa_flat = self.param_grids["kappa"].ravel()[ko_indices] * self.dt
+            beta_flat = self.param_grids["beta"].ravel()[ko_indices] * self.dt
+            alpha_flat = self.param_grids["alpha"].ravel()[ko_indices] * self.dt
+            cha_flat = self.param_grids["cha"].ravel()[ko_indices]
+            f0_flat = self.param_grids["f0"].ravel()[ko_indices]
+            alpsur_flat = self.param_grids["alpsur"].ravel()[ko_indices] * self.dt
 
             # Prepare routed flows from previous timestep (matching MATLAB mobidic_sid.m:1680)
             # Convert from [m/s] to [m] by multiplying by dt
@@ -620,7 +623,7 @@ class Simulation:
             pid_flat = pid.ravel()[ko_indices] * self.dt
 
             # Call soil_mass_balance with flattened arrays
-            # Pre-multiply parameters by dt (already done in _soil_parameters_to_grids)
+            # Parameters have been pre-multiplied by dt above (lines 609-612, 616)
             (
                 wc_out_flat,
                 wg_out_flat,
@@ -697,10 +700,10 @@ class Simulation:
             flr_discharge = flr * cell_area
             lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
 
-            # CRITICAL: Zero out flr ONLY for cells directly ON channels (matching MATLAB glob_route_day.m line 33)
-            # This prevents double-counting - flows from channel cells are consumed and don't route to next timestep
-            # Hillslope cells keep their flr and it routes gradually toward channels over multiple timesteps
-            flr[self.channel_mask] = 0.0
+            # CRITICAL: Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
+            # MATLAB behavior: pir(k)=0 where k=find(ch==i), i.e., ALL cells that drain to reach i
+            # This prevents double-counting - flows from all contributing cells are consumed after accumulation
+            flr[self.hillslope_reach_map >= 0] = 0.0
             # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
 
             # Store flr and fld for next timestep's routing (at step 3)
