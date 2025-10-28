@@ -187,10 +187,6 @@ class Simulation:
         self.alpsur = gisdata.grids["alpsur"]
         self.hillslope_reach_map = gisdata.hillslope_reach_map
 
-        # Create channel mask
-        # See glob_route_day.m line 24-35
-        self.channel_mask = self._create_channel_mask(gisdata.network)
-
         # Optional grids
         # These may be None if not provided: use get() to avoid KeyError
         self.kf = gisdata.grids.get("kf")
@@ -215,37 +211,6 @@ class Simulation:
             f"Simulation initialized: grid={self.nrows}x{self.ncols}, "
             f"dt={self.dt}s, network={len(self.network)} reaches"
         )
-
-    def _create_channel_mask(self, network) -> np.ndarray:
-        """Create a boolean mask identifying cells that are directly ON river channels.
-
-        This is distinct from hillslope_reach_map which identifies which reach each cell
-        drains to (including hillslope cells). Only cells ON channels should have their
-        flow zeroed after contributing to channels (matching MATLAB glob_route_day.m line 33).
-
-        Args:
-            network: River network GeoDataFrame with 'hillslope_cells' column
-
-        Returns:
-            Boolean array (nrows x ncols) where True = cell is ON a channel
-        """
-        logger.debug("Creating channel mask from network hillslope_cells")
-
-        channel_mask = np.zeros((self.nrows, self.ncols), dtype=bool)
-
-        for _, row in network.iterrows():
-            if "hillslope_cells" in row and isinstance(row["hillslope_cells"], (list, np.ndarray)):
-                for cell_idx in row["hillslope_cells"]:
-                    if not np.isnan(cell_idx):
-                        # Convert linear index to 2D coordinates
-                        i, j = divmod(int(cell_idx), self.ncols)
-                        if 0 <= i < self.nrows and 0 <= j < self.ncols:
-                            channel_mask[i, j] = True
-
-        n_channel_cells = np.sum(channel_mask)
-        logger.success(f"Channel mask created: {n_channel_cells} cells directly on channels")
-
-        return channel_mask
 
     def _initial_state(self) -> SimulationState:
         """Initialize the initial simulation state variables with initial conditions from configuration.
@@ -479,8 +444,8 @@ class Simulation:
         lateral_inflow = np.zeros(n_reaches)
 
         # Flatten lateral flow and hillslope-reach mapping
-        lateral_flow_flat = lateral_flow.ravel('F')
-        hillslope_map_flat = self.hillslope_reach_map.ravel('F')
+        lateral_flow_flat = lateral_flow.ravel("F")
+        hillslope_map_flat = self.hillslope_reach_map.ravel("F")
 
         # Sum lateral flow for each reach
         # MATLAB: ko = find(isfinite(zz) & (ch>0)); % contributing pixels
@@ -541,10 +506,10 @@ class Simulation:
         # Create ko mask: contributing pixels only (matching MATLAB mobidic_sid.m:224)
         # konoch  = find(isfinite(zz));      % pixels within the basin
         # ko = find(isfinite(zz) & (ch>0));  % contributing pixels
-        konoch = np.isfinite(self.dtm) 
-        konoch = np.where(konoch.ravel('F'))[0] # Column-major "Fortran" order to match MATLAB linear indexing
+        konoch = np.isfinite(self.dtm)
+        konoch = np.where(konoch.ravel("F"))[0]  # Column-major "Fortran" order to match MATLAB linear indexing
         ko = np.isfinite(self.dtm) & (self.hillslope_reach_map > 0)
-        ko = np.where(ko.ravel('F'))[0]
+        ko = np.where(ko.ravel("F"))[0]
         logger.info(f"Contributing pixels (ko): {len(ko)} of {self.nrows * self.ncols} total cells")
 
         # Initialize flow variables for hillslope routing feedback (matching MATLAB mobidic_sid.m:1621-1625)
@@ -592,35 +557,34 @@ class Simulation:
 
             # Flatten 2D arrays to 1D (MATLAB: uses linear indexing with ko)
             # Extract only contributing pixels (ko) for processing (matching MATLAB mobidic_sid.m:733-736)
-            wc_flat_full = self.state.wc.ravel('F')
-            wg_flat_full = self.state.wg.ravel('F')
-            wp_flat_full = self.state.wp.ravel('F') if self.state.wp is not None else None
-            ws_flat_full = self.state.ws.ravel('F')
+            wc_flat_full = self.state.wc.ravel("F")
+            wg_flat_full = self.state.wg.ravel("F")
+            wp_flat_full = self.state.wp.ravel("F") if self.state.wp is not None else None
+            ws_flat_full = self.state.ws.ravel("F")
 
             # Extract ko cells only (matching MATLAB: Wc_ko = Wc(ko))
             wc_flat = wc_flat_full[ko]
             wg_flat = wg_flat_full[ko]
             wp_flat = wp_flat_full[ko] if wp_flat_full is not None else None
             ws_flat = ws_flat_full[ko]
-            wc0_flat = self.wc0.ravel('F')[ko]
-            wg0_flat = self.wg0.ravel('F')[ko]
-            wtot0_flat = wtot0.ravel('F')[ko]
-            precip_flat = precip_depth.ravel('F')[ko]
-            pet_flat = pet.ravel('F')[ko] * self.dt
+            wc0_flat = self.wc0.ravel("F")[ko]
+            wg0_flat = self.wg0.ravel("F")[ko]
+            wtot0_flat = wtot0.ravel("F")[ko]
+            precip_flat = precip_depth.ravel("F")[ko]
+            pet_flat = pet.ravel("F")[ko] * self.dt
             # Multiply rate parameters by dt (matching MATLAB mobidic_sid.m:1681-1682)
-            ks_flat = self.param_grids["ks"].ravel('F')[ko] * self.dt
-            gamma_flat = self.param_grids["gamma"].ravel('F')[ko] * self.dt
-            kappa_flat = self.param_grids["kappa"].ravel('F')[ko] * self.dt
-            beta_flat = self.param_grids["beta"].ravel('F')[ko] * self.dt
-            alpha_flat = self.param_grids["alpha"].ravel('F')[ko] * self.dt
-            cha_flat = self.param_grids["cha"].ravel('F')[ko]
-            f0_flat = self.param_grids["f0"].ravel('F')[ko]
-            alpsur_flat = self.param_grids["alpsur"].ravel('F')[ko] * self.dt
+            ks_flat = self.param_grids["ks"].ravel("F")[ko] * self.dt
+            gamma_flat = self.param_grids["gamma"].ravel("F")[ko] * self.dt
+            kappa_flat = self.param_grids["kappa"].ravel("F")[ko] * self.dt
+            beta_flat = self.param_grids["beta"].ravel("F")[ko] * self.dt
+            cha_flat = self.param_grids["cha"].ravel("F")[ko]
+            f0_flat = self.param_grids["f0"].ravel("F")[ko]
+            alpsur_flat = self.param_grids["alpsur"].ravel("F")[ko] * self.dt
 
             # Prepare routed flows from previous timestep (matching MATLAB mobidic_sid.m:1680)
             # Convert from [m/s] to [m] by multiplying by dt
-            pir_flat = pir.ravel('F')[ko] * self.dt
-            pid_flat = pid.ravel('F')[ko] * self.dt
+            pir_flat = pir.ravel("F")[ko] * self.dt
+            pid_flat = pid.ravel("F")[ko] * self.dt
 
             # Call soil_mass_balance with flattened arrays
             # Parameters have been pre-multiplied by dt above (lines 609-612, 616)
@@ -675,19 +639,21 @@ class Simulation:
             surface_runoff_full = np.full(self.nrows * self.ncols, np.nan)
             lateral_flow_depth_full = np.full(self.nrows * self.ncols, np.nan)
             # Set non-ko cells within basin to zero
-            surface_runoff_full[np.isfinite(self.dtm.ravel('F'))] = 0.0
-            lateral_flow_depth_full[np.isfinite(self.dtm.ravel('F'))] = 0.0
+            surface_runoff_full[np.isfinite(self.dtm.ravel("F"))] = 0.0
+            lateral_flow_depth_full[np.isfinite(self.dtm.ravel("F"))] = 0.0
             # Update ko cells with computed values
             surface_runoff_full[ko] = surface_runoff_flat
             lateral_flow_depth_full[ko] = lateral_flow_depth_flat
 
             # Reshape outputs back to 2D (Fortran order to match MATLAB)
-            self.state.wc = wc_flat_full.reshape((self.nrows, self.ncols), order='F')
-            self.state.wg = wg_flat_full.reshape((self.nrows, self.ncols), order='F')
-            self.state.wp = wp_flat_full.reshape((self.nrows, self.ncols), order='F') if wp_flat_full is not None else None
-            self.state.ws = ws_flat_full.reshape((self.nrows, self.ncols), order='F')
-            surface_runoff = surface_runoff_full.reshape((self.nrows, self.ncols), order='F')
-            lateral_flow_depth = lateral_flow_depth_full.reshape((self.nrows, self.ncols), order='F')
+            self.state.wc = wc_flat_full.reshape((self.nrows, self.ncols), order="F")
+            self.state.wg = wg_flat_full.reshape((self.nrows, self.ncols), order="F")
+            self.state.wp = (
+                wp_flat_full.reshape((self.nrows, self.ncols), order="F") if wp_flat_full is not None else None
+            )
+            self.state.ws = ws_flat_full.reshape((self.nrows, self.ncols), order="F")
+            surface_runoff = surface_runoff_full.reshape((self.nrows, self.ncols), order="F")
+            lateral_flow_depth = lateral_flow_depth_full.reshape((self.nrows, self.ncols), order="F")
 
             # 5. Convert outputs from depth [m] to rate [m/s] (matching MATLAB mobidic_sid.m:1684)
             # flr: surface runoff rate [m/s] - analogous to MATLAB flr after division by dt
@@ -700,7 +666,7 @@ class Simulation:
             flr_discharge = flr * cell_area
             lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
 
-            # CRITICAL: Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
+            # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
             # MATLAB behavior: pir(k)=0 where k=find(ch==i), i.e., ALL cells that drain to reach i
             # This prevents double-counting - flows from all contributing cells are consumed after accumulation
             flr[self.hillslope_reach_map >= 0] = 0.0
