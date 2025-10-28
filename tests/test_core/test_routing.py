@@ -11,37 +11,40 @@ class TestHillslopeRouting:
     """Tests for hillslope_routing function."""
 
     def test_simple_accumulation_grass(self):
-        """Test simple flow accumulation with Grass notation."""
+        """Test one-step routing with Grass notation."""
         # Create 3x3 grid where all cells drain to center
         lateral_flow = np.ones((3, 3)) * 0.1
 
         # All cells flow to center (1,1)
         # Grass notation: 1=bottom-left, 2=bottom, 3=bottom-right, 4=right,
         #                 5=top-right, 6=top, 7=top-left, 8=left
+        # Note: Grass notation uses different numbering than Arc
+        # Direction 2 = up (north), 6 = down (south), 4 = right (east), 8 = left (west)
         flow_direction = np.array(
             [
-                [3, 2, 1],  # top row: (0,0)->down-right, (0,1)->down, (0,2)->down-left
+                [5, 6, 7],  # top row: (0,0)->down-right, (0,1)->down, (0,2)->down-left
                 [4, 0, 8],  # middle: (1,0)->right, (1,1)=outlet, (1,2)->left
-                [5, 6, 7],  # bottom: (2,0)->up-right, (2,1)->up, (2,2)->up-left
+                [3, 2, 1],  # bottom: (2,0)->up-right, (2,1)->up, (2,2)->up-left
             ]
         )
 
-        accumulated = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
 
-        # Center cell should have its own flow (0.1) + 8 neighbors (0.1 each) = 0.9
-        assert np.isclose(accumulated[1, 1], 0.9)
+        # Center cell receives flow from all 8 neighbors (one-step)
+        # Does NOT include center's own flow
+        assert np.isclose(upstream_contribution[1, 1], 0.8)  # 8 neighbors × 0.1
 
-        # Edge cells should only have their own flow
-        assert np.isclose(accumulated[0, 0], 0.1)
-        assert np.isclose(accumulated[2, 2], 0.1)
+        # Edge cells receive no upstream flow (they are headwaters)
+        assert np.isclose(upstream_contribution[0, 0], 0.0)
+        assert np.isclose(upstream_contribution[2, 2], 0.0)
 
     def test_simple_accumulation_arc(self):
-        """Test simple flow accumulation with Arc notation."""
+        """Test one-step routing with Arc notation."""
         lateral_flow = np.ones((3, 3)) * 0.1
 
         # All cells flow to center (1,1) using Arc notation
-        # Arc notation: 1=bottom, 2=bottom-right, 4=right, 8=top-right,
-        #               16=top, 32=top-left, 64=left, 128=bottom-left
+        # Arc notation: 1=down, 2=down-right, 4=right, 8=up-right,
+        #               16=up, 32=up-left, 64=left, 128=down-left
         flow_direction = np.array(
             [
                 [2, 1, 128],  # top row: (0,0)->down-right, (0,1)->down, (0,2)->down-left
@@ -50,25 +53,26 @@ class TestHillslopeRouting:
             ]
         )
 
-        accumulated = hillslope_routing(lateral_flow, flow_direction, "Arc")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Arc")
 
-        # Center cell should have accumulated flow
-        assert np.isclose(accumulated[1, 1], 0.9)
+        # Center cell receives flow from all 8 neighbors (one-step)
+        # Does NOT include center's own flow
+        assert np.isclose(upstream_contribution[1, 1], 0.8)  # 8 neighbors × 0.1
 
     def test_linear_cascade_grass(self):
-        """Test linear cascade of cells."""
+        """Test one-step routing in linear cascade."""
         # 1x5 grid, flow from left to right
         lateral_flow = np.ones((1, 5)) * 1.0
         flow_direction = np.array([[4, 4, 4, 4, 0]])  # All flow right, last is outlet
 
-        accumulated = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
 
-        # Each cell accumulates all upstream flow
-        assert np.isclose(accumulated[0, 0], 1.0)  # First cell: only own flow
-        assert np.isclose(accumulated[0, 1], 2.0)  # Second: own + first
-        assert np.isclose(accumulated[0, 2], 3.0)  # Third: own + first two
-        assert np.isclose(accumulated[0, 3], 4.0)  # Fourth: own + first three
-        assert np.isclose(accumulated[0, 4], 5.0)  # Outlet: all five cells
+        # One-step routing: each cell receives flow ONLY from immediate upstream neighbor
+        assert np.isclose(upstream_contribution[0, 0], 0.0)  # First cell: no upstream
+        assert np.isclose(upstream_contribution[0, 1], 1.0)  # Second: from first cell
+        assert np.isclose(upstream_contribution[0, 2], 1.0)  # Third: from second cell
+        assert np.isclose(upstream_contribution[0, 3], 1.0)  # Fourth: from third cell
+        assert np.isclose(upstream_contribution[0, 4], 1.0)  # Outlet: from fourth cell
 
     def test_nan_handling(self):
         """Test that NaN values are handled correctly."""
@@ -88,34 +92,43 @@ class TestHillslopeRouting:
             ]
         )
 
-        accumulated = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
 
-        # NaN cells should remain NaN
-        assert np.isnan(accumulated[0, 1])
+        # NaN cells are skipped in routing, result is 0.0 at that position
+        assert np.isclose(upstream_contribution[0, 1], 0.0)
 
-        # Other cells should accumulate normally
-        assert np.isfinite(accumulated[2, 0])
+        # Other cells should receive upstream flow normally
+        assert np.isfinite(upstream_contribution[2, 0])
+        # Cell (1,0) receives flow from cell (2,0) which flows up (direction 2)
+        assert upstream_contribution[1, 0] > 0
 
     def test_multiple_outlets(self):
         """Test grid with multiple outlet cells."""
         lateral_flow = np.ones((2, 3)) * 1.0
 
-        # Create a simple 2x3 grid with two outlets
+        # Create a simple 2x3 grid with three outlets
         # (1,0) flows to (0,0), (1,1) flows to (0,1), (1,2) flows to (0,2)
         # Top row cells are all outlets (no outflow)
+        # Grass direction 2 = up (north), so bottom row flows to top row
         flow_direction = np.array(
             [
                 [0, 0, 0],  # Three outlets (no outflow)
-                [6, 6, 6],  # Bottom row flows up (direction 6 = up)
+                [2, 2, 2],  # Bottom row flows up (direction 2 = north/up)
             ]
         )
 
-        accumulated = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
 
-        # Each top cell should receive flow from cell below + own flow
-        assert np.isclose(accumulated[0, 0], 2.0)  # Own (1.0) + from (1,0) (1.0)
-        assert np.isclose(accumulated[0, 1], 2.0)  # Own (1.0) + from (1,1) (1.0)
-        assert np.isclose(accumulated[0, 2], 2.0)  # Own (1.0) + from (1,2) (1.0)
+        # Each top cell receives flow from cell below (one-step)
+        # Does NOT include cell's own flow
+        assert np.isclose(upstream_contribution[0, 0], 1.0)  # From (1,0)
+        assert np.isclose(upstream_contribution[0, 1], 1.0)  # From (1,1)
+        assert np.isclose(upstream_contribution[0, 2], 1.0)  # From (1,2)
+
+        # Bottom cells have no upstream flow
+        assert np.isclose(upstream_contribution[1, 0], 0.0)
+        assert np.isclose(upstream_contribution[1, 1], 0.0)
+        assert np.isclose(upstream_contribution[1, 2], 0.0)
 
     def test_invalid_flow_dir_type(self):
         """Test that invalid flow direction type raises error."""

@@ -195,8 +195,9 @@ class TestMATMeteoReaderIntegration:
         assert len(meteo_data.stations["precipitation"]) == 223
 
         # Check date range is correct for Arno example
+        # Data starts on 2023-10-31 00:15:00 and ends on 2023-11-04 23:45:00
         assert meteo_data.start_date.year == 2023
-        assert meteo_data.start_date.month == 11
+        assert meteo_data.start_date.month == 10
         assert meteo_data.end_date.year == 2023
 
 
