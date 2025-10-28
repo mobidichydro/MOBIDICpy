@@ -667,7 +667,6 @@ class Simulation:
             lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
 
             # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
-            # MATLAB behavior: pir(k)=0 where k=find(ch==i), i.e., ALL cells that drain to reach i
             # This prevents double-counting - flows from all contributing cells are consumed after accumulation
             flr[self.hillslope_reach_map >= 0] = 0.0
             # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
