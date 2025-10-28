@@ -147,7 +147,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan],
                 "downstream": [np.nan],
                 "calc_order": [0],
-                "storage_coeff": [3600.0],
+                "lag_time_s": [3600.0],
                 "geometry": [LineString([(0, 0), (1, 1)])],
             }
         )
@@ -178,7 +178,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan, np.nan],
                 "downstream": [1, np.nan],
                 "calc_order": [0, 1],
-                "storage_coeff": [3600.0, 7200.0],  # K = 1h and 2h
+                "lag_time_s": [3600.0, 7200.0],  # K = 1h and 2h
                 "geometry": [
                     LineString([(0, 0), (1, 1)]),
                     LineString([(1, 1), (2, 2)]),
@@ -216,7 +216,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan, np.nan, 1],
                 "downstream": [2, 2, np.nan],
                 "calc_order": [0, 0, 1],
-                "storage_coeff": [3600.0, 3600.0, 7200.0],
+                "lag_time_s": [3600.0, 3600.0, 7200.0],
                 "geometry": [
                     LineString([(0, 0), (1, 1)]),
                     LineString([(0, 2), (1, 1)]),
@@ -245,7 +245,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan],
                 "downstream": [np.nan],
                 "calc_order": [0],
-                "storage_coeff": [3600.0],
+                "lag_time_s": [3600.0],
                 "geometry": [LineString([(0, 0), (1, 1)])],
             }
         )
@@ -260,8 +260,8 @@ class TestLinearChannelRouting:
         expected_Q = Q_init[0] * np.exp(-dt / 3600.0)
         assert np.isclose(Q_final[0], expected_Q)
 
-    def test_very_large_storage_coeff(self):
-        """Test routing with very large storage coefficient (slow recession)."""
+    def test_very_large_lag_time(self):
+        """Test routing with very large lag time (slow recession)."""
         network = gpd.GeoDataFrame(
             {
                 "mobidic_id": [0],
@@ -269,7 +269,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan],
                 "downstream": [np.nan],
                 "calc_order": [0],
-                "storage_coeff": [1e10],  # Very large K
+                "lag_time_s": [1e10],  # Very large K
                 "geometry": [LineString([(0, 0), (1, 1)])],
             }
         )
@@ -284,8 +284,8 @@ class TestLinearChannelRouting:
         # So Q_final ≈ Q_init
         assert np.isclose(Q_final[0], Q_init[0], rtol=0.01)
 
-    def test_very_small_storage_coeff(self):
-        """Test routing with very small storage coefficient (fast recession)."""
+    def test_very_small_lag_time(self):
+        """Test routing with very small lag time (fast recession)."""
         network = gpd.GeoDataFrame(
             {
                 "mobidic_id": [0],
@@ -293,7 +293,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan],
                 "downstream": [np.nan],
                 "calc_order": [0],
-                "storage_coeff": [1.0],  # Very small K
+                "lag_time_s": [1.0],  # Very small K
                 "geometry": [LineString([(0, 0), (1, 1)])],
             }
         )
@@ -325,8 +325,8 @@ class TestLinearChannelRouting:
         with pytest.raises(ValueError, match="missing required columns"):
             linear_channel_routing(network, Q_init, qL, dt)
 
-    def test_missing_storage_coeff_column(self):
-        """Test that missing storage coefficient column raises error."""
+    def test_missing_lag_time_column(self):
+        """Test that missing lag_time_s column raises error."""
         network = gpd.GeoDataFrame(
             {
                 "mobidic_id": [0],
@@ -342,31 +342,8 @@ class TestLinearChannelRouting:
         qL = np.array([2.0])
         dt = 900.0
 
-        with pytest.raises(ValueError, match="Storage coefficient column"):
+        with pytest.raises(ValueError, match="missing required columns"):
             linear_channel_routing(network, Q_init, qL, dt)
-
-    def test_custom_storage_coeff_column(self):
-        """Test using custom storage coefficient column name."""
-        network = gpd.GeoDataFrame(
-            {
-                "mobidic_id": [0],
-                "upstream_1": [np.nan],
-                "upstream_2": [np.nan],
-                "downstream": [np.nan],
-                "calc_order": [0],
-                "K_custom": [3600.0],
-                "geometry": [LineString([(0, 0), (1, 1)])],
-            }
-        )
-
-        Q_init = np.array([10.0])
-        qL = np.array([2.0])
-        dt = 900.0
-
-        Q_final, state = linear_channel_routing(network, Q_init, qL, dt, storage_coeff="K_custom")
-
-        # Should work with custom column name
-        assert Q_final[0] > 0
 
     def test_array_length_mismatch(self):
         """Test that array length mismatch raises error."""
@@ -377,7 +354,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan, np.nan],
                 "downstream": [1, np.nan],
                 "calc_order": [0, 1],
-                "storage_coeff": [3600.0, 7200.0],
+                "lag_time_s": [3600.0, 7200.0],
                 "geometry": [
                     LineString([(0, 0), (1, 1)]),
                     LineString([(1, 1), (2, 2)]),
@@ -401,7 +378,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan],
                 "downstream": [np.nan],
                 "calc_order": [0],
-                "storage_coeff": [3600.0],
+                "lag_time_s": [3600.0],
                 "geometry": [LineString([(0, 0), (1, 1)])],
             }
         )
@@ -423,7 +400,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan, np.nan],
                 "downstream": [1, np.nan],
                 "calc_order": [0, 1],
-                "storage_coeff": [3600.0, 3600.0],
+                "lag_time_s": [3600.0, 3600.0],
                 "geometry": [
                     LineString([(0, 0), (1, 1)]),
                     LineString([(1, 1), (2, 2)]),
@@ -455,7 +432,7 @@ class TestLinearChannelRouting:
                 "upstream_2": [np.nan, np.nan],
                 "downstream": [np.nan, 0],
                 "calc_order": [1, 0],  # 1 is processed before 0
-                "storage_coeff": [3600.0, 3600.0],
+                "lag_time_s": [3600.0, 3600.0],
                 "geometry": [
                     LineString([(1, 1), (2, 2)]),
                     LineString([(0, 0), (1, 1)]),

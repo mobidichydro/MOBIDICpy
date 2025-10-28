@@ -69,7 +69,7 @@ def hillslope_routing(
         ...                            [3, 2, 1]])  # all 8 neighbors drain to center
         >>> upstream = hillslope_routing(lateral_flow, flow_direction, "Grass")
         >>> upstream[1, 1]  # Center receives flow from all 8 neighbors (one-step)
-        0.8  # 8 neighbors × 0.1 m³/s each = 0.8 m³/s (does NOT include center's own 0.1)
+        0.8  # 8 neighbors x 0.1 m³/s each = 0.8 m³/s (does NOT include center's own 0.1)
     """
     logger.debug(f"Starting hillslope routing with flow_dir_type={flow_dir_type}, grid shape={lateral_flow.shape}")
 
@@ -160,7 +160,6 @@ def linear_channel_routing(
     discharge_initial: np.ndarray,
     lateral_inflow: np.ndarray,
     dt: float,
-    storage_coeff: str | None = None,
 ) -> tuple[np.ndarray, dict]:
     """
     Route water through river network using linear reservoir method.
@@ -175,7 +174,7 @@ def linear_channel_routing(
     Where:
         C3 = exp(-dt/K)  [recession coefficient]
         C4 = 1 - C3      [lateral inflow coefficient]
-        K = storage coefficient [s]
+        K = lag_time_s [s] (lag time used as storage coefficient)
         qL = lateral inflow + integrated upstream contributions [m³/s]
 
     Args:
@@ -184,14 +183,12 @@ def linear_channel_routing(
             - upstream_1, upstream_2: Upstream reach IDs (NaN if none)
             - downstream: Downstream reach ID (NaN if outlet)
             - calc_order: Calculation order (lower values processed first)
-            - storage_coeff or {storage_coeff}: Storage coefficient K [s]
+            - lag_time_s: Lag time [s] (used as storage coefficient K)
         discharge_initial: Initial discharge for each reach [m³/s].
             Shape: (n_reaches,). Indexed by mobidic_id.
         lateral_inflow: Lateral inflow to each reach during this time step [m³/s].
             Shape: (n_reaches,). Indexed by mobidic_id.
         dt: Time step duration [s].
-        storage_coeff: Name of column containing storage coefficient [s].
-            If None, uses 'storage_coeff'. Can also specify custom column name.
 
     Returns:
         Tuple containing:
@@ -220,7 +217,7 @@ def linear_channel_routing(
         ...     'upstream_2': [np.nan, np.nan],
         ...     'downstream': [1, np.nan],
         ...     'calc_order': [0, 1],
-        ...     'storage_coeff': [3600.0, 7200.0],  # 1 hour and 2 hours
+        ...     'lag_time_s': [3600.0, 7200.0],  # 1 hour and 2 hours
         ...     'geometry': [...]
         ... })
         >>> Q_init = np.array([10.0, 5.0])  # m³/s
@@ -230,16 +227,10 @@ def linear_channel_routing(
     logger.debug(f"Starting linear channel routing for {len(network)} reaches, dt={dt}s")
 
     # Validate inputs
-    required_cols = ["mobidic_id", "upstream_1", "upstream_2", "downstream", "calc_order"]
+    required_cols = ["mobidic_id", "upstream_1", "upstream_2", "downstream", "calc_order", "lag_time_s"]
     missing_cols = [col for col in required_cols if col not in network.columns]
     if missing_cols:
         raise ValueError(f"Network missing required columns: {missing_cols}")
-
-    # Get storage coefficient column
-    if storage_coeff is None:
-        storage_coeff = "storage_coeff"
-    if storage_coeff not in network.columns:
-        raise ValueError(f"Storage coefficient column '{storage_coeff}' not found in network")
 
     n_reaches = len(network)
 
@@ -260,8 +251,8 @@ def linear_channel_routing(
     discharge_final = np.zeros(n_reaches)
     qL_total = lateral_inflow.copy()
 
-    # Calculate routing coefficients for all reaches
-    K = network[storage_coeff].values
+    # Calculate routing coefficients for all reaches using lag_time_s as K
+    K = network["lag_time_s"].values
     C3 = np.exp(-dt / K)  # Recession coefficient
     C4 = 1 - C3  # Lateral inflow coefficient
 
@@ -285,7 +276,8 @@ def linear_channel_routing(
                 jj = mobidic_id_to_idx[upstream_mobidic_id]  # Get DataFrame index for upstream reach
 
                 # Compute mean integral of upstream discharge over time step
-                # Formula from MATLAB: Qx(jj)/C4(jj) + (Qx(jj)-Q(jj,t-1)*C4(jj))/log(C3(jj))
+                # Formula from MATLAB go_route_ord.m line 70 (simplified for LINEAR routing):
+                # mean = qL_total + C4 * (qL_total - Q_initial) / log(C3)
                 # This integrates the exponential decay from upstream reach
 
                 if C3[jj] == 1.0:
@@ -300,8 +292,10 @@ def linear_channel_routing(
                     # General case: compute integral mean
                     # ∫[Q(t)] dt from 0 to dt where Q(t) = C3^(t/dt) * Q(0) + (1-C3^(t/dt)) * qL
                     # After integration and division by dt:
-                    term1 = qL_total[jj] / C4[jj]
-                    term2 = (qL_total[jj] - discharge_initial[jj] * C4[jj]) / np.log(C3[jj])
+                    # Formula from MATLAB go_route_ord.m line 70:
+                    # mean = qL_total + C4 * (qL_total - Q_initial) / log(C3)
+                    term1 = qL_total[jj]
+                    term2 = C4[jj] * (qL_total[jj] - discharge_initial[jj]) / np.log(C3[jj])
                     mean_upstream = term1 + term2
 
                 qL_total[ki] += mean_upstream

@@ -72,7 +72,6 @@ def sample_network():
             "length_m": [1000.0, 1200.0, 1500.0],
             "width_m": [1.0, 1.0, 2.83],
             "lag_time_s": [200.0, 240.0, 300.0],
-            "storage_coeff": [0.45, 0.44, 0.43],
             "n_manning": [0.03, 0.03, 0.03],
             "calc_order": [1, 1, 2],
         },
