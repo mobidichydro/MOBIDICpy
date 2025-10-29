@@ -247,11 +247,13 @@ def main():
 
         # Add R² text inside the plot
         ax_scatter.text(
-            0.05, 0.95, f"R² = {metrics['R2']:.3f}",
+            0.05,
+            0.95,
+            f"R² = {metrics['R2']:.3f}",
             transform=ax_scatter.transAxes,
             fontsize=10,
-            verticalalignment='top',
-            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
+            verticalalignment="top",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
         )
 
         # Make scatter plot square
