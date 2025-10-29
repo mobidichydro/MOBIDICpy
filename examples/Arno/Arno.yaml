@@ -332,9 +332,16 @@ output_states_settings:
   # [one among the following options: 'netCDF' (default)]
   output_format: netCDF
 
-  # OPTIONAL: Time interval for state output, in seconds
+  # OPTIONAL: Which time steps to save
+  # [one among the following options: 'all' (default), 'final', 'list']
+  output_states: final
+
+  # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
   output_interval:
+
+  # OPTIONAL: List of time steps to save, as integers. Used with output_states=list.
+  output_list: []
 
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
@@ -343,7 +350,7 @@ output_report:
 
   # OPTIONAL: Option to save lateral inflow hydrograph at selected reach IDs
   # [boolean]
-  lateral_inflow: false
+  lateral_inflow: true
   
 output_report_settings:
   # OPTIONAL: Format for report output files

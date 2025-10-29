@@ -131,6 +131,70 @@ class SimulationResults:
             add_metadata=add_metadata,
         )
 
+    def save_lateral_inflow_report(
+        self,
+        output_path: str | Path,
+        reach_selection: str = "all",
+        selected_reaches: list[int] | None = None,
+    ) -> None:
+        """Save lateral inflow time series to Parquet file.
+
+        Args:
+            output_path: Path to output Parquet file
+            reach_selection: "all", "outlets", or "list"
+            selected_reaches: List of reach IDs (if reach_selection="list")
+        """
+        if "lateral_inflow" not in self.time_series:
+            raise ValueError("No lateral inflow data to save. Run simulation first.")
+
+        if self.simulation is None:
+            raise ValueError("Cannot save lateral inflow report without simulation object")
+
+        from mobidic.io import save_lateral_inflow_report
+
+        save_lateral_inflow_report(
+            lateral_inflow_timeseries=self.time_series["lateral_inflow"],
+            time_stamps=self.time_series["time"],
+            network=self.simulation.network,
+            output_path=output_path,
+            reach_selection=reach_selection,
+            selected_reaches=selected_reaches,
+        )
+
+    def save_final_state(
+        self,
+        output_path: str | Path,
+        add_metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """Save final simulation state to NetCDF file.
+
+        Args:
+            output_path: Path to output NetCDF file
+            add_metadata: Additional metadata to include in file
+        """
+        if self.final_state is None:
+            raise ValueError("No final state to save. Run simulation first.")
+
+        if self.simulation is None:
+            raise ValueError("Cannot save final state without simulation object")
+
+        if "time" not in self.time_series or not self.time_series["time"]:
+            raise ValueError("No time information available")
+
+        from mobidic.io import save_state
+
+        # Get final time
+        final_time = self.time_series["time"][-1]
+
+        save_state(
+            state=self.final_state,
+            output_path=output_path,
+            time=final_time,
+            grid_metadata=self.simulation.gisdata.metadata,
+            network_size=len(self.simulation.network),
+            add_metadata=add_metadata,
+        )
+
 
 class Simulation:
     """MOBIDIC simulation engine.
@@ -245,11 +309,11 @@ class Simulation:
         wc = wc * wcsat
         wg = wg * wgsat
 
-        # Set NaN outside domain
-        wc[np.isnan(self.dtm)] = np.nan
-        wg[np.isnan(self.dtm)] = np.nan
-        ws[np.isnan(self.dtm)] = np.nan
-        wp[np.isnan(self.dtm)] = np.nan
+        # Set NaN outside domain (lines 298-300 in mobidic_sid.m)
+        wc[np.isnan(self.flow_acc)] = np.nan
+        wg[np.isnan(self.flow_acc)] = np.nan
+        ws[np.isnan(self.flow_acc)] = np.nan
+        wp[np.isnan(self.flow_acc)] = np.nan
 
         # Initialize river discharge
         discharge = np.zeros(len(self.network))
@@ -421,7 +485,7 @@ class Simulation:
         param_grids["cha"] = self.flow_acc / np.nanmax(self.flow_acc)
         param_grids["cha"] = np.where(param_grids["cha"] > 0, param_grids["cha"], 0.0)
 
-        # Surface flow parameter alpsur [m/s]
+        # Surface alpha parameter alpsur
         param_grids["alpsur"] = self.alpsur * param_grids["alpha"]
 
         return param_grids
@@ -491,6 +555,7 @@ class Simulation:
         # Initialize results container
         results = SimulationResults(self.config, simulation=self)
         discharge_ts = []
+        lateral_inflow_ts = []
         time_ts = []
 
         # Calculate number of time steps
@@ -687,6 +752,7 @@ class Simulation:
 
             # 8. Store results
             discharge_ts.append(self.state.discharge.copy())
+            lateral_inflow_ts.append(lateral_inflow.copy())
             time_ts.append(current_time)
 
             # Log progress every 100 steps
@@ -702,9 +768,70 @@ class Simulation:
 
         # Store results
         results.time_series["discharge"] = np.array(discharge_ts)
+        results.time_series["lateral_inflow"] = np.array(lateral_inflow_ts)
         results.time_series["time"] = time_ts
         results.final_state = self.state
 
         logger.success(f"Simulation completed: {n_steps} time steps")
+
+        # Auto-save reports based on configuration
+        output_dir = Path(self.config.paths.output)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Determine reach selection
+        settings = self.config.output_report_settings
+        if settings.reach_selection == "file":
+            # Load reach IDs from file
+            import json
+
+            with open(settings.sel_file) as f:
+                selected_reaches = json.load(f)
+            reach_selection = "list"
+        elif settings.reach_selection == "list":
+            selected_reaches = settings.sel_list
+            reach_selection = "list"
+        else:
+            selected_reaches = None
+            reach_selection = settings.reach_selection
+
+        # Save discharge report if enabled
+        if self.config.output_report.discharge:
+            start_str = start_date.strftime("%Y%m%d")
+            end_str = end_date.strftime("%Y%m%d")
+            discharge_path = output_dir / f"discharge_{start_str}_{end_str}.parquet"
+            logger.info("Exporting discharges")
+            results.save_report(
+                output_path=discharge_path,
+                reach_selection=reach_selection,
+                selected_reaches=selected_reaches,
+            )
+
+        # Save lateral inflow report if enabled
+        if self.config.output_report.lateral_inflow:
+            lateral_inflow_path = output_dir / f"lateral_inflow_{start_str}_{end_str}.parquet"
+            logger.info("Exporting lateral inflows")
+            results.save_lateral_inflow_report(
+                output_path=lateral_inflow_path,
+                reach_selection=reach_selection,
+                selected_reaches=selected_reaches,
+            )
+
+        # Save final state if enabled
+        states_dir = Path(self.config.paths.states)
+        states_dir.mkdir(parents=True, exist_ok=True)
+        state_settings = self.config.output_states_settings
+
+        if state_settings.output_states in ["final", "all"]:
+            final_time = results.time_series["time"][-1]
+            state_filename = f"state_{final_time.strftime('%Y%m%d_%H%M%S')}.nc"
+            state_path = states_dir / state_filename
+            logger.info("Auto-saving final state")
+            results.save_final_state(
+                output_path=state_path,
+                add_metadata={
+                    "basin_id": self.config.basin.id,
+                    "paramset_id": self.config.basin.paramset_id,
+                },
+            )
 
         return results

@@ -298,7 +298,13 @@ class OutputStatesSettings(BaseModel):
     """Output state file settings."""
 
     output_format: Optional[Literal["netCDF"]] = Field("netCDF", description="Format for state output files")
+    output_states: Optional[Literal["all", "final", "list"]] = Field(
+        "final", description="Which time steps to save: 'all', 'final', or 'list'"
+    )
     output_interval: Optional[float] = Field(None, description="Time interval for state output, in seconds")
+    output_list: Optional[list[int]] = Field(
+        default_factory=list, description="List of time step indices to save (used when output_states='list')"
+    )
 
     @field_validator("output_interval")
     @classmethod
@@ -307,6 +313,13 @@ class OutputStatesSettings(BaseModel):
         if v is not None and v <= 0:
             raise ValueError("output_interval must be positive")
         return v
+
+    @model_validator(mode="after")
+    def check_output_settings_consistency(self) -> "OutputStatesSettings":
+        """Validate that output settings are consistent."""
+        if self.output_states == "list" and not self.output_list:
+            raise ValueError("output_list must be provided when output_states='list'")
+        return self
 
 
 class OutputReport(BaseModel):
