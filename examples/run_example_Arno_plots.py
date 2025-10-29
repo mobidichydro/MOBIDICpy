@@ -215,7 +215,13 @@ def main():
         ax_ts.plot(time_index, matlab_series, "b-", linewidth=1.5, alpha=0.7, label="MATLAB (reference)")
         ax_ts.plot(time_index, python_series, "r--", linewidth=1.0, alpha=0.8, label="Python (MOBIDICpy)")
 
-        ax_ts.set_xlabel("Time")
+        # Only show x-axis label and rotation on the last plot
+        if i == n_reaches - 1:
+            ax_ts.set_xlabel("Time")
+            ax_ts.tick_params(axis="x", rotation=45)
+        else:
+            ax_ts.tick_params(labelbottom=False)
+
         ax_ts.set_ylabel("Discharge [m³/s]")
         ax_ts.set_title(
             f"Reach {match['python_id']:04d} - Time Series "
@@ -223,9 +229,6 @@ def main():
         )
         ax_ts.grid(True, alpha=0.3)
         ax_ts.legend(loc="best")
-
-        # Rotate x-axis labels
-        ax_ts.tick_params(axis="x", rotation=45)
 
         # Scatter plot
         ax_scatter = fig.add_subplot(gs[i, 1])
@@ -238,9 +241,18 @@ def main():
 
         ax_scatter.set_xlabel("MATLAB Discharge [m³/s]")
         ax_scatter.set_ylabel("Python Discharge [m³/s]")
-        ax_scatter.set_title(f"Reach {match['python_id']:04d} - Scatter\n(R²={metrics['R2']:.3f})")
+        ax_scatter.set_title(f"Reach {match['python_id']:04d} - Scatter")
         ax_scatter.grid(True, alpha=0.3)
         ax_scatter.legend(loc="best")
+
+        # Add R² text inside the plot
+        ax_scatter.text(
+            0.05, 0.95, f"R² = {metrics['R2']:.3f}",
+            transform=ax_scatter.transAxes,
+            fontsize=10,
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
+        )
 
         # Make scatter plot square
         ax_scatter.set_aspect("equal", adjustable="box")
