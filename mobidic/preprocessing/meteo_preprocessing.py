@@ -478,9 +478,12 @@ class NetCDFMeteoReader:
                 station_times = pd.DatetimeIndex(ds["time"].values)
 
                 # Filter out NaN values (missing data)
-                valid_mask = ~np.isnan(station_data)
-                valid_times = station_times[valid_mask]
-                valid_data = station_data[valid_mask]
+                # valid_mask = ~np.isnan(station_data)
+                # valid_times = station_times[valid_mask]
+                # valid_data = station_data[valid_mask]
+
+                valid_times = station_times
+                valid_data = station_data
 
                 station_dict = {
                     "code": station_code,
