@@ -251,6 +251,24 @@ class Simulation:
         self.alpsur = gisdata.grids["alpsur"]
         self.hillslope_reach_map = gisdata.hillslope_reach_map
 
+        # Preprocess Wg0, Wc0, Wp0, and Ws0
+        self.wc0 = self.wc0 * self.config.parameters.multipliers.Wc_factor
+        self.wg0 = self.wg0 * self.config.parameters.multipliers.Wg_factor
+        self.wp0 = np.zeros((self.nrows, self.ncols))
+        self.ws0 = np.zeros((self.nrows, self.ncols))
+        
+        # Apply minumum limits
+        self.wc0 = np.maximum(self.wc0, const.W_MIN)
+        self.wg0 = np.maximum(self.wg0, const.W_MIN)
+
+        # Transition factor between gravitational and capillary storage
+        Wg_Wc_tr = self.config.parameters.multipliers.Wg_Wc_tr
+        if Wg_Wc_tr >= 0:
+            wtot = self.wc0 + self.wg0
+            self.wg0 = np.minimum(Wg_Wc_tr * self.wg0, wtot)
+            self.wc0 = wtot - self.wg0
+        
+
         # Optional grids
         # These may be None if not provided: use get() to avoid KeyError
         self.kf = gisdata.grids.get("kf")
@@ -289,25 +307,11 @@ class Simulation:
         wgsat = self.config.initial_conditions.Wgsat  # Fraction of gravitational saturation
         ws_init = self.config.initial_conditions.Ws  # Initial surface water depth [m]
 
-        wc = self.wc0 * self.config.parameters.multipliers.Wc_factor
-        wg = self.wg0 * self.config.parameters.multipliers.Wg_factor
-        wp = np.zeros((self.nrows, self.ncols))
-        ws = np.full((self.nrows, self.ncols), ws_init)
-
-        # Apply minumum limits
-        wc = np.maximum(wc, const.W_MIN)
-        wg = np.maximum(wg, const.W_MIN)
-
-        # Transition factor between gravitational and capillary storage
-        Wg_Wc_tr = self.config.parameters.multipliers.Wg_Wc_tr
-        if Wg_Wc_tr >= 0:
-            wtot = wc + wg
-            wg = np.minimum(Wg_Wc_tr * wg, wtot)
-            wc = wtot - wg
-
         # Initial values
-        wc = wc * wcsat
-        wg = wg * wgsat
+        wc = self.wc0.copy() * wcsat
+        wg = self.wg0.copy() * wgsat
+        ws = np.full((self.nrows, self.ncols), ws_init)
+        wp = self.wp0.copy()  # Initial plant/canopy water content [m]
 
         # Set NaN outside domain (lines 298-300 in mobidic_sid.m)
         wc[np.isnan(self.flow_acc)] = np.nan
@@ -322,7 +326,8 @@ class Simulation:
             f"State initialized. Initial conditions (average): "
             f"Wc={np.nanmean(wc) * 1000:.1f} mm, "
             f"Wg={np.nanmean(wg) * 1000:.1f} mm, "
-            f"Ws={np.nanmean(ws) * 1000:.1f} mm"
+            f"Ws={np.nanmean(ws) * 1000:.1f} mm, "
+            f"Wp={np.nanmean(wp) * 1000:.1f} mm"
         )
 
         return SimulationState(wc, wg, wp, ws, discharge)
