@@ -5,7 +5,7 @@ onto the model grid using various spatial interpolation methods.
 
 Translated from MATLAB:
     - pluviomap.m -> precipitation_interpolation()
-    - tempermap.m -> temperature_interpolation()
+    - tempermap.m -> station_interpolation()
 """
 
 import numpy as np
@@ -117,7 +117,7 @@ def precipitation_interpolation(
     return result
 
 
-def temperature_interpolation(
+def station_interpolation(
     station_x: NDArray[np.float64],
     station_y: NDArray[np.float64],
     station_elevation: NDArray[np.float64],
@@ -127,7 +127,7 @@ def temperature_interpolation(
     yllcorner: float,
     resolution: float,
     weights_matrix: NDArray[np.float64] | None = None,
-    apply_elevation_correction: bool = True,
+    apply_elevation_correction: bool = False,
     power: float = 2.0,
 ) -> NDArray[np.float64]:
     """
@@ -166,7 +166,7 @@ def temperature_interpolation(
         >>> station_y = np.array([1000, 5000, 9000])
         >>> station_elev = np.array([100, 500, 300])
         >>> station_temp = np.array([20.0, 15.0, 18.0])  # °C
-        >>> temp = temperature_interpolation(
+        >>> temp = station_interpolation(
         ...     station_x, station_y, station_elev, station_temp,
         ...     dtm, 0, 0, 100
         ... )
@@ -174,6 +174,8 @@ def temperature_interpolation(
     nrows, ncols = dtm.shape
 
     # Convert station coordinates to grid indices
+    # MATLAB tempermap.m lines 24-25: st_j = round((st_est-xll)/grid_size)+1
+    # MATLAB uses 1-based indexing, so +1. Python uses 0-based, so we skip the +1.
     st_j = np.round((station_x - xllcorner) / resolution).astype(int)  # column
     st_i = np.round((station_y - yllcorner) / resolution).astype(int)  # row
 
@@ -193,10 +195,10 @@ def temperature_interpolation(
     valid_mask = np.isfinite(station_values) & np.isfinite(st_zz)
     n_valid = np.sum(valid_mask)
 
-    logger.debug(f"Temperature interpolation: {n_valid} valid stations with elevation")
+    logger.debug(f"Station data interpolation: {n_valid} valid stations with elevation")
 
     if n_valid == 0:
-        logger.warning("No valid stations for temperature interpolation, returning NaN grid")
+        logger.warning("No valid stations for station data interpolation, returning NaN grid")
         return np.full_like(dtm, np.nan)
 
     # Extract valid stations
@@ -229,17 +231,23 @@ def temperature_interpolation(
             weights_sum += weights_matrix[:, :, station_idx]
     else:
         # Compute weights on-the-fly using IDW
+        # Match MATLAB mobidic_sid.m lines 1126-1128: add 0.01 to grid coordinates to avoid division by zero
         jj, ii = np.meshgrid(np.arange(ncols), np.arange(nrows))
+        jj = jj + 0.01
+        ii = ii + 0.01
 
         for i in range(n_valid):
             station_idx = k_ok[i]
 
-            # Distance from each grid cell to station
+            # Distance from each grid cell to station (matching MATLAB line 1135)
             dx = jj - st_j[station_idx]
             dy = ii - st_i[station_idx]
-            dist_squared = dx**2 + dy**2 + 0.01  # Add small value to avoid division by zero
+            dist_squared = dx**2 + dy**2
 
             # Inverse distance weights
+            # MATLAB line 1172: tmww = 1./tmww (inverse of squared distance)
+            # When power==2: weight = 1/dist^2
+            # When power!=2: weight = 1/dist^power (matching MATLAB lines 47-49 in tempermap.m)
             if power == 2.0:
                 w = 1.0 / dist_squared
             else:
@@ -259,7 +267,7 @@ def temperature_interpolation(
     result[np.isnan(dtm)] = np.nan
 
     logger.debug(
-        f"Temperature interpolation completed. Value range: [{np.nanmin(result):.3f}, {np.nanmax(result):.3f}]"
+        f"Station data interpolation completed. Value range: [{np.nanmin(result):.3f}, {np.nanmax(result):.3f}]"
     )
 
     return result

@@ -6,7 +6,7 @@ from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.simulation import Simulation, SimulationState, SimulationResults
 from mobidic.core.interpolation import (
     precipitation_interpolation,
-    temperature_interpolation,
+    station_interpolation,
     create_grid_coordinates,
 )
 from mobidic.core.pet import calculate_pet
@@ -21,7 +21,7 @@ __all__ = [
     "SimulationState",
     "SimulationResults",
     "precipitation_interpolation",
-    "temperature_interpolation",
+    "station_interpolation",
     "create_grid_coordinates",
     "calculate_pet",
 ]
