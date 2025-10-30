@@ -23,7 +23,7 @@ from mobidic.core import constants as const
 from mobidic.preprocessing.meteo_preprocessing import MeteoData
 from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
-from mobidic.core.interpolation import precipitation_interpolation, temperature_interpolation
+from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
 
 
@@ -256,7 +256,7 @@ class Simulation:
         self.wg0 = self.wg0 * self.config.parameters.multipliers.Wg_factor
         self.wp0 = np.zeros((self.nrows, self.ncols))
         self.ws0 = np.zeros((self.nrows, self.ncols))
-        
+
         # Apply minumum limits
         self.wc0 = np.maximum(self.wc0, const.W_MIN)
         self.wg0 = np.maximum(self.wg0, const.W_MIN)
@@ -267,7 +267,6 @@ class Simulation:
             wtot = self.wc0 + self.wg0
             self.wg0 = np.minimum(Wg_Wc_tr * self.wg0, wtot)
             self.wc0 = wtot - self.wg0
-        
 
         # Optional grids
         # These may be None if not provided: use get() to avoid KeyError
@@ -368,13 +367,10 @@ class Simulation:
 
             if time_index >= 0 and time_index < len(station["data"]):
                 value = station["data"][time_index]
-
-                # Only include station if data is not NaN
-                if not np.isnan(value):
-                    station_x.append(station["x"])
-                    station_y.append(station["y"])
-                    station_elevation.append(station["elevation"])
-                    station_values.append(value)
+                station_x.append(station["x"])
+                station_y.append(station["y"])
+                station_elevation.append(station["elevation"])
+                station_values.append(value)
 
         if len(station_values) == 0:
             raise ValueError(f"No valid data found for {variable} at time {time}")
@@ -390,22 +386,57 @@ class Simulation:
 
         # Choose interpolation method based on variable
         if variable == "precipitation":
-            # Use nearest neighbor for precipitation (MATLAB: pluviomap.m)
-            grid_values = precipitation_interpolation(
-                station_x,
-                station_y,
-                station_values,
-                self.dtm,
-                self.xllcorner,
-                self.yllcorner,
-                resolution,
-            )
-            # Convert from mm (over dt) to m/s, matching MATLAB line 1240 (mobidic_sid.m):
-            # pp=pp/1000/dt; % average intensity during dt [m/s]
-            grid_values = grid_values / 1000.0 / self.dt
+            # Check if there's any rainfall before interpolating (MATLAB line 1241: if nansum(pp))
+            # This optimization skips interpolation when all precipitation values are zero or NaN
+            if np.nansum(station_values) == 0 or np.all(np.isnan(station_values)):
+                # Return zero grid (matching MATLAB line 1256: p_i = Mzeros)
+                grid_values = np.zeros_like(self.dtm)
+            else:
+                # Get precipitation interpolation method from config
+                precip_interp = self.config.simulation.precipitation_interp
+
+                if precip_interp == "nearest":
+                    # Use nearest neighbor for precipitation (MATLAB: pluviomap.m when thiessen=1)
+                    grid_values = precipitation_interpolation(
+                        station_x,
+                        station_y,
+                        station_values,
+                        self.dtm,
+                        self.xllcorner,
+                        self.yllcorner,
+                        resolution,
+                    )
+                else:  # "idw"
+                    # Use IDW without elevation correction for precipitation
+                    # MATLAB mobidic_sid.m line 1246: uses tmww3 with expon=2
+                    # tmww3 = tmww^3 where tmww = 1/dist^2, so tmww3 = 1/dist^6
+                    # This gives stronger weight to nearby stations (power=6)
+                    grid_values = station_interpolation(
+                        station_x,
+                        station_y,
+                        station_elevation,
+                        station_values,
+                        self.dtm,
+                        self.xllcorner,
+                        self.yllcorner,
+                        resolution,
+                        weights_matrix=None,
+                        apply_elevation_correction=False,  # switchregz=0 in MATLAB
+                        power=6.0,  # tmww3 in MATLAB: (1/dist^2)^3 = 1/dist^6
+                    )
+
+                # Convert from mm (over dt) to m/s, matching MATLAB line 1240 (mobidic_sid.m):
+                # pp=pp/1000/dt; % average intensity during dt [m/s]
+                grid_values = grid_values / 1000.0 / self.dt
         else:
-            # Use IDW with elevation correction for temperature and other variables (MATLAB: tempermap.m)
-            grid_values = temperature_interpolation(
+            # Use IDW with elevation correction for temperature and other variables
+            # MATLAB calc_forcing_day.m uses different settings per variable:
+            # - Temperature (min/max): switchregz=1, expon=2 (elevation correction, power=2)
+            # - Humidity: switchregz=0, expon=2 (no elevation correction, power=2)
+            # - Wind: switchregz=0, expon=0.5 (no elevation correction, power=0.5)
+            # - Radiation: switchregz=0, expon=2 (no elevation correction, power=2)
+            # Currently only temperature is implemented with elevation correction
+            grid_values = station_interpolation(
                 station_x,
                 station_y,
                 station_elevation,
@@ -415,8 +446,8 @@ class Simulation:
                 self.yllcorner,
                 resolution,
                 weights_matrix=None,
-                apply_elevation_correction=True,
-                power=2.0,
+                apply_elevation_correction=True,  # True for temperature, False for others
+                power=2.0,  # 2.0 for most, 0.5 for wind
             )
 
         return grid_values
@@ -574,10 +605,7 @@ class Simulation:
         cell_area = self.resolution[0] * self.resolution[1]
 
         # Create ko mask: contributing pixels only (matching MATLAB mobidic_sid.m:224)
-        # konoch  = find(isfinite(zz));      % pixels within the basin
         # ko = find(isfinite(zz) & (ch>0));  % contributing pixels
-        konoch = np.isfinite(self.dtm)
-        konoch = np.where(konoch.ravel("F"))[0]  # Column-major "Fortran" order to match MATLAB linear indexing
         ko = np.isfinite(self.dtm) & (self.hillslope_reach_map >= 0)
         ko = np.where(ko.ravel("F"))[0]
         logger.info(f"Contributing pixels (ko): {len(ko)} of {self.nrows * self.ncols} total cells")
