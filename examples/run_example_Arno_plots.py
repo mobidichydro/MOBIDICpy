@@ -1,15 +1,15 @@
 """
-MOBIDIC Validation Python vs MATLAB discharge results
+MOBIDIC Validation Python vs MATLAB discharge and lateral inflow results
 
-This script compares discharge outputs from the Python implementation
-against the MATLAB reference implementation for the Arno River basin.
+This script compares discharge and lateral inflow outputs from the Python
+implementation against the MATLAB reference implementation for the Arno River basin.
 
 Usage:
     python examples/run_example_Arno_plots.py
 
 The script will:
-1. Load Python discharge output (Parquet format)
-2. Load MATLAB discharge output (CSV format)
+1. Load Python output files (Parquet format)
+2. Load MATLAB output files (CSV format)
 3. Account for +1 offset in MATLAB reach IDs
 4. Plot time series comparison for each reach
 5. Calculate and display error metrics (NSE, RMSE, bias)
@@ -56,30 +56,49 @@ def calculate_metrics(reference, simulated):
     return {"NSE": nse, "RMSE": rmse, "bias": bias, "R2": r2}
 
 
-def main():
-    """Main function to compare Python and MATLAB discharge outputs."""
+def compare_variable(
+    output_dir: Path,
+    matlab_dir: Path,
+    variable_name: str,
+    python_pattern: str,
+    matlab_filename: str,
+    python_prefix: str,
+    matlab_prefix: str,
+    unit: str,
+    variable_label: str,
+):
+    """Compare a variable (discharge or lateral inflow) between Python and MATLAB.
 
+    Args:
+        output_dir: Directory containing Python output files
+        matlab_dir: Directory containing MATLAB output files
+        variable_name: Name of variable (e.g., "Discharge", "Lateral Inflow")
+        python_pattern: Glob pattern for Python files (e.g., "discharge*.parquet")
+        matlab_filename: MATLAB CSV filename (e.g., "discharge.csv")
+        python_prefix: Prefix for Python column names (e.g., "reach")
+        matlab_prefix: Prefix for MATLAB column names (e.g., "Q_reach", "qL_reach")
+        unit: Unit string (e.g., "m³/s")
+        variable_label: Y-axis label (e.g., "Discharge [m³/s]")
+
+    Returns:
+        tuple: (mean_nse, mean_rmse, n_reaches, n_timesteps)
+    """
     print("=" * 80)
-    print("MOBIDIC - Python vs MATLAB Discharge Comparison")
+    print(f"MOBIDIC - Python vs MATLAB {variable_name} Comparison")
     print("=" * 80)
     print()
 
-    # Define paths
-    example_dir = Path(__file__).parent / "Arno"
-    output_dir = example_dir / "output"
-    matlab_dir = output_dir / "matlab"
-
     # Find Python output file
-    parquet_files = list(output_dir.glob("discharge*.parquet"))
+    parquet_files = list(output_dir.glob(python_pattern))
     if not parquet_files:
-        raise FileNotFoundError(f"No discharge parquet files found in {output_dir}")
+        raise FileNotFoundError(f"No {python_pattern} files found in {output_dir}")
     parquet_file = parquet_files[0]
 
     # MATLAB output file
-    matlab_file = matlab_dir / "discharge.csv"
+    matlab_file = matlab_dir / matlab_filename
 
     if not matlab_file.exists():
-        raise FileNotFoundError(f"MATLAB discharge file not found: {matlab_file}")
+        raise FileNotFoundError(f"MATLAB {variable_name} file not found: {matlab_file}")
 
     print(f"Python output: {parquet_file.name}")
     print(f"MATLAB output: {matlab_file.name}")
@@ -110,9 +129,9 @@ def main():
 
     # Extract reach IDs from column names
     # Python: reach_0313 -> 313
-    # MATLAB: Q_reach_314 -> 314
+    # MATLAB: Q_reach_314 or qL_reach_314 -> 314
     python_reaches = {int(col.split("_")[1]): col for col in df_python.columns}
-    matlab_reaches = {int(col.split("_")[2]): col for col in df_matlab.columns}
+    matlab_reaches = {int(col.split("_")[-1]): col for col in df_matlab.columns}
 
     # Find matching reaches
     matched_reaches = []
@@ -130,12 +149,12 @@ def main():
 
     print(f"  Found {len(matched_reaches)} matching reaches:")
     for match in matched_reaches:
-        print(f"    Python reach_{match['python_id']:04d} <-> MATLAB Q_reach_{match['matlab_id']}")
+        print(f"    Python {python_prefix}_{match['python_id']:04d} <-> MATLAB {matlab_prefix}_{match['matlab_id']}")
     print()
 
     if not matched_reaches:
         print("ERROR: No matching reaches found!")
-        return
+        return None, None, 0, 0
 
     # =========================================================================
     # Align time series
@@ -176,8 +195,8 @@ def main():
 
         print(f"  Reach {match['python_id']:04d}:")
         print(f"    NSE:  {metrics['NSE']:7.4f}")
-        print(f"    RMSE: {metrics['RMSE']:7.3f} m³/s")
-        print(f"    Bias: {metrics['bias']:7.3f} m³/s")
+        print(f"    RMSE: {metrics['RMSE']:7.3f} {unit}")
+        print(f"    Bias: {metrics['bias']:7.3f} {unit}")
         print(f"    R²:   {metrics['R2']:7.4f}")
         print()
 
@@ -187,7 +206,7 @@ def main():
 
     print("  Overall average:")
     print(f"    Mean NSE:  {np.mean(all_nse):.4f}")
-    print(f"    Mean RMSE: {np.mean(all_rmse):.3f} m³/s")
+    print(f"    Mean RMSE: {np.mean(all_rmse):.3f} {unit}")
     print()
 
     # =========================================================================
@@ -201,7 +220,12 @@ def main():
     fig = plt.figure(figsize=(14, 4 * n_reaches))
     gs = GridSpec(n_reaches, 2, figure=fig, width_ratios=[3, 1], hspace=0.3, wspace=0.3)
 
-    fig.suptitle("MOBIDIC: Python vs MATLAB Discharge Comparison - Arno Basin", fontsize=14, fontweight="bold", y=0.995)
+    fig.suptitle(
+        f"MOBIDIC: Python vs MATLAB {variable_name} Comparison - Arno Basin",
+        fontsize=14,
+        fontweight="bold",
+        y=0.995,
+    )
 
     for i, match in enumerate(matched_reaches):
         python_series = df_python_aligned[match["python_col"]]
@@ -222,10 +246,10 @@ def main():
         else:
             ax_ts.tick_params(labelbottom=False)
 
-        ax_ts.set_ylabel("Discharge [m³/s]")
+        ax_ts.set_ylabel(variable_label)
         ax_ts.set_title(
             f"Reach {match['python_id']:04d} - Time Series "
-            + f"(NSE={metrics['NSE']:.3f}, RMSE={metrics['RMSE']:.2f} m³/s)"
+            + f"(NSE={metrics['NSE']:.3f}, RMSE={metrics['RMSE']:.2f} {unit})"
         )
         ax_ts.grid(True, alpha=0.3)
         ax_ts.legend(loc="best")
@@ -239,8 +263,8 @@ def main():
         max_val = max(matlab_series.max(), python_series.max())
         ax_scatter.plot([min_val, max_val], [min_val, max_val], "k--", linewidth=1.5, label="1:1 line")
 
-        ax_scatter.set_xlabel("MATLAB Discharge [m³/s]")
-        ax_scatter.set_ylabel("Python Discharge [m³/s]")
+        ax_scatter.set_xlabel(f"MATLAB {variable_label}")
+        ax_scatter.set_ylabel(f"Python {variable_label}")
         ax_scatter.set_title(f"Reach {match['python_id']:04d} - Scatter")
         ax_scatter.grid(True, alpha=0.3)
         ax_scatter.legend(loc="best")
@@ -259,8 +283,6 @@ def main():
         # Make scatter plot square
         ax_scatter.set_aspect("equal", adjustable="box")
 
-    print(f"  Plot saved to: {output_dir / 'discharge_comparison.png'}")
-
     plt.show()
 
     # =========================================================================
@@ -268,12 +290,61 @@ def main():
     # =========================================================================
     print()
     print("=" * 80)
-    print("Comparison Summary")
+    print(f"{variable_name} Comparison Summary")
     print("=" * 80)
     print(f"Number of reaches compared: {len(matched_reaches)}")
     print(f"Time steps: {len(common_index)}")
     print(f"Mean NSE:  {np.mean(all_nse):.4f}")
-    print(f"Mean RMSE: {np.mean(all_rmse):.3f} m³/s")
+    print(f"Mean RMSE: {np.mean(all_rmse):.3f} {unit}")
+    print()
+
+    return np.mean(all_nse), np.mean(all_rmse), len(matched_reaches), len(common_index)
+
+
+def main():
+    """Main function to compare Python and MATLAB outputs."""
+
+    # Define paths
+    example_dir = Path(__file__).parent / "Arno"
+    output_dir = example_dir / "output"
+    matlab_dir = output_dir / "matlab"
+
+    # Compare discharge
+    discharge_results = compare_variable(
+        output_dir=output_dir,
+        matlab_dir=matlab_dir,
+        variable_name="Discharge",
+        python_pattern="discharge*.parquet",
+        matlab_filename="discharge.csv",
+        python_prefix="reach",
+        matlab_prefix="Q_reach",
+        unit="m³/s",
+        variable_label="Discharge [m³/s]",
+    )
+
+    # Compare lateral inflow
+    lateral_results = compare_variable(
+        output_dir=output_dir,
+        matlab_dir=matlab_dir,
+        variable_name="Lateral Inflow",
+        python_pattern="lateral_inflow*.parquet",
+        matlab_filename="lateral_inflow.csv",
+        python_prefix="reach",
+        matlab_prefix="qL_reach",
+        unit="m³/s",
+        variable_label="Lateral Inflow [m³/s]",
+    )
+
+    # Overall summary
+    print()
+    print("=" * 80)
+    print("OVERALL COMPARISON SUMMARY")
+    print("=" * 80)
+    if discharge_results[0] is not None:
+        print(f"Discharge:      Mean NSE = {discharge_results[0]:.4f}, Mean RMSE = {discharge_results[1]:.3f} m³/s")
+    if lateral_results[0] is not None:
+        print(f"Lateral Inflow: Mean NSE = {lateral_results[0]:.4f}, Mean RMSE = {lateral_results[1]:.3f} m³/s")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
