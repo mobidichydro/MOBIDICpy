@@ -12,7 +12,7 @@ The script will:
 2. Load MATLAB output files (CSV format)
 3. Account for +1 offset in MATLAB reach IDs
 4. Plot time series comparison for each reach
-5. Calculate and display error metrics (NSE, RMSE, bias)
+5. Calculate and display error metrics (RMSE, bias)
 """
 
 from pathlib import Path
@@ -30,7 +30,7 @@ def calculate_metrics(reference, simulated):
         simulated: Simulated values (Python)
 
     Returns:
-        dict: Dictionary with NSE, RMSE, bias, and R² metrics
+        dict: Dictionary with RMSE and bias metrics
     """
     # Remove NaN values
     mask = ~(np.isnan(reference) | np.isnan(simulated))
@@ -38,10 +38,7 @@ def calculate_metrics(reference, simulated):
     sim = simulated[mask]
 
     if len(obs) == 0:
-        return {"NSE": np.nan, "RMSE": np.nan, "bias": np.nan, "R2": np.nan}
-
-    # Nash-Sutcliffe Efficiency
-    nse = 1 - np.sum((obs - sim) ** 2) / np.sum((obs - np.mean(obs)) ** 2)
+        return {"RMSE": np.nan, "bias": np.nan}
 
     # Root Mean Square Error
     rmse = np.sqrt(np.mean((obs - sim) ** 2))
@@ -49,11 +46,7 @@ def calculate_metrics(reference, simulated):
     # Bias
     bias = np.mean(sim - obs)
 
-    # R-squared
-    corr = np.corrcoef(obs, sim)[0, 1]
-    r2 = corr**2
-
-    return {"NSE": nse, "RMSE": rmse, "bias": bias, "R2": r2}
+    return {"RMSE": rmse, "bias": bias}
 
 
 def compare_variable(
@@ -81,7 +74,7 @@ def compare_variable(
         variable_label: Y-axis label (e.g., "Discharge [m³/s]")
 
     Returns:
-        tuple: (mean_nse, mean_rmse, n_reaches, n_timesteps)
+        tuple: (mean_rmse, n_reaches, n_timesteps)
     """
     print("=" * 80)
     print(f"MOBIDIC - Python vs MATLAB {variable_name} Comparison")
@@ -154,7 +147,7 @@ def compare_variable(
 
     if not matched_reaches:
         print("ERROR: No matching reaches found!")
-        return None, None, 0, 0
+        return None, 0, 0
 
     # =========================================================================
     # Align time series
@@ -194,18 +187,14 @@ def compare_variable(
         metrics_summary.append(metrics)
 
         print(f"  Reach {match['python_id']:04d}:")
-        print(f"    NSE:  {metrics['NSE']:7.4f}")
         print(f"    RMSE: {metrics['RMSE']:7.3f} {unit}")
         print(f"    Bias: {metrics['bias']:7.3f} {unit}")
-        print(f"    R²:   {metrics['R2']:7.4f}")
         print()
 
     # Overall metrics
-    all_nse = [m["NSE"] for m in metrics_summary if not np.isnan(m["NSE"])]
     all_rmse = [m["RMSE"] for m in metrics_summary if not np.isnan(m["RMSE"])]
 
     print("  Overall average:")
-    print(f"    Mean NSE:  {np.mean(all_nse):.4f}")
     print(f"    Mean RMSE: {np.mean(all_rmse):.3f} {unit}")
     print()
 
@@ -217,7 +206,7 @@ def compare_variable(
     n_reaches = len(matched_reaches)
 
     # Create figure with subplots
-    fig = plt.figure(figsize=(14, 4 * n_reaches))
+    fig = plt.figure(figsize=(14, 3 * n_reaches))
     gs = GridSpec(n_reaches, 2, figure=fig, width_ratios=[3, 1], hspace=0.3, wspace=0.3)
 
     fig.suptitle(
@@ -247,10 +236,7 @@ def compare_variable(
             ax_ts.tick_params(labelbottom=False)
 
         ax_ts.set_ylabel(variable_label)
-        ax_ts.set_title(
-            f"Reach {match['python_id']:04d} - Time Series "
-            + f"(NSE={metrics['NSE']:.3f}, RMSE={metrics['RMSE']:.2f} {unit})"
-        )
+        ax_ts.set_title(f"Reach {match['python_id']:04d} - Time Series " + f"(RMSE={metrics['RMSE']:.6f} {unit})")
         ax_ts.grid(True, alpha=0.3)
         ax_ts.legend(loc="best")
 
@@ -269,17 +255,6 @@ def compare_variable(
         ax_scatter.grid(True, alpha=0.3)
         ax_scatter.legend(loc="best")
 
-        # Add R² text inside the plot
-        ax_scatter.text(
-            0.05,
-            0.95,
-            f"R² = {metrics['R2']:.3f}",
-            transform=ax_scatter.transAxes,
-            fontsize=10,
-            verticalalignment="top",
-            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
-        )
-
         # Make scatter plot square
         ax_scatter.set_aspect("equal", adjustable="box")
 
@@ -294,11 +269,10 @@ def compare_variable(
     print("=" * 80)
     print(f"Number of reaches compared: {len(matched_reaches)}")
     print(f"Time steps: {len(common_index)}")
-    print(f"Mean NSE:  {np.mean(all_nse):.4f}")
-    print(f"Mean RMSE: {np.mean(all_rmse):.3f} {unit}")
+    print(f"Mean RMSE: {np.mean(all_rmse):.6f} {unit}")
     print()
 
-    return np.mean(all_nse), np.mean(all_rmse), len(matched_reaches), len(common_index)
+    return np.mean(all_rmse), len(matched_reaches), len(common_index)
 
 
 def main():
@@ -341,9 +315,9 @@ def main():
     print("OVERALL COMPARISON SUMMARY")
     print("=" * 80)
     if discharge_results[0] is not None:
-        print(f"Discharge:      Mean NSE = {discharge_results[0]:.4f}, Mean RMSE = {discharge_results[1]:.3f} m³/s")
+        print(f"Discharge:      Mean RMSE = {discharge_results[0]:.6f} m³/s")
     if lateral_results[0] is not None:
-        print(f"Lateral Inflow: Mean NSE = {lateral_results[0]:.4f}, Mean RMSE = {lateral_results[1]:.3f} m³/s")
+        print(f"Lateral Inflow: Mean RMSE = {lateral_results[0]:.6f} m³/s")
     print("=" * 80)
 
 
