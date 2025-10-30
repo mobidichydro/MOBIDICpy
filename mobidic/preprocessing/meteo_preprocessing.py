@@ -476,12 +476,6 @@ class NetCDFMeteoReader:
                 # Extract time series for this station
                 station_data = data_var[:, i].values
                 station_times = pd.DatetimeIndex(ds["time"].values)
-
-                # Filter out NaN values (missing data)
-                # valid_mask = ~np.isnan(station_data)
-                # valid_times = station_times[valid_mask]
-                # valid_data = station_data[valid_mask]
-
                 valid_times = station_times
                 valid_data = station_data
 
