@@ -573,7 +573,7 @@ class Simulation:
         # ko = find(isfinite(zz) & (ch>0));  % contributing pixels
         konoch = np.isfinite(self.dtm)
         konoch = np.where(konoch.ravel("F"))[0]  # Column-major "Fortran" order to match MATLAB linear indexing
-        ko = np.isfinite(self.dtm) & (self.hillslope_reach_map > 0)
+        ko = np.isfinite(self.dtm) & (self.hillslope_reach_map >= 0)
         ko = np.where(ko.ravel("F"))[0]
         logger.info(f"Contributing pixels (ko): {len(ko)} of {self.nrows * self.ncols} total cells")
 
