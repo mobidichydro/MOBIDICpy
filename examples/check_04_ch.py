@@ -3,6 +3,7 @@ Script for checking the computed hill -> reach mapping against the MATLAB versio
 """
 
 import numpy as np
+from pathlib import Path
 from mobidic import (
     load_config,
     configure_logger,
@@ -12,11 +13,15 @@ from mobidic import (
 )
 from scipy.io import loadmat
 
+# Get directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+
 # Configuration
-config = load_config("examples/Arno/Arno.yaml")
+config = load_config(EXAMPLE_DIR / "Arno.yaml")
 
 # MATLAB ch matrix import file .mat
-mat_data = loadmat("examples/Arno/gisdata/Arno_gisdata.mat")
+mat_data = loadmat(EXAMPLE_DIR / "gisdata" / "Arno_gisdata.mat")
 ch = mat_data["ch"]
 
 # Configure logger
