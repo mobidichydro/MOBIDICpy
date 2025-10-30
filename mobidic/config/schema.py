@@ -255,6 +255,9 @@ class Simulation(BaseModel):
     energy_balance: Literal["None", "1L", "5L", "Snow"] = Field(
         ..., description="Type of surface energy balance scheme"
     )
+    precipitation_interp: Optional[Literal["nearest", "idw"]] = Field(
+        "idw", description="Precipitation interpolation method"
+    )
 
     @field_validator("timestep")
     @classmethod

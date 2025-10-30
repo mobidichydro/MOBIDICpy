@@ -291,6 +291,9 @@ simulation:
   # [one among the following options 'None', '1L', '5L', 'Snow']
   energy_balance: None
 
+  ## OPTIONAL: Precipitation interpolation method
+  # [one among the following options: 'nearest', 'idw' (default)]
+  precipitation_interp: idw
 
 ####### OUTPUT CONTROLS
 
