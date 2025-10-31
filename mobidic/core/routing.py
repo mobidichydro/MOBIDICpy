@@ -5,6 +5,8 @@ This module implements hillslope and channel routing algorithms. The hillslope r
 accumulates lateral flow contributions from upslope cells, while channel routing
 propagates water through the river network.
 
+It includes Numba-optimized functions for performance.
+
 Translated from MATLAB:
     - hill_route.m -> hillslope_routing()
     - go_route_ord.m + calc_par_ord.m (LINEAR case) -> linear_channel_routing()
@@ -122,7 +124,7 @@ def hillslope_routing(
         >>> upstream[1, 1]  # Center receives flow from all 8 neighbors (one-step)
         0.8  # 8 neighbors x 0.1 m³/s each = 0.8 m³/s (does NOT include center's own 0.1)
     """
-    logger.debug(f"Starting hillslope routing (Numba) with grid shape={lateral_flow.shape}")
+    logger.debug(f"Starting hillslope routing with grid shape={lateral_flow.shape}")
 
     # Validate inputs
     if lateral_flow.shape != flow_direction.shape:
@@ -151,8 +153,107 @@ def hillslope_routing(
     return upstream_contribution
 
 
+@njit(cache=True, fastmath=True)
+def _linear_routing_kernel(
+    discharge_initial: np.ndarray,
+    lateral_inflow: np.ndarray,
+    sorted_reach_idx: np.ndarray,
+    upstream_1_idx: np.ndarray,
+    upstream_2_idx: np.ndarray,
+    n_upstream: np.ndarray,
+    K: np.ndarray,
+    C3: np.ndarray,
+    C4: np.ndarray,
+    discharge_final: np.ndarray,
+    qL_total: np.ndarray,
+) -> None:
+    """
+    Numba-compiled kernel for linear channel routing.
+
+    This function modifies discharge_final and qL_total in-place for performance.
+    Compiled to machine code with Numba for significant speedup over pure Python loops.
+
+    Args:
+        discharge_initial: Initial discharge for each reach [m³/s]
+        lateral_inflow: Lateral inflow to each reach [m³/s]
+        sorted_reach_idx: Reach indices sorted by calc_order
+        upstream_1_idx: Index of first upstream reach (-1 if none)
+        upstream_2_idx: Index of second upstream reach (-1 if none)
+        n_upstream: Number of upstream reaches (0, 1, or 2)
+        K: Storage coefficient (lag time) [s]
+        C3: Recession coefficients
+        C4: Lateral inflow coefficients
+        discharge_final: Output discharge array (modified in-place)
+        qL_total: Total inflow array (modified in-place)
+    """
+    # Route through network in topological order
+    for ki in sorted_reach_idx:
+        # Start with lateral inflow (MATLAB line 66: Qx(ki) = qL(ki))
+        qL_total[ki] = lateral_inflow[ki]
+
+        # Add contributions from upstream reaches (MATLAB lines 67-74)
+        jj1 = upstream_1_idx[ki]
+        if jj1 >= 0:
+            # Compute mean integral of upstream discharge over time step
+            if C3[jj1] == 1.0:
+                # Special case: no decay (K → ∞)
+                mean_upstream = qL_total[jj1] / C4[jj1]
+            elif abs(C3[jj1]) < 1e-10:
+                # Special case: instant decay (K → 0)
+                mean_upstream = qL_total[jj1] / C4[jj1]
+            else:
+                # General case: compute integral mean
+                mean_upstream = qL_total[jj1] / C4[jj1] + (qL_total[jj1] - discharge_initial[jj1] * C4[jj1]) / np.log(
+                    C3[jj1]
+                )
+            qL_total[ki] += mean_upstream
+
+        jj2 = upstream_2_idx[ki]
+        if jj2 >= 0:
+            # Compute mean integral of upstream discharge over time step
+            if C3[jj2] == 1.0:
+                # Special case: no decay (K → ∞)
+                mean_upstream = qL_total[jj2] / C4[jj2]
+            elif abs(C3[jj2]) < 1e-10:
+                # Special case: instant decay (K → 0)
+                mean_upstream = qL_total[jj2] / C4[jj2]
+            else:
+                # General case: compute integral mean
+                mean_upstream = qL_total[jj2] / C4[jj2] + (qL_total[jj2] - discharge_initial[jj2] * C4[jj2]) / np.log(
+                    C3[jj2]
+                )
+            qL_total[ki] += mean_upstream
+
+        # MATLAB line 75: Qx(ki) = Qx(ki) * C4(ki)
+        qL_total[ki] = qL_total[ki] * C4[ki]
+
+        # MATLAB line 79: Qpast = Q(ki, tt-1)
+        Qpast = discharge_initial[ki]
+
+        # Check if reach is too short (MATLAB lines 120-130)
+        if np.isnan(K[ki]) or K[ki] <= 0:
+            # Reach too short - flow passes directly through
+            if n_upstream[ki] > 0:
+                # Sum upstream discharges (MATLAB line 122)
+                upstream_sum = 0.0
+                if jj1 >= 0:
+                    upstream_sum += discharge_final[jj1]
+                if jj2 >= 0:
+                    upstream_sum += discharge_final[jj2]
+                discharge_final[ki] = lateral_inflow[ki] + upstream_sum
+            else:
+                # No upstream reaches (MATLAB line 124)
+                discharge_final[ki] = lateral_inflow[ki]
+        else:
+            # Normal routing (MATLAB lines 150-154)
+            # MATLAB line 151: QQ(1,1) = Qx(ki) + C3(ki) * Qpast(1)
+            QQ = qL_total[ki] + C3[ki] * Qpast
+            # For LINEAR, nx=1 and nt=1, so this is just QQ(1,1)
+            discharge_final[ki] = QQ
+
+
 def linear_channel_routing(
-    network: GeoDataFrame,
+    network: GeoDataFrame | dict,
     discharge_initial: np.ndarray,
     lateral_inflow: np.ndarray,
     dt: float,
@@ -173,6 +274,8 @@ def linear_channel_routing(
         K = lag_time_s [s] (lag time used as storage coefficient)
         qL = lateral inflow + integrated upstream contributions [m³/s]
 
+    PERFORMANCE: Uses Numba JIT compilation for significant speedup over pure Python loops.
+
     Args:
         network: River network GeoDataFrame with columns:
             - mobidic_id: Internal reach ID (0-indexed)
@@ -180,10 +283,17 @@ def linear_channel_routing(
             - downstream: Downstream reach ID (NaN if outlet)
             - calc_order: Calculation order (lower values processed first)
             - lag_time_s: Lag time [s] (used as storage coefficient K)
+            OR dictionary with pre-processed topology (from Simulation._preprocess_network_topology):
+            - 'upstream_1_idx': numpy array of first upstream indices
+            - 'upstream_2_idx': numpy array of second upstream indices
+            - 'n_upstream': numpy array of upstream counts
+            - 'sorted_reach_idx': numpy array of reach indices sorted by calc_order
+            - 'K': numpy array of storage coefficients
+            - 'n_reaches': number of reaches
         discharge_initial: Initial discharge for each reach [m³/s].
-            Shape: (n_reaches,). Indexed by mobidic_id.
+            Shape: (n_reaches,). Indexed by DataFrame index (not mobidic_id).
         lateral_inflow: Lateral inflow to each reach during this time step [m³/s].
-            Shape: (n_reaches,). Indexed by mobidic_id.
+            Shape: (n_reaches,). Indexed by DataFrame index (not mobidic_id).
         dt: Time step duration [s].
 
     Returns:
@@ -220,16 +330,58 @@ def linear_channel_routing(
         >>> qL = np.array([2.0, 1.0])  # m³/s lateral inflow
         >>> Q_final, state = linear_channel_routing(network, Q_init, qL, dt=900)
     """
-    logger.debug(f"Starting linear channel routing for {len(network)} reaches, dt={dt}s")
+    # Check if network is pre-processed dictionary (from Simulation class)
+    if isinstance(network, dict):
+        # Use pre-processed topology (fast path)
+        logger.debug(f"Starting linear channel routing (Numba) for {network['n_reaches']} reaches, dt={dt}s")
 
-    # Validate inputs
-    required_cols = ["mobidic_id", "upstream_1", "upstream_2", "downstream", "calc_order", "lag_time_s"]
-    missing_cols = [col for col in required_cols if col not in network.columns]
-    if missing_cols:
-        raise ValueError(f"Network missing required columns: {missing_cols}")
+        n_reaches = network["n_reaches"]
+        upstream_1_idx = network["upstream_1_idx"]
+        upstream_2_idx = network["upstream_2_idx"]
+        n_upstream = network["n_upstream"]
+        sorted_reach_idx = network["sorted_reach_idx"]
+        K = network["K"]
 
-    n_reaches = len(network)
+    else:
+        # Process GeoDataFrame (slower path, for backwards compatibility)
+        logger.debug(f"Starting linear channel routing for {len(network)} reaches, dt={dt}s")
 
+        # Validate inputs
+        required_cols = ["mobidic_id", "upstream_1", "upstream_2", "downstream", "calc_order", "lag_time_s"]
+        missing_cols = [col for col in required_cols if col not in network.columns]
+        if missing_cols:
+            raise ValueError(f"Network missing required columns: {missing_cols}")
+
+        n_reaches = len(network)
+
+        # Create mapping from mobidic_id to DataFrame index
+        mobidic_id_to_idx = {int(network.at[idx, "mobidic_id"]): idx for idx in network.index}
+
+        # Pre-extract topology to numpy arrays (Strategy 2)
+        upstream_1_idx = np.array(
+            [mobidic_id_to_idx.get(int(uid), -1) if pd.notna(uid) else -1 for uid in network["upstream_1"]],
+            dtype=np.int32,
+        )
+        upstream_2_idx = np.array(
+            [mobidic_id_to_idx.get(int(uid), -1) if pd.notna(uid) else -1 for uid in network["upstream_2"]],
+            dtype=np.int32,
+        )
+        n_upstream = np.array(
+            [
+                (1 if pd.notna(network.at[idx, "upstream_1"]) else 0)
+                + (1 if pd.notna(network.at[idx, "upstream_2"]) else 0)
+                for idx in network.index
+            ],
+            dtype=np.int32,
+        )
+
+        # Get sorted reach indices
+        sorted_reach_idx = network.sort_values("calc_order").index.values.astype(np.int32)
+
+        # Extract K (lag time as storage coefficient)
+        K = network["lag_time_s"].values
+
+    # Validate array sizes
     if len(discharge_initial) != n_reaches:
         raise ValueError(f"discharge_initial length {len(discharge_initial)} must match number of reaches {n_reaches}")
 
@@ -239,102 +391,28 @@ def linear_channel_routing(
     if dt <= 0:
         raise ValueError(f"Time step dt must be positive, got {dt}")
 
-    # Create mapping from mobidic_id to DataFrame index (for array indexing)
-    # mobidic_ids may not be consecutive (e.g., after joining reaches), but DataFrame indices are always 0 to n-1
-    mobidic_id_to_idx = {int(network.at[idx, "mobidic_id"]): idx for idx in network.index}
-
-    # Initialize output arrays (indexed by DataFrame index, not mobidic_id)
-    discharge_final = np.zeros(n_reaches)
-    qL_total = lateral_inflow.copy()
+    # Initialize output arrays
+    discharge_final = np.zeros(n_reaches, dtype=np.float64)
+    qL_total = np.zeros(n_reaches, dtype=np.float64)
 
     # Calculate routing coefficients for all reaches using lag_time_s as K
-    K = network["lag_time_s"].values
     C3 = np.exp(-dt / K)  # Recession coefficient
     C4 = 1 - C3  # Lateral inflow coefficient
 
-    # Sort reaches by calculation order
-    network_sorted = network.sort_values("calc_order")
-
-    # Route through network in topological order
-    for _, reach in network_sorted.iterrows():
-        mobidic_id = int(reach["mobidic_id"])
-        ki = mobidic_id_to_idx[mobidic_id]  # Get DataFrame index for this mobidic_id
-
-        # Count number of upstream reaches (nm in MATLAB)
-        nm = 0
-        if pd.notna(reach["upstream_1"]):
-            nm += 1
-        if pd.notna(reach["upstream_2"]):
-            nm += 1
-
-        # Start with lateral inflow (MATLAB line 66: Qx(ki) = qL(ki))
-        qL_total[ki] = lateral_inflow[ki]
-
-        # Add contributions from upstream reaches (MATLAB lines 67-74)
-        for upstream_col in ["upstream_1", "upstream_2"]:
-            upstream_mobidic_id = reach[upstream_col]
-
-            if pd.notna(upstream_mobidic_id):
-                upstream_mobidic_id = int(upstream_mobidic_id)
-                jj = mobidic_id_to_idx[upstream_mobidic_id]  # Get DataFrame index for upstream reach
-
-                # Compute mean integral of upstream discharge over time step
-                # Formula from MATLAB go_route_ord.m line 70 (LINEAR routing):
-                # mean_upstream = Qx(jj)/C4(jj) + (Qx(jj) - Q(jj,tt-1)*C4(jj))/log(C3(jj))
-                # where Qx(jj) = C4(jj) * qL_total(jj) from previous reach computation
-                # This integrates the exponential decay from upstream reach over the time step
-
-                if C3[jj] == 1.0:
-                    # Special case: no decay (K → ∞)
-                    # Mean = Qx(jj) / C4(jj)
-                    mean_upstream = qL_total[jj] / C4[jj]
-                elif abs(C3[jj]) < 1e-10:
-                    # Special case: instant decay (K → 0)
-                    # Only lateral inflow contributes
-                    mean_upstream = qL_total[jj] / C4[jj]
-                else:
-                    # General case: compute integral mean
-                    # Exact translation from MATLAB go_route_ord.m line 70:
-                    # Qx(ki) = Qx(ki) + Qx(jj)/C4(jj) + (Qx(jj) - Q(jj,tt-1)*C4(jj))/log(C3(jj))
-                    # Note: qL_total[jj] in Python = Qx(jj) in MATLAB (already multiplied by C4)
-                    mean_upstream = qL_total[jj] / C4[jj] + (qL_total[jj] - discharge_initial[jj] * C4[jj]) / np.log(
-                        C3[jj]
-                    )
-
-                qL_total[ki] += mean_upstream
-
-        # MATLAB line 75: Qx(ki) = Qx(ki) * C4(ki)
-        qL_total[ki] = qL_total[ki] * C4[ki]
-
-        # MATLAB line 79: Qpast = Q(ki, tt-1)
-        Qpast = discharge_initial[ki]
-
-        # Check if reach is too short (MATLAB lines 120-130)
-        # For LINEAR routing this should never happen (nt is always 1, never NaN)
-        # But we keep this check for robustness and consistency with MATLAB structure
-        if np.isnan(K[ki]) or K[ki] <= 0:
-            # Reach too short - flow passes directly through
-            if nm > 0:
-                # Sum upstream discharges (MATLAB line 122)
-                upstream_sum = 0.0
-                for upstream_col in ["upstream_1", "upstream_2"]:
-                    upstream_mobidic_id = reach[upstream_col]
-                    if pd.notna(upstream_mobidic_id):
-                        upstream_mobidic_id = int(upstream_mobidic_id)
-                        jj = mobidic_id_to_idx[upstream_mobidic_id]
-                        upstream_sum += discharge_final[jj]
-                discharge_final[ki] = lateral_inflow[ki] + upstream_sum
-            else:
-                # No upstream reaches (MATLAB line 124)
-                discharge_final[ki] = lateral_inflow[ki]
-        else:
-            # Normal routing (MATLAB lines 150-154)
-            # MATLAB line 151: QQ(1,1) = Qx(ki) + C3(ki) * Qpast(1)
-            QQ = qL_total[ki] + C3[ki] * Qpast
-
-            # MATLAB line 154: Q(ki,tt) = QQ(nx(ki), nt(ki))
-            # For LINEAR, nx=1 and nt=1, so this is just QQ(1,1)
-            discharge_final[ki] = QQ
+    # Call Numba-compiled kernel for maximum performance
+    _linear_routing_kernel(
+        discharge_initial,
+        lateral_inflow,
+        sorted_reach_idx,
+        upstream_1_idx,
+        upstream_2_idx,
+        n_upstream,
+        K,
+        C3,
+        C4,
+        discharge_final,
+        qL_total,
+    )
 
     # Check for negative discharges
     negative_mask = discharge_final < 0

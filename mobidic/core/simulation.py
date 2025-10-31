@@ -285,6 +285,9 @@ class Simulation:
         # Prepare parameter grids
         self.param_grids = self._prepare_grids()
 
+        # Preprocess and cache network topology for fast routing
+        self._network_topology = self._preprocess_network_topology()
+
         # Initialize state
         self.state = None
 
@@ -526,6 +529,67 @@ class Simulation:
 
         return param_grids
 
+    def _preprocess_network_topology(self) -> dict:
+        """Preprocess network topology for fast routing.
+
+        This method pre-extracts network topology to numpy arrays and caches them
+        for use in every time step. This avoids repeated pandas operations during
+        the main simulation loop.
+
+        Returns:
+            Dictionary containing pre-processed network topology:
+                - 'upstream_1_idx': numpy array of first upstream indices
+                - 'upstream_2_idx': numpy array of second upstream indices
+                - 'n_upstream': numpy array of upstream counts
+                - 'sorted_reach_idx': numpy array of reach indices sorted by calc_order
+                - 'K': numpy array of storage coefficients (lag_time_s)
+                - 'n_reaches': number of reaches
+        """
+        logger.debug("Preprocessing network topology for fast routing")
+
+        network = self.network
+        n_reaches = len(network)
+
+        # Create mapping from mobidic_id to DataFrame index
+        mobidic_id_to_idx = {int(network.at[idx, "mobidic_id"]): idx for idx in network.index}
+
+        # Pre-extract topology to numpy arrays
+        upstream_1_idx = np.array(
+            [mobidic_id_to_idx.get(int(uid), -1) if pd.notna(uid) else -1 for uid in network["upstream_1"]],
+            dtype=np.int32,
+        )
+        upstream_2_idx = np.array(
+            [mobidic_id_to_idx.get(int(uid), -1) if pd.notna(uid) else -1 for uid in network["upstream_2"]],
+            dtype=np.int32,
+        )
+        n_upstream = np.array(
+            [
+                (1 if pd.notna(network.at[idx, "upstream_1"]) else 0)
+                + (1 if pd.notna(network.at[idx, "upstream_2"]) else 0)
+                for idx in network.index
+            ],
+            dtype=np.int32,
+        )
+
+        # Get sorted reach indices by calc_order
+        sorted_reach_idx = network.sort_values("calc_order").index.values.astype(np.int32)
+
+        # Extract K (lag time as storage coefficient)
+        K = network["lag_time_s"].values
+
+        topology = {
+            "upstream_1_idx": upstream_1_idx,
+            "upstream_2_idx": upstream_2_idx,
+            "n_upstream": n_upstream,
+            "sorted_reach_idx": sorted_reach_idx,
+            "K": K,
+            "n_reaches": n_reaches,
+        }
+
+        logger.success(f"Network topology preprocessed: {n_reaches} reaches cached")
+
+        return topology
+
     def _accumulate_lateral_inflow(self, lateral_flow: np.ndarray) -> np.ndarray:
         """Accumulate lateral flow contributions to each reach.
 
@@ -550,11 +614,7 @@ class Simulation:
 
         # Create mask for valid cells: not NaN, >= 0, and finite lateral flow
         # MATLAB: ko = find(isfinite(zz) & (ch>0)); % contributing pixels
-        valid_mask = (
-            np.isfinite(hillslope_map_flat)
-            & (hillslope_map_flat >= 0)
-            & np.isfinite(lateral_flow_flat)
-        )
+        valid_mask = np.isfinite(hillslope_map_flat) & (hillslope_map_flat >= 0) & np.isfinite(lateral_flow_flat)
 
         # Extract valid reach IDs and flow values
         valid_reach_ids = hillslope_map_flat[valid_mask].astype(np.int32)
@@ -787,7 +847,7 @@ class Simulation:
             logger.debug("Computing channel routing")
 
             self.state.discharge, routing_state = linear_channel_routing(
-                network=self.network,
+                network=self._network_topology,
                 discharge_initial=self.state.discharge,
                 lateral_inflow=lateral_inflow,
                 dt=self.dt,
