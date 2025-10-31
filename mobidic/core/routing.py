@@ -333,7 +333,7 @@ def linear_channel_routing(
     # Check if network is pre-processed dictionary (from Simulation class)
     if isinstance(network, dict):
         # Use pre-processed topology (fast path)
-        logger.debug(f"Starting linear channel routing (Numba) for {network['n_reaches']} reaches, dt={dt}s")
+        logger.debug(f"Starting linear channel routing for {network['n_reaches']} reaches, dt={dt}s")
 
         n_reaches = network["n_reaches"]
         upstream_1_idx = network["upstream_1_idx"]
