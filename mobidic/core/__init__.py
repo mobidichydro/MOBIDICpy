@@ -7,7 +7,6 @@ from mobidic.core.simulation import Simulation, SimulationState, SimulationResul
 from mobidic.core.interpolation import (
     precipitation_interpolation,
     station_interpolation,
-    create_grid_coordinates,
 )
 from mobidic.core.pet import calculate_pet
 
@@ -22,6 +21,5 @@ __all__ = [
     "SimulationResults",
     "precipitation_interpolation",
     "station_interpolation",
-    "create_grid_coordinates",
     "calculate_pet",
 ]

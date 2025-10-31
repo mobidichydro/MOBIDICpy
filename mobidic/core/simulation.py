@@ -288,6 +288,10 @@ class Simulation:
         # Preprocess and cache network topology for fast routing
         self._network_topology = self._preprocess_network_topology()
 
+        # Pre-compute interpolation weights for meteorological forcing
+        # Currently, only precipitation is used in the main loop
+        self._interpolation_weights = self._precompute_interpolation_weights(["precipitation"])
+
         # Initialize state
         self.state = None
 
@@ -334,12 +338,16 @@ class Simulation:
 
         return SimulationState(wc, wg, wp, ws, discharge)
 
-    def _interpolate_forcing(self, time: datetime, variable: str) -> np.ndarray:
+    def _interpolate_forcing(
+        self, time: datetime, variable: str, weights_cache: dict[str, np.ndarray | None] | None = None
+    ) -> np.ndarray:
         """Interpolate meteorological forcing data to grid.
 
         Args:
             time: Current simulation time
             variable: Variable name ('precipitation', 'temperature_min', 'temperature_max', etc.)
+            weights_cache: Optional pre-computed interpolation weights for performance.
+                If None, weights will be computed on-the-fly.
 
         Returns:
             2D grid of interpolated values
@@ -414,6 +422,8 @@ class Simulation:
                     # MATLAB mobidic_sid.m line 1246: uses tmww3 with expon=2
                     # tmww3 = tmww^3 where tmww = 1/dist^2, so tmww3 = 1/dist^6
                     # This gives stronger weight to nearby stations (power=6)
+                    # Use cached weights if available
+                    weights_matrix = weights_cache.get(variable) if weights_cache else None
                     grid_values = station_interpolation(
                         station_x,
                         station_y,
@@ -423,7 +433,7 @@ class Simulation:
                         self.xllcorner,
                         self.yllcorner,
                         resolution,
-                        weights_matrix=None,
+                        weights_matrix=weights_matrix,
                         apply_elevation_correction=False,  # switchregz=0 in MATLAB
                         power=6.0,  # tmww3 in MATLAB: (1/dist^2)^3 = 1/dist^6
                     )
@@ -439,6 +449,8 @@ class Simulation:
             # - Wind: switchregz=0, expon=0.5 (no elevation correction, power=0.5)
             # - Radiation: switchregz=0, expon=2 (no elevation correction, power=2)
             # Currently only temperature is implemented with elevation correction
+            # Use cached weights if available
+            weights_matrix = weights_cache.get(variable) if weights_cache else None
             grid_values = station_interpolation(
                 station_x,
                 station_y,
@@ -448,7 +460,7 @@ class Simulation:
                 self.xllcorner,
                 self.yllcorner,
                 resolution,
-                weights_matrix=None,
+                weights_matrix=weights_matrix,
                 apply_elevation_correction=True,  # True for temperature, False for others
                 power=2.0,  # 2.0 for most, 0.5 for wind
             )
@@ -528,6 +540,115 @@ class Simulation:
         param_grids["alpsur"] = self.alpsur * param_grids["alpha"]
 
         return param_grids
+
+    def _precompute_interpolation_weights(self, variables: list[str] | None = None) -> dict[str, np.ndarray | None]:
+        """Pre-compute IDW interpolation weights for each meteorological variable.
+
+        Weights depend only on station geometry, not on values, so they can be
+        computed once and reused for all timesteps. This provides significant
+        performance improvement for long simulations.
+
+        Args:
+            variables: List of variable names to compute weights for.
+                If None, computes weights for all variables in forcing data.
+                Examples: ["precipitation"], ["precipitation", "temperature_min"]
+
+        Returns:
+            Dictionary mapping variable names to weight matrices (3D arrays).
+            For variables using nearest neighbor (precipitation with "nearest" method),
+            the value is None since weights aren't needed.
+        """
+        from mobidic.core.interpolation import compute_idw_weights
+
+        # Determine which variables to compute weights for
+        if variables is None:
+            # Default: compute weights for all variables
+            variables_to_process = list(self.forcing.stations.keys())
+            logger.info("Pre-computing interpolation weights for all meteorological variables")
+        else:
+            # Validate that requested variables exist in forcing data
+            available_vars = set(self.forcing.stations.keys())
+            invalid_vars = [v for v in variables if v not in available_vars]
+            if invalid_vars:
+                raise ValueError(
+                    f"Variables {invalid_vars} not found in forcing data. Available variables: {sorted(available_vars)}"
+                )
+            variables_to_process = variables
+            logger.info(f"Pre-computing interpolation weights for selected variables: {variables_to_process}")
+
+        weights_cache = {}
+        resolution = self.resolution[0]  # Use single resolution value
+
+        for variable in variables_to_process:
+            var_stations = self.forcing.stations[variable]
+
+            if len(var_stations) == 0:
+                logger.debug(f"No stations for {variable}, skipping weight computation")
+                weights_cache[variable] = None
+                continue
+
+            # Get station coordinates (assuming they don't change over time)
+            station_x = np.array([s["x"] for s in var_stations])
+            station_y = np.array([s["y"] for s in var_stations])
+
+            # Determine interpolation settings based on variable type
+            if variable == "precipitation":
+                precip_interp = self.config.simulation.precipitation_interp
+                if precip_interp == "nearest":
+                    # Nearest neighbor doesn't use weights matrix
+                    logger.debug(f"{variable}: using nearest neighbor (no weights needed)")
+                    weights_cache[variable] = None
+                else:  # "idw"
+                    # IDW with power=6 for precipitation
+                    logger.debug(f"{variable}: pre-computing IDW weights (power=6)")
+                    weights_cache[variable] = compute_idw_weights(
+                        station_x,
+                        station_y,
+                        self.dtm,
+                        self.xllcorner,
+                        self.yllcorner,
+                        resolution,
+                        power=6.0,
+                    )
+            elif variable in ["temperature_min", "temperature_max"]:
+                # Temperature: power=2, elevation correction applied to values (not weights)
+                logger.debug(f"{variable}: pre-computing IDW weights (power=2)")
+                weights_cache[variable] = compute_idw_weights(
+                    station_x,
+                    station_y,
+                    self.dtm,
+                    self.xllcorner,
+                    self.yllcorner,
+                    resolution,
+                    power=2.0,
+                )
+            elif variable == "wind_speed":
+                # Wind: power=0.5
+                logger.debug(f"{variable}: pre-computing IDW weights (power=0.5)")
+                weights_cache[variable] = compute_idw_weights(
+                    station_x,
+                    station_y,
+                    self.dtm,
+                    self.xllcorner,
+                    self.yllcorner,
+                    resolution,
+                    power=0.5,
+                )
+            else:
+                # Other variables (humidity, radiation): power=2, no elevation correction
+                logger.debug(f"{variable}: pre-computing IDW weights (power=2)")
+                weights_cache[variable] = compute_idw_weights(
+                    station_x,
+                    station_y,
+                    self.dtm,
+                    self.xllcorner,
+                    self.yllcorner,
+                    resolution,
+                    power=2.0,
+                )
+
+        logger.success(f"Interpolation weights cached for {len(weights_cache)} variables")
+        return weights_cache
 
     def _preprocess_network_topology(self) -> dict:
         """Preprocess network topology for fast routing.
@@ -691,9 +812,11 @@ class Simulation:
         for step in range(n_steps):
             logger.debug(f"Time step {step + 1}/{n_steps}: {current_time}")
 
-            # 1. Interpolate meteorological forcing
+            # 1. Interpolate meteorological forcing (using cached weights for performance)
             try:
-                precip = self._interpolate_forcing(current_time, "precipitation")
+                precip = self._interpolate_forcing(
+                    current_time, "precipitation", weights_cache=self._interpolation_weights
+                )
             except (KeyError, ValueError):
                 logger.warning(f"Precipitation data not found for {current_time}, using zero")
                 precip = np.zeros((self.nrows, self.ncols))

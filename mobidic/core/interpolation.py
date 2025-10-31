@@ -273,36 +273,71 @@ def station_interpolation(
     return result
 
 
-def create_grid_coordinates(
+def compute_idw_weights(
+    station_x: NDArray[np.float64],
+    station_y: NDArray[np.float64],
+    dtm: NDArray[np.float64],
     xllcorner: float,
     yllcorner: float,
-    resolution: tuple[float, float],
-    shape: tuple[int, int],
-) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    resolution: float,
+    power: float = 2.0,
+) -> NDArray[np.float64]:
     """
-    Create 2D coordinate arrays for grid cells.
+    Pre-compute IDW interpolation weights for all stations.
+
+    This function computes the distance-based weights that can be reused
+    across multiple timesteps since they depend only on station geometry,
+    not on the values being interpolated.
 
     Args:
+        station_x: X coordinates of stations (e.g., UTM east) [m]
+        station_y: Y coordinates of stations (e.g., UTM north) [m]
+        dtm: Digital Terrain Model (elevation grid) [m a.s.l.]
         xllcorner: X coordinate of lower-left corner [m]
         yllcorner: Y coordinate of lower-left corner [m]
-        resolution: (x_resolution, y_resolution) [m]
-        shape: (nrows, ncols)
+        resolution: Grid cell size [m]
+        power: Power parameter for IDW (default: 2.0)
 
     Returns:
-        Tuple of (grid_x, grid_y) where each is a 2D array of shape (nrows, ncols)
+        3D array of weights with shape (nrows, ncols, n_stations).
+        weights[i, j, k] is the weight for station k at grid cell (i, j).
 
     Examples:
-        >>> # Create coordinate arrays for a 10x10 grid with 100m resolution
-        >>> grid_x, grid_y = create_grid_coordinates(0, 0, (100, 100), (10, 10))
+        >>> # Pre-compute weights for 3 stations
+        >>> dtm = np.random.rand(100, 100) * 1000
+        >>> station_x = np.array([1000, 5000, 9000])
+        >>> station_y = np.array([1000, 5000, 9000])
+        >>> weights = compute_idw_weights(station_x, station_y, dtm, 0, 0, 100)
+        >>> # weights.shape == (100, 100, 3)
     """
-    nrows, ncols = shape
-    res_x, res_y = resolution
+    nrows, ncols = dtm.shape
+    n_stations = len(station_x)
 
-    # Create 1D coordinate arrays (cell centers)
-    x_coords = xllcorner + np.arange(ncols) * res_x
-    y_coords = yllcorner + np.arange(nrows) * res_y
+    # Convert station coordinates to grid indices
+    st_j = np.round((station_x - xllcorner) / resolution).astype(int)
+    st_i = np.round((station_y - yllcorner) / resolution).astype(int)
 
-    # Create 2D meshgrid
-    grid_x, grid_y = np.meshgrid(x_coords, y_coords)
+    # Create grid indices (add 0.01 to avoid division by zero, matching MATLAB)
+    jj, ii = np.meshgrid(np.arange(ncols), np.arange(nrows))
+    jj = jj + 0.01
+    ii = ii + 0.01
 
-    return grid_x, grid_y
+    # Initialize weights array
+    weights = np.zeros((nrows, ncols, n_stations))
+
+    # Compute weights for each station
+    for k in range(n_stations):
+        # Distance from each grid cell to station
+        dx = jj - st_j[k]
+        dy = ii - st_i[k]
+        dist_squared = dx**2 + dy**2
+
+        # Inverse distance weights
+        if power == 2.0:
+            weights[:, :, k] = 1.0 / dist_squared
+        else:
+            weights[:, :, k] = 1.0 / (dist_squared ** (power / 2.0))
+
+    logger.debug(f"Pre-computed IDW weights: {nrows}x{ncols} grid, {n_stations} stations, power={power}")
+
+    return weights
