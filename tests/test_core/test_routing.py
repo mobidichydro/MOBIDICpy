@@ -11,14 +11,13 @@ class TestHillslopeRouting:
     """Tests for hillslope_routing function."""
 
     def test_simple_accumulation_grass(self):
-        """Test one-step routing with Grass notation."""
+        """Test one-step routing with MOBIDIC notation."""
         # Create 3x3 grid where all cells drain to center
         lateral_flow = np.ones((3, 3)) * 0.1
 
         # All cells flow to center (1,1)
-        # Grass notation: 1=bottom-left, 2=bottom, 3=bottom-right, 4=right,
-        #                 5=top-right, 6=top, 7=top-left, 8=left
-        # Note: Grass notation uses different numbering than Arc
+        # MOBIDIC notation (1-8): 1=northwest, 2=north, 3=northeast, 4=east,
+        #                         5=southeast, 6=south, 7=southwest, 8=west
         # Direction 2 = up (north), 6 = down (south), 4 = right (east), 8 = left (west)
         flow_direction = np.array(
             [
@@ -28,7 +27,7 @@ class TestHillslopeRouting:
             ]
         )
 
-        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
 
         # Center cell receives flow from all 8 neighbors (one-step)
         # Does NOT include center's own flow
@@ -38,34 +37,13 @@ class TestHillslopeRouting:
         assert np.isclose(upstream_contribution[0, 0], 0.0)
         assert np.isclose(upstream_contribution[2, 2], 0.0)
 
-    def test_simple_accumulation_arc(self):
-        """Test one-step routing with Arc notation."""
-        lateral_flow = np.ones((3, 3)) * 0.1
-
-        # All cells flow to center (1,1) using Arc notation
-        # Arc notation: 1=down, 2=down-right, 4=right, 8=up-right,
-        #               16=up, 32=up-left, 64=left, 128=down-left
-        flow_direction = np.array(
-            [
-                [2, 1, 128],  # top row: (0,0)->down-right, (0,1)->down, (0,2)->down-left
-                [4, 0, 64],  # middle: (1,0)->right, (1,1)=outlet, (1,2)->left
-                [8, 16, 32],  # bottom: (2,0)->up-right, (2,1)->up, (2,2)->up-left
-            ]
-        )
-
-        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Arc")
-
-        # Center cell receives flow from all 8 neighbors (one-step)
-        # Does NOT include center's own flow
-        assert np.isclose(upstream_contribution[1, 1], 0.8)  # 8 neighbors × 0.1
-
     def test_linear_cascade_grass(self):
         """Test one-step routing in linear cascade."""
         # 1x5 grid, flow from left to right
         lateral_flow = np.ones((1, 5)) * 1.0
         flow_direction = np.array([[4, 4, 4, 4, 0]])  # All flow right, last is outlet
 
-        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
 
         # One-step routing: each cell receives flow ONLY from immediate upstream neighbor
         assert np.isclose(upstream_contribution[0, 0], 0.0)  # First cell: no upstream
@@ -92,7 +70,7 @@ class TestHillslopeRouting:
             ]
         )
 
-        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
 
         # NaN cells are skipped in routing, result is 0.0 at that position
         assert np.isclose(upstream_contribution[0, 1], 0.0)
@@ -117,7 +95,7 @@ class TestHillslopeRouting:
             ]
         )
 
-        upstream_contribution = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
 
         # Each top cell receives flow from cell below (one-step)
         # Does NOT include cell's own flow
@@ -130,21 +108,13 @@ class TestHillslopeRouting:
         assert np.isclose(upstream_contribution[1, 1], 0.0)
         assert np.isclose(upstream_contribution[1, 2], 0.0)
 
-    def test_invalid_flow_dir_type(self):
-        """Test that invalid flow direction type raises error."""
-        lateral_flow = np.ones((3, 3))
-        flow_direction = np.ones((3, 3))
-
-        with pytest.raises(ValueError, match="flow_dir_type must be"):
-            hillslope_routing(lateral_flow, flow_direction, "Invalid")
-
     def test_shape_mismatch(self):
         """Test that shape mismatch raises error."""
         lateral_flow = np.ones((3, 3))
         flow_direction = np.ones((2, 2))
 
         with pytest.raises(ValueError, match="must match"):
-            hillslope_routing(lateral_flow, flow_direction, "Grass")
+            hillslope_routing(lateral_flow, flow_direction)
 
 
 class TestLinearChannelRouting:

@@ -640,8 +640,8 @@ class Simulation:
             fld_prev_discharge = fld_prev * cell_area
 
             # Route through hillslope
-            pir_discharge = hillslope_routing(flr_prev_discharge, self.flow_dir, flow_dir_type=self.flow_dir_type)
-            pid_discharge = hillslope_routing(fld_prev_discharge, self.flow_dir, flow_dir_type=self.flow_dir_type)
+            pir_discharge = hillslope_routing(flr_prev_discharge, self.flow_dir)
+            pid_discharge = hillslope_routing(fld_prev_discharge, self.flow_dir)
 
             # Convert back to rates
             pir = pir_discharge / cell_area

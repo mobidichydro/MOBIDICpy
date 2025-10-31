@@ -15,12 +15,62 @@ import numpy as np
 import pandas as pd
 from geopandas import GeoDataFrame
 from loguru import logger
+from numba import njit
+
+
+@njit(cache=True, fastmath=True)
+def _hillslope_routing_kernel(
+    lateral_flow: np.ndarray,
+    flow_direction: np.ndarray,
+    upstream_contribution: np.ndarray,
+    nrows: int,
+    ncols: int,
+) -> None:
+    """
+    Numba-compiled kernel for hillslope routing with MOBIDIC flow direction notation.
+
+    This function modifies upstream_contribution in-place for performance.
+    Compiled to machine code with Numba for speedup over pure Python loops.
+
+    Args:
+        lateral_flow: 2D array of lateral flow [m³/s]
+        flow_direction: 2D array of flow directions (MOBIDIC 1-8 notation)
+        upstream_contribution: 2D output array (modified in-place)
+        nrows: Number of rows
+        ncols: Number of columns
+    """
+    # Pre-computed direction offsets for MOBIDIC notation (1-8)
+    # Matches MATLAB stack8point.m: i8=[-1 -1 -1 0 1 1 1 0], j8=[-1 0 1 1 1 0 -1 -1]
+    dir_offsets_i = np.array([-1, -1, -1, 0, 1, 1, 1, 0], dtype=np.int32)
+    dir_offsets_j = np.array([-1, 0, 1, 1, 1, 0, -1, -1], dtype=np.int32)
+
+    for i in range(nrows):
+        for j in range(ncols):
+            # Skip NaN cells
+            if np.isnan(flow_direction[i, j]) or np.isnan(lateral_flow[i, j]):
+                continue
+
+            flow_dir = int(flow_direction[i, j])
+
+            # Skip outlets (0, -1) and invalid directions
+            if flow_dir <= 0 or flow_dir > 8:
+                continue
+
+            # Get downstream cell offset (flow_dir 1-8 maps to index 0-7)
+            idx = flow_dir - 1
+            di = dir_offsets_i[idx]
+            dj = dir_offsets_j[idx]
+            down_i = i + di
+            down_j = j + dj
+
+            # Check bounds and accumulate flow
+            if 0 <= down_i < nrows and 0 <= down_j < ncols:
+                upstream_contribution[down_i, down_j] += lateral_flow[i, j]
 
 
 def hillslope_routing(
     lateral_flow: np.ndarray,
     flow_direction: np.ndarray,
-    flow_dir_type: str = "Grass",
 ) -> np.ndarray:
     """
     Route lateral flow ONE STEP from upslope cells to immediate downstream neighbors.
@@ -32,13 +82,14 @@ def hillslope_routing(
     CRITICAL: This is NOT cumulative routing! To move water from headwaters to outlets
     requires calling this function once per timestep for many timesteps.
 
+    PERFORMANCE: Uses Numba JIT compilation for speedup over pure Python loops.
+
     Args:
         lateral_flow: 2D array of lateral flow from each cell [m³/s].
             Shape: (nrows, ncols). NaN values indicate no-data cells.
-        flow_direction: 2D array of flow directions [dimensionless].
-            Shape: (nrows, ncols). Uses either Grass (1-8) or Arc (power-of-2) notation.
-        flow_dir_type: Flow direction notation, either "Grass" (1-8 coding) or
-            "Arc" (1,2,4,8,16,32,64,128 coding). Default: "Grass".
+        flow_direction: 2D array of flow directions in MOBIDIC notation (1-8) [dimensionless].
+            Shape: (nrows, ncols). Flow directions are standardized to MOBIDIC convention
+            during preprocessing, regardless of original format.
 
     Returns:
         Upstream contribution array with same shape as lateral_flow [m³/s].
@@ -46,12 +97,12 @@ def hillslope_routing(
 
     Notes:
         Flow direction coding (D8) - MOBIDIC convention from MATLAB stack8point.m:
-            Grass/MOBIDIC notation:   Arc notation:
-            7  6  5                   64  128  32
-            8  ·  4                   16   ·    8
-            1  2  3                    1   2    4
+            MOBIDIC notation (1-8):
+            7  6  5
+            8  ·  4
+            1  2  3
 
-        Direction number → (row_offset, col_offset) in matrix coordinates:
+        Direction number -> (row_offset, col_offset) in matrix coordinates:
             1: (-1, -1) northwest,  2: (-1, 0) north,    3: (-1, 1) northeast,
             4: (0, 1) east,         5: (1, 1) southeast, 6: (1, 0) south,
             7: (1, -1) southwest,   8: (0, -1) west
@@ -67,11 +118,11 @@ def hillslope_routing(
         >>> flow_direction = np.array([[5, 6, 7],
         ...                            [4, 0, 8],  # center [1,1] is outlet (0 = no flow out)
         ...                            [3, 2, 1]])  # all 8 neighbors drain to center
-        >>> upstream = hillslope_routing(lateral_flow, flow_direction, "Grass")
+        >>> upstream = hillslope_routing(lateral_flow, flow_direction)
         >>> upstream[1, 1]  # Center receives flow from all 8 neighbors (one-step)
         0.8  # 8 neighbors x 0.1 m³/s each = 0.8 m³/s (does NOT include center's own 0.1)
     """
-    logger.debug(f"Starting hillslope routing with flow_dir_type={flow_dir_type}, grid shape={lateral_flow.shape}")
+    logger.debug(f"Starting hillslope routing (Numba) with grid shape={lateral_flow.shape}")
 
     # Validate inputs
     if lateral_flow.shape != flow_direction.shape:
@@ -79,76 +130,21 @@ def hillslope_routing(
             f"lateral_flow shape {lateral_flow.shape} must match flow_direction shape {flow_direction.shape}"
         )
 
-    if flow_dir_type not in ["Grass", "Arc"]:
-        raise ValueError(f"flow_dir_type must be 'Grass' or 'Arc', got '{flow_dir_type}'")
-
     nrows, ncols = lateral_flow.shape
 
     # Initialize upstream contribution to ZERO (matching MATLAB line 19: uf=0*fl)
     # MATLAB hill_route does NOT include cell's own flow - only upstream contributions
     upstream_contribution = np.zeros_like(lateral_flow)
 
-    # Define flow direction mappings (direction -> row/col offsets)
-    # MOBIDIC convention matches MATLAB stack8point.m (lines 8-9):
-    # i8=[-1 -1 -1 0 1 1 1 0]
-    # j8=[-1 0 1 1 1 0 -1 -1]
-    # This is the convention stored in gisdata after preprocessing
-    if flow_dir_type == "Grass":
-        # MOBIDIC/Grass convention (gisdata contains MOBIDIC notation)
-        dir_map = {
-            1: (-1, -1),  # up-left (i8[0]=-1, j8[0]=-1)
-            2: (-1, 0),  # up (i8[1]=-1, j8[1]=0)
-            3: (-1, 1),  # up-right (i8[2]=-1, j8[2]=1)
-            4: (0, 1),  # right (i8[3]=0, j8[3]=1)
-            5: (1, 1),  # down-right (i8[4]=1, j8[4]=1)
-            6: (1, 0),  # down (i8[5]=1, j8[5]=0)
-            7: (1, -1),  # down-left (i8[6]=1, j8[6]=-1)
-            8: (0, -1),  # left (i8[7]=0, j8[7]=-1)
-        }
-    else:  # Arc notation
-        # Arc notation: powers of 2 (if used in original data)
-        dir_map = {
-            1: (1, 0),  # down
-            2: (1, 1),  # down-right
-            4: (0, 1),  # right
-            8: (-1, 1),  # up-right
-            16: (-1, 0),  # up
-            32: (-1, -1),  # up-left
-            64: (0, -1),  # left
-            128: (1, -1),  # down-left
-        }
-
-    # MATLAB hill_route does ONE-STEP routing: each cell receives flow from immediate upstream neighbors
-    # NOT cumulative routing! Water moves cell-by-cell over multiple timesteps.
-    #
-    # For each cell, find its upstream neighbors and add their flow
-    # Matching MATLAB lines 20-35: uf(k1) = uf(k1) + fl(st(k1))
-
-    for i in range(nrows):
-        for j in range(ncols):
-            if np.isnan(flow_direction[i, j]) or np.isnan(lateral_flow[i, j]):
-                continue
-
-            flow_dir = int(flow_direction[i, j])
-            if flow_dir == 0 or flow_dir == -1:
-                # Outlet cell (no downstream direction)
-                # -1 is special marker for basin outlet (matching MATLAB buildgis line 645: zp(ifoc)=-1)
-                continue
-
-            if flow_dir not in dir_map:
-                logger.warning(f"Invalid flow direction {flow_dir} at cell ({i}, {j}), skipping")
-                continue
-
-            # Find downstream cell - cell (i,j) flows INTO (down_i, down_j)
-            di, dj = dir_map[flow_dir]
-            down_i, down_j = i + di, j + dj
-
-            # Check bounds
-            if 0 <= down_i < nrows and 0 <= down_j < ncols:
-                # Add this cell's flow to its downstream neighbor (one-step routing)
-                # Matching MATLAB: uf(downstream) += fl(upstream)
-                if not np.isnan(lateral_flow[i, j]):
-                    upstream_contribution[down_i, down_j] += lateral_flow[i, j]
+    # Call Numba-compiled kernel for maximum performance
+    # Flow direction is always in MOBIDIC format (1-8) after preprocessing
+    _hillslope_routing_kernel(
+        lateral_flow,
+        flow_direction,
+        upstream_contribution,
+        nrows,
+        ncols,
+    )
 
     logger.debug("Hillslope routing completed (one-step)")
 
