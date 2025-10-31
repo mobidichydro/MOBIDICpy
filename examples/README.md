@@ -1,10 +1,10 @@
-# MOBIDIC Examples
+# MOBIDIC examples
 
 This directory contains example scripts and data for running MOBIDIC hydrological simulations.
 
-## Available Examples
+## Available examples
 
-### Arno River Basin Example
+### Arno River basin example
 
 The `run_example_Arno.py` script demonstrates the complete MOBIDIC workflow using data from the Arno River basin in Tuscany, Italy.
 
@@ -14,7 +14,7 @@ The `run_example_Arno.py` script demonstrates the complete MOBIDIC workflow usin
 
 ### Validation: Python vs MATLAB
 
-The `run_example_Arno_plots.py` script validates the Python implementation against MATLAB reference outputs by comparing discharge time series, calculating performance metrics (NSE, RMSE, R²), and creating comparison plots.
+The `run_example_Arno_plots.py` script validates the Python implementation against MATLAB reference outputs by comparing discharge time series.
 
 **Location:** `examples/run_example_Arno_plots.py`
 
@@ -38,7 +38,7 @@ The `run_example_Arno_plots.py` script validates the Python implementation again
    pip install matplotlib
    ```
 
-### Running the Arno Example
+### Running the Arno example
 
 ```bash
 cd examples
@@ -51,7 +51,7 @@ Or from the project root:
 python examples/run_example_Arno.py
 ```
 
-### Running the Validation Script (Optional)
+### Plotting the validation results
 
 After running the main example, validate against MATLAB reference outputs:
 
@@ -59,42 +59,42 @@ After running the main example, validate against MATLAB reference outputs:
 python examples/run_example_Arno_plots.py
 ```
 
-See [Validation Against MATLAB Reference](#validation-against-matlab-reference) for details.
+See [Validation against MATLAB reference](#validation-against-matlab-reference) for details.
 
-## What the Example Does
+## What the example does
 
 The `run_example_Arno.py` script performs the following steps:
 
-1. **Configure Logging**: Sets up logger with specified debug level
+1. **Configure logging**: Sets up logger with specified debug level
 
-2. **Load Configuration**: Reads the YAML configuration file (`Arno/Arno.yaml`)
+2. **Load configuration**: Reads the YAML configuration file (`Arno/Arno.yaml`)
 
-3. **GIS Preprocessing**:
+3. **GIS preprocessing**:
    - Processes raster data (DEM, flow direction, soil parameters)
    - Processes river network shapefile
    - Builds network topology and Strahler ordering
    - Maps hillslope cells to river reaches
    - Saves preprocessed data to NetCDF and GeoParquet formats
 
-4. **Meteorological Data Conversion**:
+4. **Meteorological data conversion**:
    - Converts MATLAB .mat format to CF-compliant NetCDF
    - Organizes station data by variable type
 
-5. **Load Forcing Data**:
+5. **Load forcing data**:
    - Loads meteorological forcing from NetCDF
    - Displays available variables and time range
 
-6. **Run Simulation**:
+6. **Run simulation**:
    - Creates Simulation object with GIS data, forcing, and configuration
    - Runs simulation over the entire forcing period
    - Computes soil water balance and channel routing at each time step
    - Stores discharge time series
 
-7. **Save Results**:
+7. **Save results**:
    - Saves final model state to NetCDF
    - Saves discharge time series to Parquet format
 
-8. **Visualize Results**:
+8. **Visualize results**:
    - Plots discharge hydrograph at a specific reach
    - Shows network-wide discharge statistics
    - Displays interactive plots
@@ -110,20 +110,20 @@ debug_level = "DEBUG"        # Logging level: DEBUG, INFO, WARNING, ERROR
 
 The simulation runs for the entire period available in the meteorological forcing data. To run shorter simulations for testing, modify the `end_date` calculation in the script (commented example provided).
 
-## Output Files
+## Output files
 
 The script creates the following outputs:
 
-### Preprocessed Data
+### Preprocessed data
 - `Arno/gisdata/Arno_gisdata.nc` - Gridded GIS data (NetCDF)
 - `Arno/gisdata/Arno_net.parquet` - River network (GeoParquet)
 - `Arno/meteodata/Arno_meteodata.nc` - Meteorological data (NetCDF)
 
-### Simulation Results
+### Simulation results
 - `Arno/states/final_state_YYYYMMDD_HHMMSS.nc` - Final model state (NetCDF)
-- `Arno/output/discharge_YYYYMMDD_HHMMSS_YYYYMMDD_HHMMSS.parquet` - Discharge time series (Parquet)
+- `Arno/output/discharge_YYYYMMDD_YYYYMMDD.parquet` - Discharge time series (Parquet)
 
-## Example Data
+## Example data
 
 The `Arno/` directory contains:
 
@@ -148,7 +148,7 @@ Arno/
         └── discharge.csv        # MATLAB discharge time series
 ```
 
-## Configuration File
+## Configuration file
 
 The `Arno.yaml` file contains all model parameters and settings:
 
@@ -162,7 +162,7 @@ The `Arno.yaml` file contains all model parameters and settings:
 
 See `Arno/Arno.yaml` for detailed parameter descriptions.
 
-## Validation Against MATLAB Reference
+## Validation against MATLAB reference
 
 After running `run_example_Arno.py`, you can validate the Python implementation against MATLAB reference outputs using:
 
@@ -170,65 +170,40 @@ After running `run_example_Arno.py`, you can validate the Python implementation 
 python examples/run_example_Arno_plots.py
 ```
 
-### What the Validation Script Does
+### Comparison steps
 
-1. **Load Data**:
+1. **Load data**:
    - Loads Python discharge output (Parquet format)
    - Loads MATLAB discharge output (CSV format)
 
-2. **Match Reaches**:
+2. **Match reaches**:
    - Accounts for +1 offset in MATLAB reach IDs (MATLAB reach_id = Python reach_id + 1)
    - Identifies matching reaches between implementations
 
-3. **Align Time Series**:
+3. **Align time series**:
    - Finds common time range
    - Ensures exact timestamp alignment
 
-4. **Calculate Metrics**:
-   - Nash-Sutcliffe Efficiency (NSE)
+4. **Calculate metrics**:
    - Root Mean Square Error (RMSE)
    - Bias
-   - R² coefficient
 
-5. **Visualize Comparison**:
+5. **Visualize comparison**:
    - Time series plots (Python vs MATLAB)
    - Scatter plots with 1:1 line
-   - Performance metrics displayed on plots
 
-### Expected Output
+### Expected output
 
 The script displays:
 - Performance metrics for each matched reach
 - Overall average NSE and RMSE
 - Interactive comparison plots showing time series and scatter plots
 
-**Typical validation results:**
-- NSE > 0.99 indicates excellent agreement
-- RMSE < 1 m³/s indicates minimal differences
+## Additional resources
 
-## Next Steps
-
-After running the example, you can:
-
-1. **Modify parameters** in `Arno.yaml` to see how they affect results
-2. **Extend or modify simulation period** by changing `start_date` and `end_date` in the script
-3. **Create your own basin** by following the Arno example structure
-4. **Analyze results** using the saved Parquet files:
-   ```python
-   import pandas as pd
-   import glob
-
-   # Find the latest discharge file
-   discharge_files = glob.glob('Arno/output/discharge_*.parquet')
-   df = pd.read_parquet(discharge_files[-1])
-   print(df.head())
-   ```
-
-## Additional Resources
-
-- **User Guide**: See `docs/` for detailed documentation
-- **API Reference**: See `docs/api/` for function descriptions
-- **GitHub Issues**: Report bugs or request features
+- **User guide**: See `docs/` for detailed documentation
+- **API reference**: See `docs/api/` for function descriptions
+- **GitHub issues**: Report bugs or request features
 
 ## Citation
 
