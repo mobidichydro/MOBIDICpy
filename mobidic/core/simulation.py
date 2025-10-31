@@ -534,6 +534,8 @@ class Simulation:
         - Skip NaN cells (outside domain)
         - Skip -9999 cells (inside domain but cannot reach river network)
 
+        Vectorized implementation using np.bincount for performance.
+
         Args:
             lateral_flow: 2D grid of lateral flow [m³/s]
 
@@ -541,21 +543,29 @@ class Simulation:
             1D array of lateral inflow to each reach [m³/s]
         """
         n_reaches = len(self.network)
-        lateral_inflow = np.zeros(n_reaches)
 
         # Flatten lateral flow and hillslope-reach mapping
         lateral_flow_flat = lateral_flow.ravel("F")
         hillslope_map_flat = self.hillslope_reach_map.ravel("F")
 
-        # Sum lateral flow for each reach
+        # Create mask for valid cells: not NaN, >= 0, and finite lateral flow
         # MATLAB: ko = find(isfinite(zz) & (ch>0)); % contributing pixels
-        for cell_idx, reach_id in enumerate(hillslope_map_flat):
-            # Skip NaN (outside domain) and negative values like -9999 (unassigned)
-            if not np.isnan(reach_id) and reach_id >= 0:
-                reach_id = int(reach_id)
-                # Additional safety check for valid reach index
-                if reach_id < n_reaches and not np.isnan(lateral_flow_flat[cell_idx]):
-                    lateral_inflow[reach_id] += lateral_flow_flat[cell_idx]
+        valid_mask = (
+            np.isfinite(hillslope_map_flat)
+            & (hillslope_map_flat >= 0)
+            & np.isfinite(lateral_flow_flat)
+        )
+
+        # Extract valid reach IDs and flow values
+        valid_reach_ids = hillslope_map_flat[valid_mask].astype(np.int32)
+        valid_flows = lateral_flow_flat[valid_mask]
+
+        # Accumulate using bincount (vectorized, very fast)
+        lateral_inflow = np.bincount(
+            valid_reach_ids,
+            weights=valid_flows,
+            minlength=n_reaches,
+        )
 
         return lateral_inflow
 
