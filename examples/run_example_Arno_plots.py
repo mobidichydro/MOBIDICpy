@@ -104,9 +104,6 @@ def compare_variable(
 
     # Load Python output (Parquet)
     df_python = pd.read_parquet(parquet_file)
-    # Set time as index if it's a column
-    if "time" in df_python.columns:
-        df_python.set_index("time", inplace=True)
     print(f"  Python data shape: {df_python.shape}")
     print(f"  Time range: {df_python.index[0]} to {df_python.index[-1]}")
 
