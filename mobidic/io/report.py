@@ -83,6 +83,9 @@ def save_discharge_report(
         columns=[f"reach_{rid:04d}" for rid in reach_indices],
     )
 
+    # Reset index to make time the first column
+    df = df.reset_index()
+
     # Add reach metadata as separate columns (optional, can be joined later with network data)
     # For now, keep it simple and just save discharge values
 
@@ -91,7 +94,7 @@ def save_discharge_report(
         output_path,
         engine="pyarrow",
         compression="snappy",
-        index=True,
+        index=False,
     )
 
     logger.success(f"Discharge report saved to {output_path}")
@@ -212,12 +215,15 @@ def save_lateral_inflow_report(
         columns=[f"reach_{rid:04d}" for rid in reach_indices],
     )
 
+    # Reset index to make time the first column
+    df = df.reset_index()
+
     # Save to Parquet
     df.to_parquet(
         output_path,
         engine="pyarrow",
         compression="snappy",
-        index=True,
+        index=False,
     )
 
     logger.success(f"Lateral inflow report saved to {output_path}")
