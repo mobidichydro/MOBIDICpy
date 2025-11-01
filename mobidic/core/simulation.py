@@ -923,8 +923,8 @@ class Simulation:
         lateral_inflow_ts = []
         time_ts = []
 
-        # Calculate number of time steps
-        n_steps = int((end_date - start_date).total_seconds() / self.dt)
+        # Calculate number of time steps (inclusive of end_date)
+        n_steps = int((end_date - start_date).total_seconds() / self.dt) + 1
         logger.info(f"Number of time steps: {n_steps}")
 
         # Pre-compute time indices for all simulation timesteps
