@@ -292,6 +292,9 @@ class Simulation:
         # Currently, only precipitation is used in the main loop
         self._interpolation_weights = self._precompute_interpolation_weights(["precipitation"])
 
+        # Time indices cache (will be populated in run() when simulation period is known)
+        self._time_indices_cache = None
+
         # Initialize state
         self.state = None
 
@@ -339,7 +342,11 @@ class Simulation:
         return SimulationState(wc, wg, wp, ws, discharge)
 
     def _interpolate_forcing(
-        self, time: datetime, variable: str, weights_cache: dict[str, np.ndarray | None] | None = None
+        self,
+        time: datetime,
+        variable: str,
+        weights_cache: dict[str, np.ndarray | None] | None = None,
+        time_step_index: int | None = None,
     ) -> np.ndarray:
         """Interpolate meteorological forcing data to grid.
 
@@ -348,6 +355,8 @@ class Simulation:
             variable: Variable name ('precipitation', 'temperature_min', 'temperature_max', etc.)
             weights_cache: Optional pre-computed interpolation weights for performance.
                 If None, weights will be computed on-the-fly.
+            time_step_index: Optional time step index for accessing cached time indices.
+                If None, time indices will be computed on-the-fly.
 
         Returns:
             2D grid of interpolated values
@@ -357,40 +366,70 @@ class Simulation:
             raise ValueError(f"Variable '{variable}' not found in forcing data")
 
         var_stations = self.forcing.stations[variable]
+        n_stations = len(var_stations)
 
-        if len(var_stations) == 0:
+        if n_stations == 0:
             raise ValueError(f"No stations found for variable '{variable}'")
 
-        # Extract station coordinates and values for the given time
-        station_x = []
-        station_y = []
-        station_elevation = []
-        station_values = []
+        # Pre-allocate arrays (faster than list append)
+        station_x = np.zeros(n_stations, dtype=np.float64)
+        station_y = np.zeros(n_stations, dtype=np.float64)
+        station_elevation = np.zeros(n_stations, dtype=np.float64)
+        station_values = np.zeros(n_stations, dtype=np.float64)
+        valid_mask = np.ones(n_stations, dtype=bool)
 
-        target_time = pd.Timestamp(time)
+        # Use cached time indices if available
+        if (
+            self._time_indices_cache is not None
+            and time_step_index is not None
+            and variable in self._time_indices_cache
+        ):
+            time_indices_var = self._time_indices_cache[variable]
 
-        for station in var_stations:
-            # Find the value at the nearest time
-            if len(station["time"]) == 0:
-                continue
+            if time_indices_var is not None:
+                # Fast path: use pre-computed indices
+                indices = time_indices_var[:, time_step_index]
 
-            time_index = station["time"].get_indexer([target_time], method="nearest")[0]
+                for i, station in enumerate(var_stations):
+                    if len(station["time"]) == 0:
+                        valid_mask[i] = False
+                        continue
 
-            if time_index >= 0 and time_index < len(station["data"]):
-                value = station["data"][time_index]
-                station_x.append(station["x"])
-                station_y.append(station["y"])
-                station_elevation.append(station["elevation"])
-                station_values.append(value)
+                    idx = indices[i]
+                    station_x[i] = station["x"]
+                    station_y[i] = station["y"]
+                    station_elevation[i] = station["elevation"]
+                    station_values[i] = station["data"][idx]
+            else:
+                # Fallback for variables with no cached indices (shouldn't happen)
+                valid_mask[:] = False
+        else:
+            # Fallback: compute time indices on-the-fly (slower, used when cache is not available)
+            target_time = pd.Timestamp(time)
 
-        if len(station_values) == 0:
+            for i, station in enumerate(var_stations):
+                if len(station["time"]) == 0:
+                    valid_mask[i] = False
+                    continue
+
+                time_index = station["time"].get_indexer([target_time], method="nearest")[0]
+
+                if time_index >= 0 and time_index < len(station["data"]):
+                    station_x[i] = station["x"]
+                    station_y[i] = station["y"]
+                    station_elevation[i] = station["elevation"]
+                    station_values[i] = station["data"][time_index]
+                else:
+                    valid_mask[i] = False
+
+        # Filter out invalid stations
+        if not valid_mask.any():
             raise ValueError(f"No valid data found for {variable} at time {time}")
 
-        # Convert to numpy arrays
-        station_x = np.array(station_x)
-        station_y = np.array(station_y)
-        station_elevation = np.array(station_elevation)
-        station_values = np.array(station_values)
+        station_x = station_x[valid_mask]
+        station_y = station_y[valid_mask]
+        station_elevation = station_elevation[valid_mask]
+        station_values = station_values[valid_mask]
 
         # Use single resolution value (assume square cells)
         resolution = self.resolution[0]
@@ -650,6 +689,105 @@ class Simulation:
         logger.success(f"Interpolation weights cached for {len(weights_cache)} variables")
         return weights_cache
 
+    def _precompute_time_indices(
+        self, simulation_times: pd.DatetimeIndex, variables: list[str] | None = None
+    ) -> dict[str, np.ndarray]:
+        """Pre-compute time indices for all stations and all simulation timesteps.
+
+        This method pre-computes the mapping from simulation timesteps to station data
+        indices, avoiding repeated time lookups during the main simulation loop.
+        This provides significant performance improvement for long simulations.
+
+        Args:
+            simulation_times: DatetimeIndex of all simulation timesteps
+            variables: List of variable names to compute time indices for.
+                If None, computes indices for all variables in forcing data.
+                Examples: ["precipitation"], ["precipitation", "temperature_min"]
+
+        Returns:
+            Dictionary mapping variable names to (n_stations × n_timesteps) index arrays.
+            For each variable and timestep, the array contains the index into the
+            station's data array that is nearest to that timestep.
+        """
+        # Determine which variables to compute indices for
+        if variables is None:
+            # Default: compute indices for all variables
+            variables_to_process = list(self.forcing.stations.keys())
+            logger.info(f"Pre-computing time indices for {len(simulation_times)} timesteps (all variables)")
+        else:
+            # Validate that requested variables exist in forcing data
+            available_vars = set(self.forcing.stations.keys())
+            invalid_vars = [v for v in variables if v not in available_vars]
+            if invalid_vars:
+                raise ValueError(
+                    f"Variables {invalid_vars} not found in forcing data. Available variables: {sorted(available_vars)}"
+                )
+            variables_to_process = variables
+            logger.info(
+                f"Pre-computing time indices for {len(simulation_times)} timesteps "
+                f"({len(variables_to_process)} variables: {variables_to_process})"
+            )
+
+        time_indices = {}
+        n_times = len(simulation_times)
+
+        for variable in variables_to_process:
+            var_stations = self.forcing.stations[variable]
+            n_stations = len(var_stations)
+
+            if n_stations == 0:
+                logger.debug(f"No stations for {variable}, skipping time index computation")
+                time_indices[variable] = None
+                continue
+
+            # Pre-allocate index array (n_stations × n_timesteps)
+            indices = np.zeros((n_stations, n_times), dtype=np.int32)
+
+            for i, station in enumerate(var_stations):
+                if len(station["time"]) == 0:
+                    # Station has no data - indices will be 0 but won't be used
+                    continue
+
+                # Convert station times to numpy array for searchsorted
+                station_times = station["time"].values.astype("datetime64[ns]")
+                sim_times = simulation_times.values.astype("datetime64[ns]")
+
+                # Find insertion points (left side)
+                left_idx = np.searchsorted(station_times, sim_times, side="left")
+
+                # For each simulation time, find the nearest station time
+                # We need to check both left_idx and left_idx-1 (if valid)
+                max_idx = len(station_times) - 1
+
+                for t in range(n_times):
+                    left = left_idx[t]
+
+                    # Clamp to valid range
+                    if left > max_idx:
+                        # Past the end - use last index
+                        indices[i, t] = max_idx
+                    elif left == 0:
+                        # Before the start - use first index
+                        indices[i, t] = 0
+                    else:
+                        # Check both neighbors and pick nearest
+                        right = left
+                        left_candidate = left - 1
+
+                        left_dist = abs((sim_times[t] - station_times[left_candidate]).astype("timedelta64[ns]"))
+                        right_dist = abs((sim_times[t] - station_times[right]).astype("timedelta64[ns]"))
+
+                        if left_dist <= right_dist:
+                            indices[i, t] = left_candidate
+                        else:
+                            indices[i, t] = right
+
+            time_indices[variable] = indices
+            logger.debug(f"Pre-computed {n_stations} × {n_times} time indices for {variable}")
+
+        logger.success(f"Time indices cached for {len(time_indices)} variables")
+        return time_indices
+
     def _preprocess_network_topology(self) -> dict:
         """Preprocess network topology for fast routing.
 
@@ -789,6 +927,11 @@ class Simulation:
         n_steps = int((end_date - start_date).total_seconds() / self.dt)
         logger.info(f"Number of time steps: {n_steps}")
 
+        # Pre-compute time indices for all simulation timesteps
+        # Currently, only precipitation is used in the main loop
+        simulation_times = pd.date_range(start=start_date, periods=n_steps, freq=f"{self.dt}s")
+        self._time_indices_cache = self._precompute_time_indices(simulation_times, variables=["precipitation"])
+
         # Get total soil capacity
         wtot0 = self.wc0 + self.wg0
 
@@ -812,10 +955,13 @@ class Simulation:
         for step in range(n_steps):
             logger.debug(f"Time step {step + 1}/{n_steps}: {current_time}")
 
-            # 1. Interpolate meteorological forcing (using cached weights for performance)
+            # 1. Interpolate meteorological forcing (using cached weights and time indices for performance)
             try:
                 precip = self._interpolate_forcing(
-                    current_time, "precipitation", weights_cache=self._interpolation_weights
+                    current_time,
+                    "precipitation",
+                    weights_cache=self._interpolation_weights,
+                    time_step_index=step,
                 )
             except (KeyError, ValueError):
                 logger.warning(f"Precipitation data not found for {current_time}, using zero")
