@@ -245,7 +245,8 @@ def soil_mass_balance(
 
     # Horton runoff and infiltration (using random variable approach)
     # Augmentation factor (increases as soil becomes drier)
-    kaug = 1 + 500 * np.exp(-50 * wc / wc0) / ((wc / wc0) ** 2)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        kaug = 1 + 500 * np.exp(-50 * wc / wc0) / ((wc / wc0) ** 2)
     kaug[np.isinf(kaug)] = 1 + 500 * np.exp(-50 * 1e-5) / (1e-5**2)
 
     # Handle zero balance to avoid division by zero
