@@ -224,11 +224,11 @@ def station_interpolation(
 
     # Compute or use pre-computed weights
     if weights_matrix is not None:
-        # Use pre-computed weights
-        for i in range(n_valid):
-            station_idx = k_ok[i]
-            result += st_val_corr[station_idx] * weights_matrix[:, :, station_idx]
-            weights_sum += weights_matrix[:, :, station_idx]
+        # Use pre-computed weights (vectorized for performance)
+        # Einstein summation: multiply each grid cell's weights by station values and sum over stations
+        # 'ijk,k->ij' means: for each (i,j) grid cell, multiply k weights by k values and sum
+        result = np.einsum("ijk,k->ij", weights_matrix[:, :, k_ok], st_val_corr[k_ok])
+        weights_sum = np.sum(weights_matrix[:, :, k_ok], axis=2)
     else:
         # Compute weights on-the-fly using IDW
         # Match MATLAB mobidic_sid.m lines 1126-1128: add 0.01 to grid coordinates to avoid division by zero
