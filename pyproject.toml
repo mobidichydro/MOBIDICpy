@@ -1,13 +1,11 @@
-# see documentation, e.g.
-# - https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#declaring-project-metadata
-# - https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
-# - https://www.python.org/dev/peps/pep-0621/
-
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 authors = [
-    { name = "Fabio Castelli", email = "fabio.castelli@unifi.it" },
-    { name = "Matteo Masi", email = "matteo.masi@unifi.it" }
+    { name = "Matteo Masi", email = "matteo.masi@unifi.it" },
+    { name = "Fabio Castelli", email = "fabio.castelli@unifi.it" }
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -20,24 +18,24 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "pandas",
-    "numpy",
-    "scipy",
-    "matplotlib",
+    "pandas>=2.0",
+    "numpy>=2.0",
+    "scipy>=1.16",
+    "matplotlib>=3.10",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "rasterio>=1.3.0",
+    "rasterio>=1.4.0",
     "geopandas>=1.1.0",
     "loguru>=0.7.0",
-    "pyarrow",
+    "pyarrow>=21.0.0",
     "xarray>=2023.1.0",
-    "netcdf4",
-    "numba>=0.57.0",
+    "netcdf4>=1.6.0",
+    "numba>=0.62.0",
 ]
 description = "MOBIDIC - Distributed and continuous hydrological balance model"
 keywords = ["Hydrology", "Numerical modelling", "Distributed hydrologic modelling"]
 license = "Apache-2.0"
-name = "mobidicpy"
+name = "mobidic"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
 version = "0.0.1"
@@ -63,9 +61,12 @@ Repository = "https://github.com/mobidichydro/mobidicpy"
 Issues = "https://github.com/mobidichydro/mobidicpy/issues"
 
 [tool.setuptools]
-packages = {find = {where = ["."]}}
-package-dir = {"" = "."}
 include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mobidic*"]
+exclude = ["tests*", "examples*", "docs*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -127,7 +128,7 @@ pydocstyle.convention = "google"
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["mobidicpy"]
+known-first-party = ["mobidic"]
 force-single-line = true
 no-lines-before = ["future","standard-library","third-party","first-party","local-folder"]
 
