@@ -3,6 +3,7 @@ Script for checking the flow direction against the result from MATLAB
 """
 
 import numpy as np
+from pathlib import Path
 from mobidic import (
     load_config,
     configure_logger,
@@ -10,11 +11,15 @@ from mobidic import (
 )
 from mobidic.preprocessing import convert_to_mobidic_notation
 
+# Get directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+
 # Configuration
-config = load_config("examples/Arno/Arno.yaml")
+config = load_config(EXAMPLE_DIR / "Arno.yaml")
 
 # Read flow direction computed in matlab
-zp = np.loadtxt("examples/Arno/output/matlab/zp.csv", delimiter=",")
+zp = np.loadtxt(EXAMPLE_DIR / "output" / "matlab" / "zp.csv", delimiter=",")
 
 # Configure logger
 configure_logger(level="DEBUG")

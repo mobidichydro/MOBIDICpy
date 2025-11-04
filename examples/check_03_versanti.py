@@ -3,6 +3,7 @@ Script for checking the compute hillslope cells against the MATLAB version.
 """
 
 import numpy as np
+from pathlib import Path
 from scipy.io import loadmat
 from mobidic import load_config
 from mobidic import process_river_network
@@ -10,12 +11,16 @@ from mobidic.preprocessing import (
     compute_hillslope_cells,
 )
 
+# Get directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+
 # Load configuration
-config = load_config("examples/Arno/Arno.yaml")
+config = load_config(EXAMPLE_DIR / "Arno.yaml")
 
 
 # MATLAB ret structure import file .mat
-mat_data = loadmat("examples/Arno/gisdata/Arno_gisdata.mat")
+mat_data = loadmat(EXAMPLE_DIR / "gisdata" / "Arno_gisdata.mat")
 ret = mat_data["ret"]
 
 # Process river network

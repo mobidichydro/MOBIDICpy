@@ -9,6 +9,7 @@ This script demonstrates how to:
 
 import rasterio
 import numpy as np
+from pathlib import Path
 from mobidic import (
     load_config,
     configure_logger,
@@ -17,8 +18,12 @@ from mobidic import (
     map_hillslope_to_reach,
 )
 
+# Get directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+
 # Configuration
-config = load_config("examples/Arno/Arno.yaml")
+config = load_config(EXAMPLE_DIR / "Arno.yaml")
 
 # Configure logger
 configure_logger(level="INFO")
@@ -70,7 +75,7 @@ print("\n" + "=" * 60)
 print("STEP 4: Exporting results")
 print("=" * 60)
 
-reach_map_output_path = "examples/Arno/output/reach_map.tif"
+reach_map_output_path = EXAMPLE_DIR / "output" / "reach_map.tif"
 
 with rasterio.open(config.raster_files.flow_dir) as src:
     profile = src.profile

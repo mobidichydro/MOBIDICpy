@@ -1,9 +1,14 @@
 """Test script to process the Arno river network."""
 
+from pathlib import Path
 from mobidic import load_config, process_river_network, save_network
 
+# Get directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+
 # Load configuration
-config = load_config("examples/Arno/Arno.yaml")
+config = load_config(EXAMPLE_DIR / "Arno.yaml")
 
 # Process river network
 print("Processing Arno river network...")

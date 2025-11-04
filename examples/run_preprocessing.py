@@ -17,6 +17,10 @@ Requirements:
 from pathlib import Path
 from mobidic import load_config, run_preprocessing, GISData, configure_logger
 
+# Get directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+
 # Configure logging
 configure_logger(level="INFO")
 
@@ -29,7 +33,7 @@ def main():
     print("=" * 80)
 
     # Step 1: Load configuration
-    config_path = Path("examples/Arno/Arno.yaml")
+    config_path = EXAMPLE_DIR / "Arno.yaml"
     if not config_path.exists():
         return
     config = load_config(config_path)
