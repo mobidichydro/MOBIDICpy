@@ -299,23 +299,23 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.success(f"Loaded {len(grids)} raster grids. Shape: {grids['dtm'].shape}, cellsize: {cellsize} m")
     logger.info("")
 
-    # Step 2: Apply grid degradation if needed
-    logger.info("Step 2/6: Applying grid degradation")
+    # Step 2: Apply grid downsampling if needed
+    logger.info("Step 2/6: Applying grid downsampling")
     logger.info("-" * 80)
 
     resample_factor = config.simulation.resample
 
     if resample_factor > 1:
-        logger.info(f"Degrading grids by factor {resample_factor}")
+        logger.info(f"Downsampling grids by factor {resample_factor}")
 
-        # Degrade most grids using simple averaging
+        # Downsample most grids using simple averaging
         for name in grids.keys():
             if name not in ["flow_dir", "flow_acc"]:
-                logger.debug(f"Degrading {name}")
+                logger.debug(f"Downsampling {name}")
                 grids[name] = degrade_raster(grids[name], resample_factor)
 
-        # Degrade flow direction and accumulation together (special handling)
-        logger.debug("Degrading flow_dir and flow_acc (special handling)")
+        # Downsample flow direction and accumulation together (special handling)
+        logger.debug("Downsampling flow_dir and flow_acc (special handling)")
         grids["flow_dir"], grids["flow_acc"] = degrade_flow_direction(
             grids["flow_dir"], grids["flow_acc"], resample_factor
         )
@@ -327,9 +327,9 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
             metadata["resolution"][1] * resample_factor,
         )
 
-        logger.success(f"Grid degradation complete. New shape: {metadata['shape']}")
+        logger.success(f"Grid downsampling complete. New shape: {metadata['shape']}")
     else:
-        logger.info("No grid degradation needed (resample factor = 1)")
+        logger.info("No grid downsampling applied (resample factor = 1)")
 
     logger.info("")
 

@@ -124,7 +124,6 @@ def hillslope_routing(
         >>> upstream[1, 1]  # Center receives flow from all 8 neighbors (one-step)
         0.8  # 8 neighbors x 0.1 m³/s each = 0.8 m³/s (does NOT include center's own 0.1)
     """
-    logger.debug(f"Starting hillslope routing with grid shape={lateral_flow.shape}")
 
     # Validate inputs
     if lateral_flow.shape != flow_direction.shape:
@@ -147,8 +146,6 @@ def hillslope_routing(
         nrows,
         ncols,
     )
-
-    logger.debug("Hillslope routing completed (one-step)")
 
     return upstream_contribution
 
@@ -432,7 +429,7 @@ def linear_channel_routing(
         "qL_total": qL_total,
     }
 
-    logger.success(
+    logger.debug(
         f"Linear channel routing completed. "
         f"Discharge range: [{discharge_final.min():.3f}, {discharge_final.max():.3f}] m³/s"
     )

@@ -14,6 +14,7 @@ Translated from MATLAB: mobidic_sid.m (main simulation loop)
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Any
+import time
 import numpy as np
 import pandas as pd
 from loguru import logger
@@ -25,6 +26,33 @@ from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
+
+
+def _create_progress_bar(current: int, total: int, bar_length: int = 20) -> str:
+    """Create a text-based progress bar.
+
+    Args:
+        current: Current step number (1-indexed)
+        total: Total number of steps
+        bar_length: Length of the progress bar in characters (default: 20)
+
+    Returns:
+        Progress bar string like "[=========>          ]"
+    """
+    progress = current / total
+    filled = int(bar_length * progress)
+
+    if filled == bar_length:
+        # Complete bar
+        bar = "=" * bar_length
+    elif filled > 0:
+        # Partial bar with arrow
+        bar = "=" * (filled - 1) + ">" + " " * (bar_length - filled)
+    else:
+        # Empty bar
+        bar = " " * bar_length
+
+    return f"[{bar}]"
 
 
 class SimulationState:
@@ -603,7 +631,7 @@ class Simulation:
         if variables is None:
             # Default: compute weights for all variables
             variables_to_process = list(self.forcing.stations.keys())
-            logger.info("Pre-computing interpolation weights for all meteorological variables")
+            logger.debug("Pre-computing interpolation weights for all meteorological variables")
         else:
             # Validate that requested variables exist in forcing data
             available_vars = set(self.forcing.stations.keys())
@@ -613,7 +641,7 @@ class Simulation:
                     f"Variables {invalid_vars} not found in forcing data. Available variables: {sorted(available_vars)}"
                 )
             variables_to_process = variables
-            logger.info(f"Pre-computing interpolation weights for selected variables: {variables_to_process}")
+            logger.debug(f"Pre-computing interpolation weights for selected variables: {variables_to_process}")
 
         weights_cache = {}
         resolution = self.resolution[0]  # Use single resolution value
@@ -783,9 +811,9 @@ class Simulation:
                             indices[i, t] = right
 
             time_indices[variable] = indices
-            logger.debug(f"Pre-computed {n_stations} × {n_times} time indices for {variable}")
+            logger.debug(f"Pre-computed {n_stations} x {n_times} time indices for {variable}")
 
-        logger.success(f"Time indices cached for {len(time_indices)} variables")
+        logger.debug(f"Time indices cached for {len(time_indices)} variables")
         return time_indices
 
     def _preprocess_network_topology(self) -> dict:
@@ -906,6 +934,14 @@ class Simulation:
         Returns:
             SimulationResults object containing time series and final state
         """
+
+        logger.info("=" * 80)
+        logger.info("MOBIDIC SIMULATION")
+        logger.info("=" * 80)
+        logger.info(f"Basin: {self.config.basin.id}")
+        logger.info(f"Parameter set: {self.config.basin.paramset_id}")
+        logger.info("")
+
         # Convert dates to datetime
         if isinstance(start_date, str):
             start_date = datetime.fromisoformat(start_date)
@@ -942,7 +978,7 @@ class Simulation:
         # ko = find(isfinite(zz) & (ch>0));  % contributing pixels
         ko = np.isfinite(self.dtm) & (self.hillslope_reach_map >= 0)
         ko = np.where(ko.ravel("F"))[0]
-        logger.info(f"Contributing pixels (ko): {len(ko)} of {self.nrows * self.ncols} total cells")
+        logger.debug(f"Contributing pixels (ko): {len(ko)} of {self.nrows * self.ncols} total cells")
 
         # Initialize flow variables for hillslope routing feedback (matching MATLAB mobidic_sid.m:1621-1625)
         # flr_prev: surface runoff from previous timestep [m/s] - will be routed to create pir
@@ -950,8 +986,17 @@ class Simulation:
         flr_prev = np.zeros((self.nrows, self.ncols))
         fld_prev = np.zeros((self.nrows, self.ncols))
 
+        # Calculate progress logging interval: either 20 steps total or every 30 seconds
+        # Use whichever results in fewer log messages
+        steps_per_intervals = max(1, n_steps // 20)
+        progress_step_interval = steps_per_intervals
+        progress_time_interval = 30.0  # seconds
+
         # Main time loop
+        logger.info("Starting simulation main loop")
         current_time = start_date
+        simulation_start_time = time.time()
+        last_log_time = simulation_start_time
         for step in range(n_steps):
             logger.debug(f"Time step {step + 1}/{n_steps}: {current_time}")
 
@@ -981,6 +1026,7 @@ class Simulation:
             # Route through hillslope
             pir_discharge = hillslope_routing(flr_prev_discharge, self.flow_dir)
             pid_discharge = hillslope_routing(fld_prev_discharge, self.flow_dir)
+            logger.debug("Hillslope routing completed")
 
             # Convert back to rates
             pir = pir_discharge / cell_area
@@ -1102,6 +1148,7 @@ class Simulation:
             # Convert to discharge for accumulation
             flr_discharge = flr * cell_area
             lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
+            logger.debug("Lateral inflow accumulation completed")
 
             # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
             # This prevents double-counting - flows from all contributing cells are consumed after accumulation
@@ -1127,13 +1174,24 @@ class Simulation:
             lateral_inflow_ts.append(lateral_inflow.copy())
             time_ts.append(current_time)
 
-            # Log progress every 100 steps
-            if (step + 1) % 100 == 0 or step == n_steps - 1:
+            # Log progress based on step interval or time interval (whichever comes first)
+            current_wall_time = time.time()
+            time_since_last_log = current_wall_time - last_log_time
+            is_step_interval = (step + 1) % progress_step_interval == 0
+            is_time_interval = time_since_last_log >= progress_time_interval
+            is_final_step = step == n_steps - 1
+
+            if is_step_interval or is_time_interval or is_final_step:
+                progress_bar = _create_progress_bar(step + 1, n_steps, bar_length=20)
+                q_mean = np.mean(self.state.discharge)
+                q_max = np.max(self.state.discharge)
+                date_str = current_time.strftime("%Y-%m-%d %H:%M")
+
                 logger.info(
-                    f"Step {step + 1}/{n_steps} completed. "
-                    f"Q_mean={np.mean(self.state.discharge):.2f} m³/s, "
-                    f"Q_max={np.max(self.state.discharge):.2f} m³/s"
+                    f"{progress_bar} {step + 1}/{n_steps} | Simulation time: {date_str} | "
+                    f"Q_mean={q_mean:.2f} m³/s | Q_max={q_max:.2f} m³/s"
                 )
+                last_log_time = current_wall_time
 
             # Advance time
             current_time += timedelta(seconds=self.dt)
@@ -1144,7 +1202,21 @@ class Simulation:
         results.time_series["time"] = time_ts
         results.final_state = self.state
 
-        logger.success(f"Simulation completed: {n_steps} time steps")
+        # Calculate elapsed time
+        simulation_end_time = time.time()
+        elapsed_seconds = simulation_end_time - simulation_start_time
+        elapsed_minutes = elapsed_seconds / 60
+        elapsed_hours = elapsed_minutes / 60
+
+        # Format elapsed time message
+        if elapsed_hours >= 1:
+            elapsed_str = f"{elapsed_hours:.2f} hours"
+        elif elapsed_minutes >= 1:
+            elapsed_str = f"{elapsed_minutes:.2f} minutes"
+        else:
+            elapsed_str = f"{elapsed_seconds:.2f} seconds"
+
+        logger.success(f"Simulation completed: {n_steps} time steps in {elapsed_str}")
 
         # Auto-save reports based on configuration
         output_dir = Path(self.config.paths.output)
