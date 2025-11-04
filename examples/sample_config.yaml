@@ -288,6 +288,10 @@ simulation:
   # [one among the following options 'None', '1L', '5L', 'Snow']
   energy_balance: None
 
+  ## OPTIONAL: Precipitation interpolation method
+  # [one among the following options: 'nearest', 'idw' (default)]
+  precipitation_interp: idw
+
 
 ####### OUTPUT CONTROLS
 
@@ -329,9 +333,16 @@ output_states_settings:
   # [one among the following options: 'netCDF' (default)]
   output_format: netCDF
 
-  # OPTIONAL: Time interval for state output, in seconds
+  # OPTIONAL: Which time steps to save
+  # [one among the following options: 'all' (default), 'final', 'list']
+  output_states: all
+
+  # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
   output_interval:
+
+  # OPTIONAL: List of time steps to save, as integers. Used with output_states=list.
+  output_list: []
 
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
