@@ -226,7 +226,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     flow_acc_data = flow_acc_result["data"]
     if np.any((flow_acc_data[~np.isnan(flow_acc_data)] < 1)):
         flow_acc_data[~np.isnan(flow_acc_data)] += 1
-        logger.warning("Flow accumulation values were < 1 and have been incremented by 1.")
+        logger.info("Flow accumulation values were < 1 and have been incremented by 1.")
     grids["flow_acc"] = flow_acc_data
 
     # Get index of the cell with maximum flow accumulation
@@ -296,7 +296,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     alpsur = alpsur / np.nanmean(alpsur)
     grids["alpsur"] = alpsur
 
-    logger.success(f"Loaded {len(grids)} raster grids")
+    logger.success(f"Loaded {len(grids)} raster grids. Shape: {grids['dtm'].shape}, cellsize: {cellsize} m")
     logger.info("")
 
     # Step 2: Apply grid degradation if needed
@@ -338,7 +338,6 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("-" * 80)
 
     flow_dir_type = config.raster_settings.flow_dir_type
-    logger.info(f"Converting from {flow_dir_type} notation to MOBIDIC notation")
 
     grids["flow_dir"] = convert_to_mobidic_notation(grids["flow_dir"], from_notation=flow_dir_type)
 
@@ -364,7 +363,6 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         routing_params=routing_params,
     )
 
-    logger.success(f"River network processed: {len(network)} reaches")
     logger.info("")
 
     # Step 5: Compute hillslope cells for each reach
@@ -381,7 +379,6 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         densify_step=10.0,
     )
 
-    logger.success("Hillslope cells computed")
     logger.info("")
 
     # Step 6: Map hillslope cells to reaches
@@ -394,14 +391,6 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         flow_dir_type=flow_dir_type,
     )
 
-    logger.success("Hillslope-to-reach mapping complete")
-    logger.info("")
-
-    # Create GISData container
-    logger.info("=" * 80)
-    logger.info("PREPROCESSING COMPLETE")
-    logger.info("=" * 80)
-
     gisdata = GISData(
         grids=grids,
         metadata=metadata,
@@ -409,6 +398,10 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         hillslope_reach_map=hillslope_reach_map,
         config=config,
     )
+
+    logger.info("")
+    logger.success("Preprocessing completed successfully")
+    logger.info("")
 
     return gisdata
 

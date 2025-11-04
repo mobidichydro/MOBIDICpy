@@ -293,7 +293,6 @@ def convert_to_mobidic_notation(
                [8, 1, 2],
                [3, 4, 5]])
     """
-    logger.info(f"Converting flow direction from {from_notation} to MOBIDIC notation")
 
     # GRASS to MOBIDIC transformation (from buildgis_mysql_include.m)
     grass_to_mobidic = {1: 5, 2: 6, 3: 7, 4: 8, 5: 1, 6: 2, 7: 3, 8: 4}
@@ -320,6 +319,6 @@ def convert_to_mobidic_notation(
         raise ValueError(f"Invalid from_notation: {from_notation}. Must be 'Grass' or 'Arc'")
 
     valid_cells = np.sum(np.isfinite(converted))
-    logger.success(f"Flow direction conversion to MOBIDIC complete: {valid_cells} cells converted")
+    logger.info(f"Flow direction conversion to MOBIDIC complete: {valid_cells} cells converted")
 
     return converted

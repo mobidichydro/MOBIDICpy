@@ -89,7 +89,7 @@ def grid_to_matrix(gridname: str | Path) -> dict[str, Any]:
         xllcorner += 0.5 * cellsize
         yllcorner += 0.5 * cellsize
 
-        logger.success(f"GeoTIFF read: shape={matgr.shape}, cellsize={cellsize}")
+        logger.info(f"GeoTIFF read: shape={matgr.shape}, cellsize={cellsize}")
 
         return {
             "data": matgr,

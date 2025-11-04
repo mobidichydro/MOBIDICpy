@@ -141,7 +141,8 @@ def _build_network_topology(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     # Log terminal reaches
     terminal_reaches = network[network["downstream"] == -1]["mobidic_id"].values
-    logger.info(f"Found {len(terminal_reaches)} terminal reach(es): {terminal_reaches}")
+    logger.info(f"Found {len(terminal_reaches)} terminal reach(es)")
+    logger.debug(f"Terminal reach(es): {terminal_reaches}")
 
     return network
 

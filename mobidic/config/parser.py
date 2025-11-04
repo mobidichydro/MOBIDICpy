@@ -42,7 +42,7 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
     with open(config_path, "r", encoding="utf-8") as f:
         try:
             config_dict = yaml.safe_load(f)
-            logger.success(f"Successfully parsed YAML file: {config_path}")
+            logger.success(f"Successfully loaded YAML file: {config_path}")
         except yaml.YAMLError as e:
             logger.error(f"Error parsing YAML file {config_path}: {e}")
             raise yaml.YAMLError(f"Error parsing YAML file {config_path}: {e}") from e
