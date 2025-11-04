@@ -381,7 +381,7 @@ output_report_settings:
 
 advanced:
   # OPTIONAL: Logging level
-  # [one among the following options: 'DEBUG', 'INFO' (default), 'WARNING', 'ERROR']
+  # [one among the following options: 'DEBUG', 'INFO' (default), 'SUCCESS', 'WARNING', 'ERROR']
   log_level: INFO
 
   # OPTIONAL: Path to log file

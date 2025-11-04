@@ -31,7 +31,7 @@ from mobidic import (
     load_gisdata,
     MeteoData,
     Simulation,
-    configure_logger,
+    configure_logger_from_config,
 )
 
 # Configuration
@@ -42,8 +42,6 @@ config_file = example_dir / "Arno.yaml"
 
 meteodata_mat_path = example_dir / "meteodata/meteodata.mat"
 
-debug_level = "DEBUG"  # Logging level
-
 
 """Run complete MOBIDIC workflow for Arno basin."""
 
@@ -51,9 +49,6 @@ print("=" * 80)
 print("MOBIDIC - Arno River Basin Example")
 print("=" * 80)
 print()
-
-# Configure logging
-configure_logger(level=debug_level)
 
 
 # =========================================================================
@@ -65,6 +60,9 @@ print(f"  Configuration loaded: {config.basin.id}")
 print(f"  Time step: {config.simulation.timestep} seconds")
 print(f"  Routing method: {config.parameters.routing.method}")
 print()
+
+# Configure logging
+configure_logger_from_config(config)
 
 
 # =========================================================================

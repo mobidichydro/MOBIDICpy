@@ -16,6 +16,25 @@ from pathlib import Path
 from loguru import logger
 
 
+def configure_logger_from_config(config) -> None:
+    """Configure the logger from a MOBIDICConfig object.
+
+    This function reads the logging settings from the config's advanced section
+    and configures the logger accordingly.
+
+    Args:
+        config: MOBIDICConfig object containing the configuration.
+
+    Examples:
+        >>> from mobidic import load_config, configure_logger_from_config
+        >>> config = load_config("config.yaml")
+        >>> configure_logger_from_config(config)
+    """
+    log_level = config.advanced.log_level if config.advanced else "INFO"
+    log_file = config.advanced.log_file if config.advanced else None
+    configure_logger(level=log_level, log_file=log_file)
+
+
 def configure_logger(
     level: str = "INFO",
     format_string: str | None = None,

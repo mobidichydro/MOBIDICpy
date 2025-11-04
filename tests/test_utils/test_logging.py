@@ -3,8 +3,9 @@
 from pathlib import Path
 
 from loguru import logger
+from pydantic import BaseModel, Field
 
-from mobidic.utils.logging import configure_logger
+from mobidic.utils.logging import configure_logger, configure_logger_from_config
 
 
 class TestConfigureLogger:
@@ -178,3 +179,93 @@ class TestConfigureLogger:
         assert Path(log_file).exists()
         log_content = Path(log_file).read_text()
         assert "String path test" in log_content
+
+
+class TestConfigureLoggerFromConfig:
+    """Tests for configure_logger_from_config function."""
+
+    def setup_method(self):
+        """Remove all handlers before each test."""
+        logger.remove()
+
+    def teardown_method(self):
+        """Clean up after each test."""
+        logger.remove()
+
+    def test_configure_from_config_with_defaults(self, capsys):
+        """Test logger configuration from config with default values."""
+
+        # Create a mock config with default advanced settings
+        class MockAdvanced(BaseModel):
+            log_level: str = Field(default="INFO")
+            log_file: str | Path | None = Field(default=None)
+
+        class MockConfig(BaseModel):
+            advanced: MockAdvanced = Field(default_factory=MockAdvanced)
+
+        config = MockConfig()
+        configure_logger_from_config(config)
+
+        logger.info("Test message")
+        captured = capsys.readouterr()
+        assert "Test message" in captured.out
+        assert "INFO" in captured.out
+
+    def test_configure_from_config_with_debug_level(self, capsys):
+        """Test logger configuration from config with DEBUG level."""
+
+        class MockAdvanced(BaseModel):
+            log_level: str = "DEBUG"
+            log_file: str | Path | None = None
+
+        class MockConfig(BaseModel):
+            advanced: MockAdvanced = Field(default_factory=MockAdvanced)
+
+        config = MockConfig()
+        configure_logger_from_config(config)
+
+        logger.debug("Debug message")
+        captured = capsys.readouterr()
+        assert "Debug message" in captured.out
+        assert "DEBUG" in captured.out
+
+    def test_configure_from_config_with_log_file(self, tmp_path, capsys):
+        """Test logger configuration from config with log file."""
+
+        log_file_path = tmp_path / "config_test.log"
+
+        class MockAdvanced(BaseModel):
+            log_level: str = "INFO"
+            log_file: str | Path | None = str(log_file_path)
+
+        class MockConfig(BaseModel):
+            advanced: MockAdvanced = Field(default_factory=MockAdvanced)
+
+        config = MockConfig()
+        configure_logger_from_config(config)
+
+        logger.info("Config file test")
+
+        # Check stdout
+        captured = capsys.readouterr()
+        assert "Config file test" in captured.out
+
+        # Check file
+        assert log_file_path.exists()
+        log_content = log_file_path.read_text()
+        assert "Config file test" in log_content
+
+    def test_configure_from_config_none_advanced(self, capsys):
+        """Test logger configuration when advanced section is None."""
+
+        class MockConfig(BaseModel):
+            advanced: None = None
+
+        config = MockConfig()
+        configure_logger_from_config(config)
+
+        # Should default to INFO level
+        logger.info("Default test")
+        captured = capsys.readouterr()
+        assert "Default test" in captured.out
+        assert "INFO" in captured.out
