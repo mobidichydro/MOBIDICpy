@@ -369,13 +369,12 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("Step 5/6: Computing hillslope cells")
     logger.info("-" * 80)
 
-    # We need to save flow_dir temporarily to read it with compute_hillslope_cells
-    # (compute_hillslope_cells uses grid_to_matrix which needs a file path)
-    temp_flowdir_path = Path(config.raster_files.flow_dir)
-
     network = compute_hillslope_cells(
         network=network,
-        grid_path=temp_flowdir_path,
+        grid_array=grids["flow_dir"],
+        xllcorner=xllcorner,
+        yllcorner=yllcorner,
+        cellsize=metadata["resolution"][0],
         densify_step=10.0,
     )
 
@@ -387,8 +386,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     hillslope_reach_map = map_hillslope_to_reach(
         network=network,
-        flowdir_path=temp_flowdir_path,
-        flow_dir_type=flow_dir_type,
+        flowdir_array=grids["flow_dir"],
     )
 
     gisdata = GISData(

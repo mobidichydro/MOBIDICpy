@@ -16,8 +16,12 @@ from mobidic.preprocessing.gis_reader import grid_to_matrix
 
 def compute_hillslope_cells(
     network: gpd.GeoDataFrame,
-    grid_path: str | Path,
+    grid_path: str | Path | None = None,
     densify_step: float = 10.0,
+    grid_array: np.ndarray | None = None,
+    xllcorner: float | None = None,
+    yllcorner: float | None = None,
+    cellsize: float | None = None,
 ) -> gpd.GeoDataFrame:
     """Compute hillslope cells for each reach in the river network.
 
@@ -30,8 +34,12 @@ def compute_hillslope_cells(
 
     Args:
         network: GeoDataFrame with processed river network (must contain geometry column)
-        grid_path: Path to reference grid raster (used to get grid parameters)
+        grid_path: Path to reference grid raster (used to get grid parameters). Required if grid_array is not provided.
         densify_step: Maximum distance [m] between points when densifying reach geometries (default: 10.0)
+        grid_array: Optional numpy array with grid data. If provided, xllcorner, yllcorner, and cellsize must also be provided.
+        xllcorner: X coordinate of lower-left corner [m]. Required if grid_array is provided.
+        yllcorner: Y coordinate of lower-left corner [m]. Required if grid_array is provided.
+        cellsize: Grid cell size [m]. Required if grid_array is provided.
 
     Returns:
         GeoDataFrame with added 'hillslope_cells' column containing list of linear indices
@@ -39,18 +47,41 @@ def compute_hillslope_cells(
     Examples:
         >>> from mobidic import process_river_network
         >>> network = process_river_network("river_network.shp")
+        >>>
+        >>> # Option 1: Use file path
         >>> flowdir_path = "flowdir.tif"
-        >>> network = compute_hillslope_cells(network, flowdir_path)
+        >>> network = compute_hillslope_cells(network, grid_path=flowdir_path)
+        >>>
+        >>> # Option 2: Use array with metadata
+        >>> network = compute_hillslope_cells(
+        ...     network,
+        ...     grid_array=flowdir_array,
+        ...     xllcorner=xll,
+        ...     yllcorner=yll,
+        ...     cellsize=cs
+        ... )
     """
     logger.info(f"Computing hillslope cells for {len(network)} reaches")
 
-    # Read reference grid
-    grid_result = grid_to_matrix(grid_path)
-    grid = grid_result["data"]
-    xllcorner = grid_result["xllcorner"]
-    yllcorner = grid_result["yllcorner"]
-    cellsize = grid_result["cellsize"]
-    nrows, ncols = grid.shape
+    # Determine input mode and get grid parameters
+    if grid_array is not None:
+        # Array mode: use provided array and metadata
+        if xllcorner is None or yllcorner is None or cellsize is None:
+            raise ValueError("When grid_array is provided, xllcorner, yllcorner, and cellsize must also be provided")
+        grid = grid_array
+        nrows, ncols = grid.shape
+        logger.debug("Using provided grid array")
+    elif grid_path is not None:
+        # Path mode: read from file
+        grid_result = grid_to_matrix(grid_path)
+        grid = grid_result["data"]
+        xllcorner = grid_result["xllcorner"]
+        yllcorner = grid_result["yllcorner"]
+        cellsize = grid_result["cellsize"]
+        nrows, ncols = grid.shape
+        logger.debug(f"Reading grid from file: {grid_path}")
+    else:
+        raise ValueError("Either grid_path or grid_array (with metadata) must be provided")
 
     logger.debug(f"Grid parameters: xllcorner={xllcorner}, yllcorner={yllcorner}, cellsize={cellsize}")
 
@@ -108,8 +139,9 @@ def compute_hillslope_cells(
 
 def map_hillslope_to_reach(
     network: gpd.GeoDataFrame,
-    flowdir_path: str | Path,
+    flowdir_path: str | Path | None = None,
     flow_dir_type: str = "Grass",
+    flowdir_array: np.ndarray | None = None,
 ) -> np.ndarray:
     """Map each hillslope cell to its downstream river reach.
 
@@ -125,8 +157,9 @@ def map_hillslope_to_reach(
 
     Args:
         network: GeoDataFrame with river network (must have 'hillslope_cells' and 'mobidic_id' columns)
-        flowdir_path: Path to flow direction raster file
-        flow_dir_type: Flow direction notation ('Grass' for 1-8 or 'Arc' for power-of-2)
+        flowdir_path: Path to flow direction raster file. Required if flowdir_array is not provided.
+        flow_dir_type: Flow direction notation ('Grass' for 1-8 or 'Arc' for power-of-2). Only used if flowdir_path is provided.
+        flowdir_array: Optional numpy array with flow direction data in MOBIDIC notation (1-8). If provided, no conversion is applied.
 
     Returns:
         2D array with reach assignment for each cell (mobidic_id or -9999 for unassigned)
@@ -138,7 +171,12 @@ def map_hillslope_to_reach(
         >>> from mobidic import process_river_network, compute_hillslope_cells
         >>> network = process_river_network("river_network.shp")
         >>> network = compute_hillslope_cells(network, "flow_dir.tif")
-        >>> reach_map = map_hillslope_to_reach(network, "flow_dir.tif")
+        >>>
+        >>> # Option 1: Use file path
+        >>> reach_map = map_hillslope_to_reach(network, flowdir_path="flow_dir.tif")
+        >>>
+        >>> # Option 2: Use array (already in MOBIDIC notation)
+        >>> reach_map = map_hillslope_to_reach(network, flowdir_array=flowdir_mobidic)
     """
     logger.info("Mapping hillslope cells to river reaches")
 
@@ -150,12 +188,20 @@ def map_hillslope_to_reach(
         logger.error("Network must have 'mobidic_id' column")
         raise ValueError("Network must have 'mobidic_id' column")
 
-    # Read flow direction grid
-    flowdir_result = grid_to_matrix(flowdir_path)
-    flowdir = flowdir_result["data"]
-
-    # Transform flow direction from GRASS/Arc to MOBIDIC notation
-    flowdir = convert_to_mobidic_notation(flowdir, from_notation=flow_dir_type)
+    # Determine input mode and get flow direction
+    if flowdir_array is not None:
+        # Array mode: use provided array (assumed to be in MOBIDIC notation)
+        flowdir = flowdir_array
+        logger.debug("Using provided flow direction array (MOBIDIC notation)")
+    elif flowdir_path is not None:
+        # Path mode: read from file and convert
+        flowdir_result = grid_to_matrix(flowdir_path)
+        flowdir = flowdir_result["data"]
+        # Transform flow direction from GRASS/Arc to MOBIDIC notation
+        flowdir = convert_to_mobidic_notation(flowdir, from_notation=flow_dir_type)
+        logger.debug(f"Reading flow direction from file and converting from {flow_dir_type} to MOBIDIC notation")
+    else:
+        raise ValueError("Either flowdir_path or flowdir_array must be provided")
 
     nrows, ncols = flowdir.shape
 
