@@ -36,7 +36,8 @@ def compute_hillslope_cells(
         network: GeoDataFrame with processed river network (must contain geometry column)
         grid_path: Path to reference grid raster (used to get grid parameters). Required if grid_array is not provided.
         densify_step: Maximum distance [m] between points when densifying reach geometries (default: 10.0)
-        grid_array: Optional numpy array with grid data. If provided, xllcorner, yllcorner, and cellsize must also be provided.
+        grid_array: Optional numpy array with grid data. If provided, xllcorner, yllcorner,
+                    and cellsize must also be provided.
         xllcorner: X coordinate of lower-left corner [m]. Required if grid_array is provided.
         yllcorner: Y coordinate of lower-left corner [m]. Required if grid_array is provided.
         cellsize: Grid cell size [m]. Required if grid_array is provided.
@@ -158,8 +159,10 @@ def map_hillslope_to_reach(
     Args:
         network: GeoDataFrame with river network (must have 'hillslope_cells' and 'mobidic_id' columns)
         flowdir_path: Path to flow direction raster file. Required if flowdir_array is not provided.
-        flow_dir_type: Flow direction notation ('Grass' for 1-8 or 'Arc' for power-of-2). Only used if flowdir_path is provided.
-        flowdir_array: Optional numpy array with flow direction data in MOBIDIC notation (1-8). If provided, no conversion is applied.
+        flow_dir_type: Flow direction notation ('Grass' for 1-8 or 'Arc' for power-of-2).
+                        Only used if flowdir_path is provided.
+        flowdir_array: Optional numpy array with flow direction data in MOBIDIC notation (1-8).
+                        If provided, no conversion is applied.
 
     Returns:
         2D array with reach assignment for each cell (mobidic_id or -9999 for unassigned)
