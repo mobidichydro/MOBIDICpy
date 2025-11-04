@@ -14,6 +14,7 @@ import numpy as np
 import geopandas as gpd
 from loguru import logger
 
+from mobidic import __version__
 from mobidic.config.schema import MOBIDICConfig
 from mobidic.preprocessing.gis_reader import grid_to_matrix
 from mobidic.preprocessing.grid_operations import (
@@ -184,7 +185,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         >>> gisdata.save("Arno_gisdata.nc", "Arno_network.parquet")
     """
     logger.info("=" * 80)
-    logger.info("MOBIDIC PREPROCESSING")
+    logger.info(f"MOBIDIC v{__version__} - PREPROCESSING")
     logger.info("=" * 80)
     logger.info(f"Basin: {config.basin.id}")
     logger.info(f"Parameter set: {config.basin.paramset_id}")

@@ -366,7 +366,9 @@ class OutputReportSettings(BaseModel):
 class Advanced(BaseModel):
     """Advanced settings."""
 
-    log_level: Optional[Literal["DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR"]] = Field("INFO", description="Logging level")
+    log_level: Optional[Literal["DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR"]] = Field(
+        "INFO", description="Logging level"
+    )
     log_file: Optional[PathField] = Field(None, description="Path to log file")
 
 

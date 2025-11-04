@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 
+from mobidic import __version__
 from mobidic.config import MOBIDICConfig
 from mobidic.core import constants as const
 from mobidic.preprocessing.meteo_preprocessing import MeteoData
@@ -935,8 +936,9 @@ class Simulation:
             SimulationResults object containing time series and final state
         """
 
+        logger.info("")
         logger.info("=" * 80)
-        logger.info("MOBIDIC SIMULATION")
+        logger.info(f"MOBIDIC v{__version__} - SIMULATION")
         logger.info("=" * 80)
         logger.info(f"Basin: {self.config.basin.id}")
         logger.info(f"Parameter set: {self.config.basin.paramset_id}")
@@ -1189,7 +1191,7 @@ class Simulation:
 
                 logger.info(
                     f"{progress_bar} {step + 1}/{n_steps} | Simulation time: {date_str} | "
-                    f"Q_mean={q_mean:.2f} m³/s | Q_max={q_max:.2f} m³/s"
+                    f"Q_mean={q_mean:.3f} m³/s | Q_max={q_max:.3f} m³/s"
                 )
                 last_log_time = current_wall_time
 
