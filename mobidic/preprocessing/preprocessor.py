@@ -314,8 +314,8 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
                 logger.debug(f"Downsampling {name}")
                 grids[name] = degrade_raster(grids[name], resample_factor)
 
-        # Downsample flow direction and accumulation together (special handling)
-        logger.debug("Downsampling flow_dir and flow_acc (special handling)")
+        # Downsample flow direction and accumulation
+        logger.debug("Downsampling flow_dir and flow_acc")
         grids["flow_dir"], grids["flow_acc"] = degrade_flow_direction(
             grids["flow_dir"], grids["flow_acc"], resample_factor
         )
