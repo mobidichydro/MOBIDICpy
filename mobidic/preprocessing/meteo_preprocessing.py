@@ -87,14 +87,31 @@ class MeteoData:
         logger.info(f"Saving meteorological data to NetCDF: {output_path}")
 
         # Create xarray Dataset with station data organized by variable
+        # Group related variables that should share station dimensions
+        # temperature_min and temperature_max share the same stations
+        var_groups = {
+            "temperature": ["temperature_min", "temperature_max"],
+            "precipitation": ["precipitation"],
+            "humidity": ["humidity"],
+            "wind_speed": ["wind_speed"],
+            "radiation": ["radiation"],
+        }
+
         datasets = {}
 
-        for var_name, var_stations in self.stations.items():
-            if len(var_stations) == 0:
-                logger.warning(f"No stations found for variable: {var_name}")
+        for group_name, var_list in var_groups.items():
+            # Check which variables in this group are available
+            available_vars = [v for v in var_list if v in self.stations and len(self.stations[v]) > 0]
+
+            if len(available_vars) == 0:
                 continue
 
-            # Extract station metadata
+            # Use the first available variable to define the station dimension
+            # For temperature, this ensures min and max share the same stations
+            primary_var = available_vars[0]
+            var_stations = self.stations[primary_var]
+
+            # Extract station metadata from primary variable
             n_stations = len(var_stations)
             station_codes = np.array([s["code"] for s in var_stations])
             station_x = np.array([s["x"] for s in var_stations])
@@ -102,61 +119,78 @@ class MeteoData:
             station_elevation = np.array([s["elevation"] for s in var_stations])
             station_names = np.array([s.get("name", "") for s in var_stations], dtype=str)
 
-            # Collect all unique timestamps across stations
+            # Collect all unique timestamps across all variables in this group
             all_times = []
-            for station in var_stations:
-                all_times.extend(station["time"])
+            for var_name in available_vars:
+                for station in self.stations[var_name]:
+                    all_times.extend(station["time"])
             unique_times = pd.DatetimeIndex(sorted(set(all_times)))
             n_times = len(unique_times)
 
-            # Create data array (time x station)
-            data_array = np.full((n_times, n_stations), np.nan, dtype=np.float32)
+            # Station dimension name based on group (e.g., "station_temperature")
+            station_dim = f"station_{group_name}"
 
-            # Fill data array
-            for i, station in enumerate(var_stations):
-                if len(station["time"]) > 0:
-                    # Find indices of this station's times in the unified time array
-                    time_indices = unique_times.get_indexer(pd.DatetimeIndex(station["time"]))
-                    valid_mask = time_indices >= 0
-                    data_array[time_indices[valid_mask], i] = station["data"][valid_mask]
+            # Create data variables for all variables in this group
+            data_vars = {}
+            for var_name in available_vars:
+                var_stations = self.stations[var_name]
 
-            # Create xarray Dataset for this variable
+                # Create data array (time x station)
+                data_array = np.full((n_times, n_stations), np.nan, dtype=np.float32)
+
+                # Fill data array
+                for i, station in enumerate(var_stations):
+                    if len(station["time"]) > 0:
+                        # Find indices of this station's times in the unified time array
+                        time_indices = unique_times.get_indexer(pd.DatetimeIndex(station["time"]))
+                        valid_mask = time_indices >= 0
+                        data_array[time_indices[valid_mask], i] = station["data"][valid_mask]
+
+                data_vars[var_name] = (
+                    ["time", station_dim],
+                    data_array,
+                    {
+                        "long_name": _get_variable_longname(var_name),
+                        "units": _get_variable_units(var_name),
+                        "missing_value": np.nan,
+                    },
+                )
+
+            # Create xarray Dataset for this group
             ds = xr.Dataset(
-                {
-                    f"{var_name}": (
-                        ["time", "station"],
-                        data_array,
-                        {
-                            "long_name": _get_variable_longname(var_name),
-                            "units": _get_variable_units(var_name),
-                            "missing_value": np.nan,
-                        },
-                    ),
-                },
+                data_vars,
                 coords={
                     "time": (["time"], unique_times, {"long_name": "time", "axis": "T"}),
-                    "station": (["station"], np.arange(n_stations), {"long_name": "station index"}),
-                    "station_code": (["station"], station_codes, {"long_name": "station code"}),
-                    "x": (
-                        ["station"],
+                    station_dim: ([station_dim], np.arange(n_stations), {"long_name": "station index"}),
+                    f"station_code_{group_name}": (
+                        [station_dim],
+                        station_codes,
+                        {"long_name": f"{group_name} station code"},
+                    ),
+                    f"x_{group_name}": (
+                        [station_dim],
                         station_x,
-                        {"long_name": "station x coordinate (easting)", "units": "m"},
+                        {"long_name": f"{group_name} station x coordinate (easting)", "units": "m"},
                     ),
-                    "y": (
-                        ["station"],
+                    f"y_{group_name}": (
+                        [station_dim],
                         station_y,
-                        {"long_name": "station y coordinate (northing)", "units": "m"},
+                        {"long_name": f"{group_name} station y coordinate (northing)", "units": "m"},
                     ),
-                    "elevation": (
-                        ["station"],
+                    f"elevation_{group_name}": (
+                        [station_dim],
                         station_elevation,
-                        {"long_name": "station elevation", "units": "m"},
+                        {"long_name": f"{group_name} station elevation", "units": "m"},
                     ),
-                    "station_name": (["station"], station_names, {"long_name": "station name"}),
+                    f"station_name_{group_name}": (
+                        [station_dim],
+                        station_names,
+                        {"long_name": f"{group_name} station name"},
+                    ),
                 },
             )
 
-            datasets[var_name] = ds
+            datasets[group_name] = ds
 
         # Merge all variable datasets
         if len(datasets) == 0:
@@ -450,6 +484,16 @@ class NetCDFMeteoReader:
 
         stations = {}
 
+        # Define variable groups and their corresponding station dimensions
+        var_to_group = {
+            "temperature_min": "temperature",
+            "temperature_max": "temperature",
+            "precipitation": "precipitation",
+            "humidity": "humidity",
+            "wind_speed": "wind_speed",
+            "radiation": "radiation",
+        }
+
         # List of expected meteorological variables
         expected_vars = ["precipitation", "temperature_min", "temperature_max", "humidity", "wind_speed", "radiation"]
 
@@ -461,17 +505,27 @@ class NetCDFMeteoReader:
 
             # Extract data array and coordinates
             data_var = ds[var_name]
-            n_stations = len(ds["station"])
+
+            # Get the group name for this variable (e.g., temperature_min -> temperature)
+            group_name = var_to_group.get(var_name, var_name)
+
+            # Station dimension name based on group (e.g., "station_temperature")
+            station_dim = f"station_{group_name}"
+            if station_dim not in ds.dims:
+                logger.warning(f"Station dimension {station_dim} not found for {var_name}, skipping")
+                continue
+
+            n_stations = len(ds[station_dim])
 
             var_stations = []
 
             # Process each station
             for i in range(n_stations):
-                station_code = int(ds["station_code"][i].values)
-                station_x = float(ds["x"][i].values)
-                station_y = float(ds["y"][i].values)
-                station_elevation = float(ds["elevation"][i].values)
-                station_name = str(ds["station_name"][i].values)
+                station_code = int(ds[f"station_code_{group_name}"][i].values)
+                station_x = float(ds[f"x_{group_name}"][i].values)
+                station_y = float(ds[f"y_{group_name}"][i].values)
+                station_elevation = float(ds[f"elevation_{group_name}"][i].values)
+                station_name = str(ds[f"station_name_{group_name}"][i].values)
 
                 # Extract time series for this station
                 station_data = data_var[:, i].values
