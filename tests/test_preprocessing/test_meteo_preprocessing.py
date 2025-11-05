@@ -236,21 +236,29 @@ class TestMeteoData:
         # Load and check structure
         ds = xr.open_dataset(output_path)
 
-        # Check dimensions
+        # Check dimensions (grouped by variable type)
         assert "time" in ds.dims
-        assert "station" in ds.dims
+        # Mock file has precipitation and temperature_min
+        assert "station_precipitation" in ds.dims
+        assert "station_temperature" in ds.dims
 
-        # Check coordinates
-        assert "station_code" in ds.coords
-        assert "x" in ds.coords
-        assert "y" in ds.coords
-        assert "elevation" in ds.coords
-        assert "station_name" in ds.coords
+        # Check coordinates (grouped by variable type)
+        assert "station_code_precipitation" in ds.coords
+        assert "x_precipitation" in ds.coords
+        assert "y_precipitation" in ds.coords
+        assert "elevation_precipitation" in ds.coords
+        assert "station_name_precipitation" in ds.coords
+        assert "station_code_temperature" in ds.coords
+        assert "x_temperature" in ds.coords
+        assert "y_temperature" in ds.coords
+        assert "elevation_temperature" in ds.coords
+        assert "station_name_temperature" in ds.coords
 
         # Check data variables (mock file has precipitation and temperature_min)
         assert "precipitation" in ds.data_vars
         assert "temperature_min" in ds.data_vars
-        assert ds["precipitation"].dims == ("time", "station")
+        assert ds["precipitation"].dims == ("time", "station_precipitation")
+        assert ds["temperature_min"].dims == ("time", "station_temperature")
 
         # Check global attributes
         assert "title" in ds.attrs
@@ -455,24 +463,24 @@ class TestNetCDFMeteoReader:
 
     def test_netcdf_handles_missing_variables(self, tmp_path):
         """Test that reader handles NetCDF files with subset of variables."""
-        # Create a minimal NetCDF with only one variable
+        # Create a minimal NetCDF with only one variable using the new grouped format
         time = pd.date_range("2023-01-01", periods=5, freq="h")
         ds = xr.Dataset(
             {
                 "precipitation": (
-                    ["time", "station"],
+                    ["time", "station_precipitation"],
                     np.random.rand(5, 1),
                     {"long_name": "precipitation", "units": "mm"},
                 )
             },
             coords={
                 "time": time,
-                "station": [0],
-                "station_code": (["station"], [1001]),
-                "x": (["station"], [1600000.0]),
-                "y": (["station"], [4800000.0]),
-                "elevation": (["station"], [500.0]),
-                "station_name": (["station"], ["Test"]),
+                "station_precipitation": [0],
+                "station_code_precipitation": (["station_precipitation"], [1001]),
+                "x_precipitation": (["station_precipitation"], [1600000.0]),
+                "y_precipitation": (["station_precipitation"], [4800000.0]),
+                "elevation_precipitation": (["station_precipitation"], [500.0]),
+                "station_name_precipitation": (["station_precipitation"], ["Test"]),
             },
         )
 
