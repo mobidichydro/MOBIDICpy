@@ -302,10 +302,10 @@ def station_interpolation(
             weights_sum += w
 
     # Normalize by sum of weights
-    result = result / weights_sum
+    result /= weights_sum
 
     # Add back elevation trend
-    result = result + p[0] * dtm + p[1]
+    result += p[0] * dtm + p[1]
 
     # Mask out cells outside basin
     result[np.isnan(dtm)] = np.nan
