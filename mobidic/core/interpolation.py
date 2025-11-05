@@ -15,7 +15,7 @@ from loguru import logger
 from numba import jit
 
 
-@jit(nopython=True, parallel=True, cache=True)
+@jit(nopython=True, cache=True, fastmath=True)
 def _compute_weighted_sum_jit(
     weights_matrix: NDArray[np.float64],
     k_ok: NDArray[np.int64],
@@ -39,7 +39,6 @@ def _compute_weighted_sum_jit(
         - weights_sum: Sum of weights at each grid cell (for normalization)
 
     Notes:
-        - Uses parallel=True for multi-threaded execution across grid rows
         - Compiled on first call (subsequent calls are fast)
         - Cache=True stores compiled code for faster startup
     """
@@ -273,9 +272,7 @@ def station_interpolation(
     # Compute or use pre-computed weights
     if weights_matrix is not None:
         # Use pre-computed weights with Numba JIT for maximum performance
-        result, weights_sum = _compute_weighted_sum_jit(
-            weights_matrix, k_ok.astype(np.int64), st_val_corr
-        )
+        result, weights_sum = _compute_weighted_sum_jit(weights_matrix, k_ok.astype(np.int64), st_val_corr)
     else:
         # Compute weights on-the-fly using IDW
         # Match MATLAB mobidic_sid.m lines 1126-1128: add 0.01 to grid coordinates to avoid division by zero
