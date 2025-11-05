@@ -12,10 +12,10 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import griddata
 from loguru import logger
-from numba import jit
+from numba import jit, prange
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@jit(nopython=True, cache=True, fastmath=True, parallel=True)
 def _compute_weighted_sum_jit(
     weights_matrix: NDArray[np.float64],
     k_ok: NDArray[np.int64],
@@ -41,21 +41,19 @@ def _compute_weighted_sum_jit(
     Notes:
         - Compiled on first call (subsequent calls are fast)
         - Cache=True stores compiled code for faster startup
+        - parallel=True enables multi-threading over grid rows
     """
     nrows, ncols = weights_matrix.shape[0], weights_matrix.shape[1]
     result = np.zeros((nrows, ncols), dtype=np.float64)
     weights_sum = np.zeros((nrows, ncols), dtype=np.float64)
 
-    # Iterate over valid stations
-    for idx in range(len(k_ok)):
-        k = k_ok[idx]
-        val = st_val_corr[k]
-
-        # Parallelize over rows (numba handles this efficiently)
-        for i in range(nrows):
-            for j in range(ncols):
+    # Parallelized over rows for better performance on multi-core CPUs
+    for i in prange(nrows):
+        for j in range(ncols):
+            for idx in range(len(k_ok)):
+                k = k_ok[idx]
                 w = weights_matrix[i, j, k]
-                result[i, j] += w * val
+                result[i, j] += w * st_val_corr[k]
                 weights_sum[i, j] += w
 
     return result, weights_sum
@@ -248,8 +246,8 @@ def station_interpolation(
         logger.warning("No valid stations for station data interpolation, returning NaN grid")
         return np.full_like(dtm, np.nan)
 
-    # Extract valid stations
-    k_ok = np.where(valid_mask)[0]
+    # Extract valid stations (use int64 for Numba compatibility)
+    k_ok = np.where(valid_mask)[0].astype(np.int64)
     st_val_ok = station_values[k_ok]
     st_zz_ok = st_zz[k_ok]
 
@@ -272,7 +270,7 @@ def station_interpolation(
     # Compute or use pre-computed weights
     if weights_matrix is not None:
         # Use pre-computed weights with Numba JIT for maximum performance
-        result, weights_sum = _compute_weighted_sum_jit(weights_matrix, k_ok.astype(np.int64), st_val_corr)
+        result, weights_sum = _compute_weighted_sum_jit(weights_matrix, k_ok, st_val_corr)
     else:
         # Compute weights on-the-fly using IDW
         # Match MATLAB mobidic_sid.m lines 1126-1128: add 0.01 to grid coordinates to avoid division by zero
