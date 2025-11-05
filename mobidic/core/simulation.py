@@ -1,11 +1,11 @@
-"""Main simulation engine for MOBIDIC.
+"""Main simulation engine
 
-This module implements the main time-stepping loop for the MOBIDIC hydrological model.
+This module implements the main time-stepping loop of MOBIDIC hydrological model.
 It orchestrates the water balance calculations, routing, and I/O operations.
 
 Currently, this implements a simplified version without:
 - Energy balance (uses simple PET instead)
-- Groundwater models (percolation goes to baseflow)
+- Groundwater models
 - Reservoir routing
 
 Translated from MATLAB: mobidic_sid.m (main simulation loop)
@@ -938,7 +938,7 @@ class Simulation:
 
         logger.info("")
         logger.info("=" * 80)
-        logger.info(f"MOBIDIC v{__version__} - SIMULATION")
+        logger.info(f"MOBIDICpy v{__version__} - SIMULATION")
         logger.info("=" * 80)
         logger.info(f"Basin: {self.config.basin.id}")
         logger.info(f"Parameter set: {self.config.basin.paramset_id}")

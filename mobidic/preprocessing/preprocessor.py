@@ -185,7 +185,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         >>> gisdata.save("Arno_gisdata.nc", "Arno_network.parquet")
     """
     logger.info("=" * 80)
-    logger.info(f"MOBIDIC v{__version__} - PREPROCESSING")
+    logger.info(f"MOBIDICpy v{__version__} - PREPROCESSING")
     logger.info("=" * 80)
     logger.info(f"Basin: {config.basin.id}")
     logger.info(f"Parameter set: {config.basin.paramset_id}")
