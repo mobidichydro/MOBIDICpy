@@ -275,6 +275,148 @@ def compare_variable(
     return np.mean(all_rmse), len(matched_reaches), len(common_index)
 
 
+def compare_observed_discharge(output_dir: Path, data_dir: Path, observed_file: str, mobidic_id: int):
+    """Compare observed discharge with Python simulation for a specific reach.
+
+    Args:
+        output_dir: Directory containing Python output files
+        data_dir: Directory containing observed data files
+        observed_file: Filename of observed discharge data (Parquet)
+        mobidic_id: MOBIDIC ID of the reach to compare
+
+    Returns:
+        dict: Performance metrics (RMSE, bias, NSE)
+    """
+    print()
+    print("=" * 80)
+    print(f"MOBIDIC - Observed vs simulated discharge (Reach {mobidic_id:04d})")
+    print("=" * 80)
+    print()
+
+    # Load observed data
+    observed_path = data_dir / observed_file
+    if not observed_path.exists():
+        raise FileNotFoundError(f"Observed discharge file not found: {observed_path}")
+
+    df_observed = pd.read_parquet(observed_path)
+    print(f"Observed data: {observed_file}")
+    print(f"  Shape: {df_observed.shape}")
+    print(f"  Time range: {df_observed['time'].min()} to {df_observed['time'].max()}")
+    print()
+
+    # Load Python discharge output
+    parquet_files = list(output_dir.glob("discharge*.parquet"))
+    if not parquet_files:
+        raise FileNotFoundError(f"No discharge files found in {output_dir}")
+    parquet_file = parquet_files[0]
+
+    df_python = pd.read_parquet(parquet_file)
+    print(f"Python output: {parquet_file.name}")
+    print(f"  Shape: {df_python.shape}")
+    print(f"  Time range: {df_python.index[0]} to {df_python.index[-1]}")
+    print()
+
+    # Find the reach column
+    reach_col = f"reach_{mobidic_id:04d}"
+    if reach_col not in df_python.columns:
+        raise ValueError(
+            f"Reach {reach_col} not found in Python output. Available reaches: {df_python.columns.tolist()}"
+        )
+
+    # Align time series
+    print("Aligning time series...")
+    df_observed["time"] = pd.to_datetime(df_observed["time"])
+    df_observed.set_index("time", inplace=True)
+
+    # Find common time range
+    start_time = max(df_python.index[0], df_observed.index[0])
+    end_time = min(df_python.index[-1], df_observed.index[-1])
+
+    df_python_aligned = df_python.loc[start_time:end_time, reach_col]
+    df_observed_aligned = df_observed.loc[start_time:end_time, "Q"]
+
+    # Resample to ensure exact alignment
+    common_index = df_python_aligned.index.intersection(df_observed_aligned.index)
+    df_python_aligned = df_python_aligned.loc[common_index]
+    df_observed_aligned = df_observed_aligned.loc[common_index]
+
+    print(f"  Common time range: {start_time} to {end_time}")
+    print(f"  Number of time steps: {len(common_index)}")
+    print()
+
+    # Calculate metrics
+    print("Calculating performance metrics...")
+    metrics = calculate_metrics(df_observed_aligned.values, df_python_aligned.values)
+
+    # Calculate Nash-Sutcliffe Efficiency (NSE)
+    mask = ~(np.isnan(df_observed_aligned.values) | np.isnan(df_python_aligned.values))
+    obs = df_observed_aligned.values[mask]
+    sim = df_python_aligned.values[mask]
+
+    if len(obs) > 0:
+        nse = 1 - np.sum((obs - sim) ** 2) / np.sum((obs - np.mean(obs)) ** 2)
+        metrics["NSE"] = nse
+
+    print(f"  RMSE: {metrics['RMSE']:.3f} m³/s")
+    print(f"  Bias: {metrics['bias']:.3f} m³/s")
+    print(f"  NSE:  {metrics['NSE']:.3f}")
+    print()
+
+    # Create plots
+    print("Creating plots...")
+    fig = plt.figure(figsize=(14, 6))
+    gs = GridSpec(1, 2, figure=fig, width_ratios=[3, 1], hspace=0.3, wspace=0.3)
+
+    fig.suptitle(
+        f"MOBIDIC: Observed vs Python Discharge - Reach {mobidic_id:04d} (Nave di Rosano)",
+        fontsize=14,
+        fontweight="bold",
+    )
+
+    # Time series plot
+    ax_ts = fig.add_subplot(gs[0, 0])
+    ax_ts.plot(common_index, df_observed_aligned, "b-", linewidth=1.5, alpha=0.7, label="Observed")
+    ax_ts.plot(common_index, df_python_aligned, "r--", linewidth=1.0, alpha=0.8, label="MOBIDIC")
+
+    ax_ts.set_xlabel("Time")
+    ax_ts.set_ylabel("Discharge [m³/s]")
+    ax_ts.set_title(f"Time Series (RMSE={metrics['RMSE']:.3f} m³/s, NSE={metrics['NSE']:.3f})")
+    ax_ts.grid(True, alpha=0.3)
+    ax_ts.legend(loc="best")
+    ax_ts.tick_params(axis="x", rotation=45)
+
+    # Scatter plot
+    ax_scatter = fig.add_subplot(gs[0, 1])
+    ax_scatter.scatter(df_observed_aligned, df_python_aligned, alpha=0.5, s=20, c="blue")
+
+    # Add 1:1 line
+    min_val = min(df_observed_aligned.min(), df_python_aligned.min())
+    max_val = max(df_observed_aligned.max(), df_python_aligned.max())
+    ax_scatter.plot([min_val, max_val], [min_val, max_val], "k--", linewidth=1.5, label="1:1 line")
+
+    ax_scatter.set_xlabel("Observed Discharge [m³/s]")
+    ax_scatter.set_ylabel("Python Discharge [m³/s]")
+    ax_scatter.set_title("Scatter Plot")
+    ax_scatter.grid(True, alpha=0.3)
+    ax_scatter.legend(loc="best")
+    ax_scatter.set_aspect("equal", adjustable="box")
+
+    plt.tight_layout()
+    plt.show()
+
+    print("=" * 80)
+    print("Observed vs MOBIDIC Discharge Comparison Summary")
+    print("=" * 80)
+    print(f"Reach: {mobidic_id:04d}")
+    print(f"Time steps: {len(common_index)}")
+    print(f"RMSE: {metrics['RMSE']:.3f} m³/s")
+    print(f"Bias: {metrics['bias']:.3f} m³/s")
+    print(f"NSE:  {metrics['NSE']:.3f}")
+    print("=" * 80)
+
+    return metrics
+
+
 def main():
     """Main function to compare Python and MATLAB outputs."""
 
@@ -282,6 +424,7 @@ def main():
     example_dir = Path(__file__).parent / "Arno"
     output_dir = example_dir / "output"
     matlab_dir = output_dir / "matlab"
+    data_dir = example_dir / "data"
 
     # Compare discharge
     discharge_results = compare_variable(
@@ -309,6 +452,14 @@ def main():
         variable_label="Lateral Inflow [m³/s]",
     )
 
+    # Compare with observed discharge at Nave di Rosano (reach 292)
+    observed_results = compare_observed_discharge(
+        output_dir=output_dir,
+        data_dir=data_dir,
+        observed_file="Q_Nave_di_Rosano_2023.parquet",
+        mobidic_id=292,
+    )
+
     # Overall summary
     print()
     print("=" * 80)
@@ -318,6 +469,11 @@ def main():
         print(f"Discharge:      Mean RMSE = {discharge_results[0]:.6f} m³/s")
     if lateral_results[0] is not None:
         print(f"Lateral Inflow: Mean RMSE = {lateral_results[0]:.6f} m³/s")
+    if observed_results is not None:
+        print(
+            f"Observed vs Python (Reach 292): RMSE = {observed_results['RMSE']:.3f} m³/s, "
+            f"NSE = {observed_results['NSE']:.3f}"
+        )
     print("=" * 80)
 
 
