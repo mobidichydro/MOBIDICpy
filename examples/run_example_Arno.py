@@ -15,7 +15,7 @@ Usage:
     python examples/run_example_Arno.py
 
     Options (modify script directly):
-    - force_preprocessing: Set to True to rerun preprocessing even if data exists
+    - force_preprocessing: Set to True to rerun preprocessing (e.g., when changing soil parameters)
 """
 
 from pathlib import Path
@@ -35,7 +35,7 @@ from mobidic import (
 )
 
 # Configuration
-force_preprocessing = False  # Set to True to force re-running preprocessing
+force_preprocessing = True  # Set to True to force re-running preprocessing
 
 example_dir = Path(__file__).parent / "Arno"
 config_file = example_dir / "Arno.yaml"
