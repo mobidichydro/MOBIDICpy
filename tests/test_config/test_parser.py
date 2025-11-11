@@ -81,6 +81,8 @@ def minimal_config_dict():
             "reservoir_states": True,
             "soil_capillary": True,
             "soil_gravitational": True,
+            "soil_plant": True,
+            "soil_surface": True,
             "surface_temperature": False,
             "ground_temperature": False,
             "aquifer_head": False,

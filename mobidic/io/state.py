@@ -19,6 +19,7 @@ def save_state(
     time: datetime,
     grid_metadata: dict,
     network_size: int,
+    output_states: "OutputStates",  # noqa: F821
     add_metadata: dict | None = None,
 ) -> None:
     """
@@ -30,6 +31,7 @@ def save_state(
         time: Current simulation time
         grid_metadata: Dictionary with grid metadata (shape, resolution, crs, etc.)
         network_size: Number of reaches in network
+        output_states: Configuration object specifying which state variables to save
         add_metadata: Additional global attributes (optional)
 
     Examples:
@@ -38,7 +40,8 @@ def save_state(
         >>> # After running simulation
         >>> from mobidic.io import save_state
         >>> save_state(sim.state, "state_2020-01-01.nc", datetime(2020, 1, 1),
-        ...            sim.gisdata.metadata, len(sim.network))
+        ...            sim.gisdata.metadata, len(sim.network),
+        ...            config.output_states)
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -54,32 +57,46 @@ def save_state(
     # Create coordinate arrays
     x = xllcorner + np.arange(ncols) * resolution[0]
     y = yllcorner + np.arange(nrows) * resolution[1]
-    reaches = np.arange(network_size)
 
-    # Create data variables
-    data_vars = {
-        "Wc": (["y", "x"], state.wc),
-        "Wg": (["y", "x"], state.wg),
-        "Ws": (["y", "x"], state.ws),
-        "discharge": (["reach"], state.discharge),
-    }
+    # Create data variables dictionary based on configuration
+    data_vars = {}
 
-    # Add plant water if present
-    if state.wp is not None:
+    # Add state variables based on output_states configuration
+    if output_states.soil_capillary:
+        data_vars["Wc"] = (["y", "x"], state.wc)
+
+    if output_states.soil_gravitational:
+        data_vars["Wg"] = (["y", "x"], state.wg)
+
+    if output_states.soil_plant and state.wp is not None:
         data_vars["Wp"] = (["y", "x"], state.wp)
+
+    if output_states.soil_surface:
+        data_vars["Ws"] = (["y", "x"], state.ws)
+
+    if output_states.discharge:
+        data_vars["discharge"] = (["reach"], state.discharge)
+        data_vars["lateral_inflow"] = (["reach"], state.lateral_inflow)
 
     # Add grid mapping variable for CRS (CF-1.12 compliance)
     data_vars["crs"] = ([], 0)
 
+    # Create coordinates dictionary
+    coords = {
+        "x": (["x"], x),
+        "y": (["y"], y),
+        "time": time,
+    }
+
+    # Add reach coordinate only if discharge is enabled
+    if output_states.discharge:
+        reaches = np.arange(network_size)
+        coords["reach"] = (["reach"], reaches)
+
     # Create dataset
     ds = xr.Dataset(
         data_vars=data_vars,
-        coords={
-            "x": (["x"], x),
-            "y": (["y"], y),
-            "reach": (["reach"], reaches),
-            "time": time,
-        },
+        coords=coords,
     )
 
     # Add grid mapping attributes (CF-1.12 compliance)
@@ -103,39 +120,32 @@ def save_state(
         "units": "m",
         "axis": "Y",
     }
-    ds["reach"].attrs = {
-        "long_name": "reach index",
-        "description": "MOBIDIC reach ID (mobidic_id)",
-        "units": "1",
-    }
+    if "reach" in ds.coords:
+        ds["reach"].attrs = {
+            "long_name": "reach index",
+            "description": "MOBIDIC reach ID (mobidic_id)",
+            "units": "1",
+        }
     ds["time"].attrs = {
         "long_name": "simulation time",
     }
 
-    # Add variable metadata
-    ds["Wc"].attrs = {
-        "long_name": "Capillary Water Content",
-        "units": "m",
-        "description": "Water held by capillary forces in soil",
-        "grid_mapping": "crs",
-    }
-    ds["Wg"].attrs = {
-        "long_name": "Gravitational Water Content",
-        "units": "m",
-        "description": "Drainable water in soil large pores",
-        "grid_mapping": "crs",
-    }
-    ds["Ws"].attrs = {
-        "long_name": "Surface Water Content",
-        "units": "m",
-        "description": "Water in surface depressions",
-        "grid_mapping": "crs",
-    }
-    ds["discharge"].attrs = {
-        "long_name": "River Discharge",
-        "units": "m3 s-1",
-        "description": "Discharge at downstream end of each reach",
-    }
+    # Add variable metadata (conditionally, based on which variables are present)
+    if "Wc" in ds:
+        ds["Wc"].attrs = {
+            "long_name": "Capillary Water Content",
+            "units": "m",
+            "description": "Water held by capillary forces in soil",
+            "grid_mapping": "crs",
+        }
+
+    if "Wg" in ds:
+        ds["Wg"].attrs = {
+            "long_name": "Gravitational Water Content",
+            "units": "m",
+            "description": "Drainable water in soil large pores",
+            "grid_mapping": "crs",
+        }
 
     if "Wp" in ds:
         ds["Wp"].attrs = {
@@ -143,6 +153,28 @@ def save_state(
             "units": "m",
             "description": "Water intercepted by vegetation canopy",
             "grid_mapping": "crs",
+        }
+
+    if "Ws" in ds:
+        ds["Ws"].attrs = {
+            "long_name": "Surface Water Content",
+            "units": "m",
+            "description": "Water in surface depressions",
+            "grid_mapping": "crs",
+        }
+
+    if "discharge" in ds:
+        ds["discharge"].attrs = {
+            "long_name": "River Discharge",
+            "units": "m3 s-1",
+            "description": "Discharge at downstream end of each reach",
+        }
+
+    if "lateral_inflow" in ds:
+        ds["lateral_inflow"].attrs = {
+            "long_name": "Lateral Inflow",
+            "units": "m3 s-1",
+            "description": "Lateral inflow from hillslope to each reach",
         }
 
     # Add global attributes
@@ -200,27 +232,56 @@ def load_state(
     # Load dataset
     ds = xr.open_dataset(input_path)
 
-    # Extract state variables
-    wc = ds["Wc"].values
-    wg = ds["Wg"].values
-    ws = ds["Ws"].values
-    discharge = ds["discharge"].values
+    # Get grid shape from coordinates (needed for initializing missing variables)
+    nrows = len(ds.y)
+    ncols = len(ds.x)
 
-    # Check array shapes
-    if discharge.shape[0] != network_size:
-        logger.warning(
-            f"Network size mismatch: expected {network_size}, got {discharge.shape[0]}. "
-            "This may cause issues if network has changed."
-        )
+    # Extract state variables (conditionally, since they may not be present)
+    # Grid variables: initialize with NaN if missing
+    if "Wc" in ds:
+        wc = ds["Wc"].values
+    else:
+        logger.warning("Wc not found in state file, initializing with NaN")
+        wc = np.full((nrows, ncols), np.nan)
 
-    # Extract plant water if present
+    if "Wg" in ds:
+        wg = ds["Wg"].values
+    else:
+        logger.warning("Wg not found in state file, initializing with NaN")
+        wg = np.full((nrows, ncols), np.nan)
+
+    if "Ws" in ds:
+        ws = ds["Ws"].values
+    else:
+        logger.warning("Ws not found in state file, initializing with NaN")
+        ws = np.full((nrows, ncols), np.nan)
+
+    # Plant water: optional, None if missing
     wp = ds["Wp"].values if "Wp" in ds else None
+
+    # Network variables: initialize with zeros if missing
+    if "discharge" in ds:
+        discharge = ds["discharge"].values
+        # Check array shapes
+        if discharge.shape[0] != network_size:
+            logger.warning(
+                f"Network size mismatch: expected {network_size}, got {discharge.shape[0]}. "
+                "This may cause issues if network has changed."
+            )
+    else:
+        logger.warning("discharge not found in state file, initializing with zeros")
+        discharge = np.zeros(network_size)
+
+    if "lateral_inflow" in ds:
+        lateral_inflow = ds["lateral_inflow"].values
+    else:
+        logger.warning("lateral_inflow not found in state file, initializing with zeros")
+        lateral_inflow = np.zeros(network_size)
 
     # Extract time
     time = pd.Timestamp(ds["time"].values).to_pydatetime()
 
     # Extract grid metadata
-    nrows, ncols = wc.shape
     resolution_x = float(ds.x.values[1] - ds.x.values[0]) if len(ds.x) > 1 else float(ds.attrs.get("resolution_x", 1.0))
     resolution_y = float(ds.y.values[1] - ds.y.values[0]) if len(ds.y) > 1 else float(ds.attrs.get("resolution_y", 1.0))
     xllcorner = float(ds.x.values[0])
@@ -241,7 +302,7 @@ def load_state(
     # Import here to avoid circular import
     from mobidic.core.simulation import SimulationState
 
-    state = SimulationState(wc, wg, wp, ws, discharge)
+    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
 
     logger.success(f"State loaded: time={time.isoformat()}, grid={nrows}x{ncols}, reaches={len(discharge)}")
 
