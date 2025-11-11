@@ -312,6 +312,14 @@ output_states:
   # [boolean]
   soil_gravitational: true
 
+  # REQUIRED: Option to save states of plant/canopy water for results analysis
+  # [boolean]
+  soil_plant: true
+
+  # REQUIRED: Option to save states of surface water for results analysis
+  # [boolean]
+  soil_surface: true
+
   # REQUIRED: Option to save states of land surface temperature for results analysis
   # [boolean]
   surface_temperature: false

@@ -157,19 +157,19 @@ parameters:
 
     # REQUIRED: Percolation coefficient, in 1/s
     # [positive number in float or exp notation]
-    gamma: 2.689337e-07
+    gamma: 1.679033e-08
 
     # REQUIRED: Adsorption coefficient, in 1/s
     # [positive number in float or exp notation]
-    kappa: 1.096651e-07
+    kappa: 1.818725e-08
 
     # REQUIRED: Hypodermic flow coefficient, in 1/s
     # [positive number in float or exp notation]
-    beta: 7.62e-06
+    beta: 1.576345e-05
 
     # REQUIRED: Hillslope flow coefficient, in 1/s
     # [positive number in float or exp notation]
-    alpha: 2.50e-05
+    alpha: 5.722441e-06
   
   energy:
     # REQUIRED: Deep ground temperature, in deg. Kelvin
@@ -298,13 +298,13 @@ simulation:
 ####### OUTPUT CONTROLS
 
 output_states:
-  # REQUIRED: Option to save states of river network for results analysis
+  # REQUIRED: Option to save states of river network (discharge, lateral inflow) for results analysis
   # [boolean]
   discharge: true
 
   # REQUIRED: Option to save states of reservoirs and lakes for results analysis
   # [boolean]
-  reservoir_states: true
+  reservoir_states: false
 
   # REQUIRED: Option to save states of soil small pores for results analysis
   # [boolean]
@@ -313,6 +313,14 @@ output_states:
   # REQUIRED: Option to save states of soil large pores for results analysis
   # [boolean]
   soil_gravitational: true
+
+  # REQUIRED: Option to save states of plant/canopy water for results analysis
+  # [boolean]
+  soil_plant: true
+
+  # REQUIRED: Option to save states of surface water for results analysis
+  # [boolean]
+  soil_surface: true
 
   # REQUIRED: Option to save states of land surface temperature for results analysis
   # [boolean]
@@ -374,7 +382,7 @@ output_report_settings:
 
   # OPTIONAL: List of reach IDs to output
   # [list of integers, e.g. [1234, 5678]. Used if reach_selection=list]
-  sel_list: [313, 329, 514]
+  sel_list: [292, 313, 329, 514]
 
 
 ####### ADVANCED SETTINGS
