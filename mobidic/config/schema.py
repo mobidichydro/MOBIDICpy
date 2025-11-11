@@ -285,6 +285,8 @@ class OutputStates(BaseModel):
     )
     soil_capillary: bool = Field(..., description="Option to save states of soil small pores for results analysis")
     soil_gravitational: bool = Field(..., description="Option to save states of soil large pores for results analysis")
+    soil_plant: bool = Field(..., description="Option to save states of plant/canopy water for results analysis")
+    soil_surface: bool = Field(..., description="Option to save states of surface water for results analysis")
     surface_temperature: bool = Field(
         ..., description="Option to save states of land surface temperature for results analysis"
     )
