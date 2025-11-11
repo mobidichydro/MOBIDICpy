@@ -66,6 +66,7 @@ class SimulationState:
         wp: np.ndarray | None,
         ws: np.ndarray,
         discharge: np.ndarray,
+        lateral_inflow: np.ndarray,
     ):
         """Initialize simulation state.
 
@@ -75,12 +76,14 @@ class SimulationState:
             wp: Plant/canopy water content [m] (None to disable)
             ws: Surface water content [m]
             discharge: River discharge for each reach [m³/s]
+            lateral_inflow: Lateral inflow to each reach [m³/s]
         """
         self.wc = wc
         self.wg = wg
         self.wp = wp
         self.ws = ws
         self.discharge = discharge
+        self.lateral_inflow = lateral_inflow
 
 
 class SimulationResults:
@@ -122,6 +125,7 @@ class SimulationResults:
             time=time,
             grid_metadata=self.simulation.gisdata.metadata,
             network_size=len(self.simulation.network),
+            output_states=self.config.output_states,
             add_metadata={
                 "basin_id": self.config.basin.id,
                 "paramset_id": self.config.basin.paramset_id,
@@ -221,6 +225,7 @@ class SimulationResults:
             time=final_time,
             grid_metadata=self.simulation.gisdata.metadata,
             network_size=len(self.simulation.network),
+            output_states=self.config.output_states,
             add_metadata=add_metadata,
         )
 
@@ -357,8 +362,9 @@ class Simulation:
         ws[np.isnan(self.flow_acc)] = np.nan
         wp[np.isnan(self.flow_acc)] = np.nan
 
-        # Initialize river discharge
+        # Initialize river discharge and lateral inflow
         discharge = np.zeros(len(self.network))
+        lateral_inflow = np.zeros(len(self.network))
 
         logger.success(
             f"State initialized. Initial conditions (average): "
@@ -368,7 +374,7 @@ class Simulation:
             f"Wp={np.nanmean(wp) * 1000:.1f} mm"
         )
 
-        return SimulationState(wc, wg, wp, ws, discharge)
+        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
 
     def _interpolate_forcing(
         self,
@@ -1151,6 +1157,9 @@ class Simulation:
             flr_discharge = flr * cell_area
             lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
             logger.debug("Lateral inflow accumulation completed")
+
+            # Store lateral inflow in state
+            self.state.lateral_inflow = lateral_inflow
 
             # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
             # This prevents double-counting - flows from all contributing cells are consumed after accumulation
