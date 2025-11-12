@@ -33,7 +33,7 @@ The hydrological processes in the soil-water balance include:
 
 ### Energy Balance
 
-MOBIDIC **solves water and energy balance simultaneously** in the soil-vegetation subsystem. The energy module computes:
+MOBIDIC solves water and energy balance simultaneously in the soil-vegetation subsystem. The energy module computes:
 
 - Surface net radiation (R<sub>n</sub>)
 - Ground heat flux (G)
@@ -57,7 +57,7 @@ Water routing occurs at two levels:
 
 1. **Hillslope routing**: Lateral flow accumulates from upslope cells following D8 flow directions. Surface runoff (W<sub>s</sub>) and subsurface lateral flow (from W<sub>g</sub>) are routed separately through the hillslope network until reaching river channels.
 
-2. **Channel routing**: The river network is represented in **vector form** (from "blue lines maps") with channels treated as cylindrical. Rivers are fed by surface runoff and baseflow from groundwater. Available routing methods include:
+2. **Channel routing**: The river network is represented as a **vector map** (polylines) with channels treated as cylindrical. Rivers are fed by surface runoff and baseflow from groundwater. Available routing methods include:
    - **Linear reservoir cascade**: Each reach is modeled as a simple reservoir with exponential recession (storage coefficient K). This method represents an optimal compromise between complexity and physical representativeness.
    - **Lag method**: Simple translation with no attenuation
    - **Muskingum method**: Hydraulic routing with wedge storage
@@ -87,20 +87,18 @@ Several groundwater models are available:
 MOBIDIC has been successfully applied to:
 
 - **Operational flood forecasting**: Real-time predictions with data assimilation (Arno basin, Tuscany)
-- **Early warning systems**: Continuous monitoring with 10-25h lead times for peak flows
-- **Water resource management**: Long-term simulations for reservoir operations and water allocation
-- **Climate change studies**: Impact assessment on water availability and flood risk
-- **Land use change evaluation**: Urbanization effects on hydrologic response
-- **Remote sensing integration**: LST and soil moisture assimilation for improved predictions
-- **Model intercomparison**: Benchmarking and ensemble forecasting
-- **Research applications**: Green infrastructure performance, urban hydrology, coupled water quality
+- **Water resource management**: Long-term simulations for reservoir siting (Masi et al., 2024) 
+- **Land use change evaluation**: Urbanization effects on hydrologic response (Yang et al., 2014)
+- **Data assimilation**: Data assimilation for improved flood forecasting (Ercolani and Castelli, 2017)
+- **Model intercomparison**: Benchmarking with other hydrological models (Castillo et al., 2015)
+- **Research applications**: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025)
 
 
 ## Translation from MATLAB
 
 MOBIDICpy is an ongoing translation effort focusing on:
 
-1. **Modernization**: Python 3.10+ with type hints and modern syntax
+1. **Modernization**: Python 3.10+ with modern syntax
 2. **Simplification**: Functional approach prioritizing clarity over abstraction
 3. **Validation**: Regression testing against MATLAB reference outputs
 4. **Performance**: Leveraging NumPy, Numba, pandas, and modern geospatial libraries
@@ -136,6 +134,8 @@ Ercolani, G., Castelli, F. (2017), Variational assimilation of streamflow data i
 DOI: [10.1002/2016WR019208](https://doi.org/10.1002/2016WR019208).
 
 Ercolani, G., Chiaradia, E. A., Gandolfi, C., Castelli, F., Masseroni, D. (2018). Evaluating performances of green roofs for stormwater runoff mitigation in a high flood risk urban catchment. Journal of Hydrology, 566, 830-845. DOI: [10.1016/j.jhydrol.2018.09.050](https://doi.org/10.1016/j.jhydrol.2018.09.050)
+
+Masi, M., Arrighi, C., Piragino, F., Castelli, F. (2024). Participatory multi-criteria decision making for optimal siting of multipurpose artificial reservoirs. Journal of Environmental Management, 370, 122904. DOI: [10.1016/j.jenvman.2024.122904](https://doi.org/10.1016/j.jenvman.2024.122904)
 
 Masi, M., Masseroni, D., Castelli, F. (2025). Coupled hydrologic, hydraulic, and surface water quality models for pollution management in urban–rural areas. 
 Journal of Hydrology, 657, 133172. DOI: [10.1016/j.jhydrol.2025.133172](https://doi.org/10.1016/j.jhydrol.2025.133172).
