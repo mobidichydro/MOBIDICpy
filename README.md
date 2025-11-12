@@ -6,6 +6,35 @@ MOBIDICpy is a Python implementation of the MOBIDIC model, originally developed 
 
 ## Installation
 
+The package can be installed locally via pip:
+
+```bash
+# Clone the repository
+git clone https://github.com/mobidichydro/mobidicpy.git
+cd mobidicpy
+
+# Create a virtual environment (optional)
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+
+# Install the package
+pip install .
+
+# For development with all dependencies
+pip install --no-cache-dir --editable .[dev]
+```
+
+The documentation can be built locally using [MkDocs](https://www.mkdocs.org/):
+
+```bash
+# Install documentation dependencies
+pip install .[doc]
+
+# Serve the documentation locally
+python -m mkdocs serve
+```
+Then open your browser at `http://127.0.0.1:8000`.
+
 
 ## Contributing
 
