@@ -433,3 +433,310 @@ class TestLinearChannelRouting:
         # Reach 0 should receive contribution from reach 1
         assert Q_final[0] > 0
         assert Q_final[1] > 0
+
+    def test_preprocessed_network_dict(self):
+        """Test routing with preprocessed network dictionary (fast path)."""
+        # Create preprocessed topology dictionary (as done by Simulation class)
+        network_dict = {
+            "n_reaches": 2,
+            "upstream_1_idx": np.array([-1, 0], dtype=np.int32),
+            "upstream_2_idx": np.array([-1, -1], dtype=np.int32),
+            "n_upstream": np.array([0, 1], dtype=np.int32),
+            "sorted_reach_idx": np.array([0, 1], dtype=np.int32),
+            "K": np.array([3600.0, 7200.0]),
+        }
+
+        Q_init = np.array([10.0, 5.0])
+        qL = np.array([2.0, 1.0])
+        dt = 900.0
+
+        Q_final, state = linear_channel_routing(network_dict, Q_init, qL, dt)
+
+        # Should produce valid results
+        assert Q_final.shape == (2,)
+        assert np.all(Q_final >= 0)
+        assert "C3" in state
+        assert "C4" in state
+        assert "qL_total" in state
+
+    def test_lateral_inflow_length_mismatch(self):
+        """Test that lateral inflow length mismatch raises error."""
+        network = gpd.GeoDataFrame(
+            {
+                "mobidic_id": [0, 1],
+                "upstream_1": [np.nan, 0],
+                "upstream_2": [np.nan, np.nan],
+                "downstream": [1, np.nan],
+                "calc_order": [0, 1],
+                "lag_time_s": [3600.0, 7200.0],
+                "geometry": [
+                    LineString([(0, 0), (1, 1)]),
+                    LineString([(1, 1), (2, 2)]),
+                ],
+            }
+        )
+
+        Q_init = np.array([10.0, 5.0])
+        qL = np.array([2.0])  # Wrong length (should be 2)
+        dt = 900.0
+
+        with pytest.raises(ValueError, match="must match"):
+            linear_channel_routing(network, Q_init, qL, dt)
+
+    def test_negative_discharge_clipping(self):
+        """Test that negative discharges are clipped to zero with warning."""
+        # Create scenario that might produce negative discharge
+        # (very large initial discharge with small lateral inflow)
+        network = gpd.GeoDataFrame(
+            {
+                "mobidic_id": [0],
+                "upstream_1": [np.nan],
+                "upstream_2": [np.nan],
+                "downstream": [np.nan],
+                "calc_order": [0],
+                "lag_time_s": [3600.0],
+                "geometry": [LineString([(0, 0), (1, 1)])],
+            }
+        )
+
+        # Artificially create conditions that could lead to negative discharge
+        # by manipulating the equation (this is edge case testing)
+        Q_init = np.array([-1.0])  # Start with negative (shouldn't happen in practice)
+        qL = np.array([0.1])
+        dt = 900.0
+
+        Q_final, state = linear_channel_routing(network, Q_init, qL, dt)
+
+        # Should clip to zero
+        assert np.all(Q_final >= 0)
+
+    def test_zero_lag_time_short_reach(self):
+        """Test routing for reach with zero lag time (too short)."""
+        network = gpd.GeoDataFrame(
+            {
+                "mobidic_id": [0],
+                "upstream_1": [np.nan],
+                "upstream_2": [np.nan],
+                "downstream": [np.nan],
+                "calc_order": [0],
+                "lag_time_s": [0.0],  # Zero K - too short
+                "geometry": [LineString([(0, 0), (1, 1)])],
+            }
+        )
+
+        Q_init = np.array([10.0])
+        qL = np.array([2.0])
+        dt = 900.0
+
+        Q_final, state = linear_channel_routing(network, Q_init, qL, dt)
+
+        # For zero K, flow passes directly through
+        # Q_final = qL (no upstream)
+        assert np.isclose(Q_final[0], qL[0])
+
+    def test_nan_lag_time_short_reach(self):
+        """Test routing for reach with NaN lag time produces valid result."""
+        network = gpd.GeoDataFrame(
+            {
+                "mobidic_id": [0],
+                "upstream_1": [np.nan],
+                "upstream_2": [np.nan],
+                "downstream": [np.nan],
+                "calc_order": [0],
+                "lag_time_s": [np.nan],  # NaN K
+                "geometry": [LineString([(0, 0), (1, 1)])],
+            }
+        )
+
+        Q_init = np.array([10.0])
+        qL = np.array([2.0])
+        dt = 900.0
+
+        Q_final, state = linear_channel_routing(network, Q_init, qL, dt)
+
+        # With NaN K, the routing equation produces NaN or uses special case
+        # Just verify the function doesn't crash and returns an array
+        assert Q_final.shape == (1,)
+        assert state["C3"].shape == (1,)
+        assert state["C4"].shape == (1,)
+
+    def test_short_reach_with_upstream(self):
+        """Test short reach (zero K) with upstream contributions."""
+        # Reach 0 flows into reach 1 which has zero K
+        network = gpd.GeoDataFrame(
+            {
+                "mobidic_id": [0, 1],
+                "upstream_1": [np.nan, 0],
+                "upstream_2": [np.nan, np.nan],
+                "downstream": [1, np.nan],
+                "calc_order": [0, 1],
+                "lag_time_s": [3600.0, 0.0],  # Reach 1 has zero K
+                "geometry": [
+                    LineString([(0, 0), (1, 1)]),
+                    LineString([(1, 1), (2, 2)]),
+                ],
+            }
+        )
+
+        Q_init = np.array([10.0, 5.0])
+        qL = np.array([2.0, 1.0])
+        dt = 900.0
+
+        Q_final, state = linear_channel_routing(network, Q_init, qL, dt)
+
+        # Reach 1 should sum upstream discharge + lateral inflow
+        # Q_final[1] = Q_final[0] + qL[1]
+        assert Q_final[1] > qL[1]
+        assert np.all(Q_final >= 0)
+
+    def test_short_reach_junction(self):
+        """Test short reach at junction with two upstream reaches."""
+        # Reaches 0 and 1 flow into reach 2 which has zero K
+        network = gpd.GeoDataFrame(
+            {
+                "mobidic_id": [0, 1, 2],
+                "upstream_1": [np.nan, np.nan, 0],
+                "upstream_2": [np.nan, np.nan, 1],
+                "downstream": [2, 2, np.nan],
+                "calc_order": [0, 0, 1],
+                "lag_time_s": [3600.0, 3600.0, 0.0],  # Reach 2 has zero K
+                "geometry": [
+                    LineString([(0, 0), (1, 1)]),
+                    LineString([(0, 2), (1, 1)]),
+                    LineString([(1, 1), (2, 1)]),
+                ],
+            }
+        )
+
+        Q_init = np.array([10.0, 8.0, 5.0])
+        qL = np.array([1.0, 1.0, 0.5])
+        dt = 900.0
+
+        Q_final, state = linear_channel_routing(network, Q_init, qL, dt)
+
+        # Reach 2 should sum both upstream discharges + lateral inflow
+        # Q_final[2] = Q_final[0] + Q_final[1] + qL[2]
+        assert Q_final[2] > Q_final[0]
+        assert Q_final[2] > Q_final[1]
+
+
+class TestHillslopeRoutingEdgeCases:
+    """Additional tests for hillslope routing edge cases."""
+
+    def test_out_of_bounds_flow(self):
+        """Test that flow directions pointing outside grid are handled."""
+        # Create 2x2 grid where edge cells try to flow outside
+        lateral_flow = np.ones((2, 2))
+
+        # All cells flow west (direction 8), which sends rightmost cells out of bounds
+        flow_direction = np.array(
+            [
+                [8, 8],
+                [8, 8],
+            ]
+        )
+
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
+
+        # Leftmost column cells should receive flow from cells to the right
+        assert upstream_contribution[0, 0] == 1.0  # From (0,1)
+        assert upstream_contribution[1, 0] == 1.0  # From (1,1)
+
+        # Rightmost column tries to flow outside - no downstream cell
+        assert upstream_contribution[0, 1] == 0.0
+        assert upstream_contribution[1, 1] == 0.0
+
+    def test_invalid_directions_negative(self):
+        """Test that invalid negative flow directions are skipped."""
+        lateral_flow = np.ones((2, 2))
+
+        # Use invalid negative directions
+        flow_direction = np.array(
+            [
+                [-1, 2],
+                [6, -5],
+            ]
+        )
+
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
+
+        # Cell (0,0) with -1 should not contribute anywhere
+        # Cell (0,1) with direction 2 (north) cannot contribute (would be out of bounds)
+        assert upstream_contribution[0, 0] == 0.0
+
+        # Cell (1,0) with direction 6 (south) should contribute to (2,0) but out of bounds
+        assert upstream_contribution[1, 0] == 0.0
+
+    def test_invalid_directions_too_large(self):
+        """Test that flow directions > 8 are skipped."""
+        lateral_flow = np.ones((2, 2))
+
+        # Use invalid directions > 8
+        flow_direction = np.array(
+            [
+                [9, 10],
+                [100, 0],
+            ]
+        )
+
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
+
+        # Invalid directions should not contribute
+        assert upstream_contribution[0, 0] == 0.0
+        assert upstream_contribution[0, 1] == 0.0
+        assert upstream_contribution[1, 0] == 0.0
+
+    def test_all_directions_outlet(self):
+        """Test grid where all cells are outlets (direction 0)."""
+        lateral_flow = np.ones((3, 3))
+        flow_direction = np.zeros((3, 3))  # All cells are outlets
+
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
+
+        # No cell should receive any flow
+        assert np.all(upstream_contribution == 0.0)
+
+    def test_single_cell_grid(self):
+        """Test routing on single-cell grid."""
+        lateral_flow = np.array([[1.0]])
+        flow_direction = np.array([[0]])  # Outlet
+
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
+
+        # Single cell receives no upstream flow
+        assert upstream_contribution[0, 0] == 0.0
+
+    def test_mixed_nan_and_valid(self):
+        """Test grid with mix of NaN and valid values."""
+        lateral_flow = np.array(
+            [
+                [1.0, 2.0, np.nan],
+                [3.0, np.nan, 4.0],
+                [np.nan, 5.0, 6.0],
+            ]
+        )
+
+        # Cells flow to southeast (direction 5)
+        flow_direction = np.array(
+            [
+                [5, 5, np.nan],
+                [5, np.nan, 5],
+                [np.nan, 5, 0],
+            ]
+        )
+
+        upstream_contribution = hillslope_routing(lateral_flow, flow_direction)
+
+        # Cell (1,1) has NaN lateral_flow and NaN flow_direction
+        # But it CAN receive flow from upstream cells
+        # (0,0) has direction 5 (southeast) -> flows to (1,1)
+        # So (1,1) should receive 1.0 from (0,0)
+        assert upstream_contribution[1, 1] == 1.0
+
+        # Cell (0,1) has direction 5 -> flows to (1,2)
+        # So (1,2) should receive 2.0 from (0,1)
+        assert upstream_contribution[1, 2] == 2.0
+
+        # Cell (1,0) has direction 5 -> flows to (2,1)
+        # So (2,1) should receive 3.0 from (1,0)
+        assert upstream_contribution[2, 1] == 3.0
