@@ -14,31 +14,31 @@ MOBIDIC operates on a distributed grid-based approach where each cell represents
 
 The soil module uses a **dual-pore storage model** that discretizes soil vertically with a single layer conceptually subdivided into two nonlinear reservoirs (Castillo et al., 2015):
 
-- **Capillary reservoir (W<sub>c</sub>)**: Smaller pores that hold water through capillary forces (field capacity to wilting point). Water leaves through evapotranspiration and absorption processes.
-- **Gravitational reservoir (W<sub>g</sub>)**: Larger pores that drain under gravity (maximum water content above field capacity). Water is supplied by infiltration and lateral flow from upslope, and leaves through percolation, downslope lateral flow, and absorption into the capillary reservoir.
-- **Plant canopy reservoir (W<sub>p</sub>)**: Rainfall interception by vegetation canopy, with throughfall occurring when capacity is exceeded.
-- **Runoff reservoir (W<sub>s</sub>)**: Surface depression storage with kinematic routing to downslope cells.
+- **Capillary reservoir ($W_c$)**: Smaller pores that hold water through capillary forces (field capacity to wilting point). Water leaves through evapotranspiration and absorption processes.
+- **Gravitational reservoir ($W_g$)**: Larger pores that drain under gravity (maximum water content above field capacity). Water is supplied by infiltration and lateral flow from upslope, and leaves through percolation, downslope lateral flow, and absorption into the capillary reservoir.
+- **Plant canopy reservoir ($W_p$)**: Rainfall interception by vegetation canopy, with throughfall occurring when capacity is exceeded.
+- **Runoff reservoir ($W_s$)**: Surface depression storage with kinematic routing to downslope cells.
 
 The hydrological processes in the soil-water balance include:
 
 - **Infiltration**: MOBIDIC uses a **stochastic approach** to represent the intermittent nature of precipitation and spatial heterogeneity of soil properties (Castelli et al., 1996). The expected infiltration rate is computed assuming rainfall follows an exponential distribution, accounting for augmented infiltration before surface ponding. Both **Horton** (infiltration excess) and **Dunne** (saturation excess) runoff mechanisms are represented.
 
-- **Percolation and hypodermic flow**: Modeled as linearly dependent on gravitational water content through empirical rate coefficients (β for downhill hypodermic flow, γ for percolation toward groundwater).
+- **Percolation and hypodermic flow**: Modeled as linearly dependent on gravitational water content through empirical rate coefficients ($\beta$ for downhill hypodermic flow, $\gamma$ for percolation toward groundwater).
 
 - **Capillary rise**: Optional upward flux from shallow water table following Salvucci (1993), using Brooks-Corey parameterization for soil matric potential.
 
 - **Absorption**: Transfer from gravitational to capillary reservoir dependent on capillary soil saturation deficit.
 
-- **Runoff**: Outgoing runoff toward the downhill cell is evaluated as linearly dependent from surface water content through a kinematic parameter (α).
+- **Runoff**: Outgoing runoff toward the downhill cell is evaluated as linearly dependent from surface water content through a kinematic parameter ($\alpha$).
 
 ### Energy Balance
 
 MOBIDIC solves water and energy balance simultaneously in the soil-vegetation subsystem. The energy module computes:
 
-- Surface net radiation (R<sub>n</sub>)
-- Ground heat flux (G)
-- Sensible heat flux (H)
-- Latent heat flux (LE) for evapotranspiration
+- Surface net radiation ($R_n$)
+- Ground heat flux ($G$)
+- Sensible heat flux ($H$)
+- Latent heat flux ($LE$) for evapotranspiration
 
 **Turbulent fluxes** are computed using bulk formulations that include both surface roughness and atmospheric stability effects (Van den Hurk and Holtslag, 1997). The energy balance is coupled with **1-D heat diffusion** into the soil, with vertical discretization using a three-point scheme.
 
@@ -55,21 +55,21 @@ Three energy balance configurations are available:
 
 Water routing occurs at two levels:
 
-1. **Hillslope routing**: Lateral flow accumulates from upslope cells following D8 flow directions. Surface runoff (W<sub>s</sub>) and subsurface lateral flow (from W<sub>g</sub>) are routed separately through the hillslope network until reaching river channels.
+1. **Hillslope routing**: Lateral flow accumulates from upslope cells following D8 flow directions. Surface runoff ($W_s$) and subsurface lateral flow (from $W_g$) are routed separately through the hillslope network until reaching river channels.
 
 2. **Channel routing**: The river network is represented as a **vector map** (polylines) with channels treated as cylindrical. Rivers are fed by surface runoff and baseflow from groundwater. Available routing methods include:
-   - **Linear reservoir cascade**: Each reach is modeled as a simple reservoir with exponential recession (storage coefficient K). This method represents an optimal compromise between complexity and physical representativeness.
+   - **Linear reservoir cascade**: Each reach is modeled as a simple reservoir with exponential recession (storage coefficient $K$). This method represents an optimal compromise between complexity and physical representativeness.
    - **Lag method**: Simple translation with no attenuation
    - **Muskingum method**: Hydraulic routing with wedge storage
    - **Muskingum-Cunge method**: Physically-based hydraulic routing
 
 The linear reservoir routing equation for each reach is:
 
-```
-dQ/dt = A(qL + U·Q - Q)
-```
+$$
+\frac{dQ}{dt} = A(q_L + U \cdot Q - Q)
+$$
 
-where Q is discharge, qL is lateral inflow (surface + groundwater), A is a diagonal matrix of inverse characteristic times (1/K), and U is a binary topology matrix indicating tributary connections.
+where $Q$ is discharge, $q_L$ is lateral inflow (surface + groundwater), $A$ is a diagonal matrix of inverse characteristic times ($1/K$), and $U$ is a binary topology matrix indicating tributary connections.
 
 ### Groundwater
 
