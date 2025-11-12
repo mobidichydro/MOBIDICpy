@@ -63,13 +63,6 @@ Water routing occurs at two levels:
    - **Muskingum method**: Hydraulic routing with wedge storage
    - **Muskingum-Cunge method**: Physically-based hydraulic routing
 
-The linear reservoir routing equation for each reach is:
-
-$$
-\frac{dQ}{dt} = A(q_L + U \cdot Q - Q)
-$$
-
-where $Q$ is discharge, $q_L$ is lateral inflow (surface + groundwater), $A$ is a diagonal matrix of inverse characteristic times ($1/K$), and $U$ is a binary topology matrix indicating tributary connections.
 
 ### Groundwater
 

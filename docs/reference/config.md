@@ -6,13 +6,18 @@ The configuration module provides a schema-driven approach to loading and valida
 
 Configuration files define all aspects of a MOBIDIC simulation, including:
 
-- Basin metadata
-- Input/output file paths
-- Raster and vector data sources
-- Model parameters (soil, energy, routing, groundwater)
-- Initial conditions
-- Simulation settings
-- Output options
+- **Basin metadata**: ID, parameter set, baricenter coordinates
+- **Input/output paths**: Meteodata, GIS data, network, states, output directories
+- **Raster and vector data sources**: DTM, flow direction/accumulation, soil/energy parameters, river network
+- **Model parameters**: Organized into four subsections:
+    - `soil`: Hydraulic conductivity, water holding capacity, flow coefficients
+    - `energy`: Thermal properties, turbulent exchange, albedo
+    - `routing`: Channel routing method, wave celerity, Manning coefficient
+    - `groundwater`: Model type, global loss
+    - `multipliers`: Calibration factors
+- **Initial conditions**: Initial state (hillslope runoff, soil saturation)
+- **Simulation settings**: Time step, resampling, soil/energy balance schemes
+- **Output options**: State outputs (NetCDF), report outputs (CSV/Parquet)
 
 The configuration system ensures all required fields are present, validates ranges and consistency, and provides sensible defaults for optional parameters.
 
@@ -20,7 +25,11 @@ The configuration system ensures all required fields are present, validates rang
 
 ::: mobidic.config.parser.load_config
 
+::: mobidic.config.parser.save_config
+
 ## Classes
+
+### Main Configuration
 
 ::: mobidic.config.schema.MOBIDICConfig
     options:
@@ -39,24 +48,45 @@ The configuration system ensures all required fields are present, validates rang
         - output_report_settings
         - advanced
 
-## Example
+### Nested Models
 
-```python
-from mobidic import load_config
+The configuration is organized hierarchically using nested Pydantic models:
 
-# Load and validate configuration
-config = load_config("config.yaml")
+::: mobidic.config.schema.Basin
 
-# Access configuration sections
-print(f"Basin ID: {config.basin.id}")
-print(f"DTM path: {config.raster_files.dtm}")
-print(f"Soil scheme: {config.simulation.soil_scheme}")
-print(f"Time step: {config.simulation.timestep} seconds")
+::: mobidic.config.schema.Paths
 
-# Access parameter values
-ks = config.parameters.soil.ks
-print(f"Hydraulic conductivity: {ks} mm/h")
-```
+::: mobidic.config.schema.VectorFiles
+
+::: mobidic.config.schema.RasterFiles
+
+::: mobidic.config.schema.RasterSettings
+
+::: mobidic.config.schema.Parameters
+
+::: mobidic.config.schema.SoilParameters
+
+::: mobidic.config.schema.EnergyParameters
+
+::: mobidic.config.schema.RoutingParameters
+
+::: mobidic.config.schema.GroundwaterParameters
+
+::: mobidic.config.schema.Multipliers
+
+::: mobidic.config.schema.InitialConditions
+
+::: mobidic.config.schema.Simulation
+
+::: mobidic.config.schema.OutputStates
+
+::: mobidic.config.schema.OutputStatesSettings
+
+::: mobidic.config.schema.OutputReport
+
+::: mobidic.config.schema.OutputReportSettings
+
+::: mobidic.config.schema.Advanced
 
 ## Configuration Structure
 

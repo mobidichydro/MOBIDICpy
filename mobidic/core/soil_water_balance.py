@@ -29,7 +29,7 @@ def capillary_rise(
 
     Args:
         s: Volumetric soil moisture content / porosity [-],
-           = (Wr+Wc+Wg)/(Wr+Wc0+Wg0), range [0-1]
+            = (Wr+Wc+Wg)/(Wr+Wc0+Wg0), range [0-1]
         z: Distance from soil center to water table [m]
         ksat: Saturated hydraulic conductivity [m/dt]
         psi1: Bubbling pressure head [m]

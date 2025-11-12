@@ -58,6 +58,36 @@ High-level workflow orchestrating the complete preprocessing pipeline.
 
 - [`run_preprocessing()`](preprocessing.md#mobidic.preprocessing.preprocessor.run_preprocessing) - Complete preprocessing pipeline
 
+### [Soil Water Balance](soil_water_balance.md)
+Hillslope water balance with four reservoir model (capillary, gravitational, plants, surface).
+
+- [`soil_mass_balance()`](soil_water_balance.md#mobidic.core.soil_water_balance.soil_mass_balance) - Main hillslope water balance function
+- [`capillary_rise()`](soil_water_balance.md#mobidic.core.soil_water_balance.capillary_rise) - Calculate capillary rise from groundwater
+
+### [Routing](routing.md)
+Hillslope and channel routing algorithms for water propagation.
+
+- [`hillslope_routing()`](routing.md#mobidic.core.routing.hillslope_routing) - Accumulate lateral flow following flow directions
+- [`linear_channel_routing()`](routing.md#mobidic.core.routing.linear_channel_routing) - Linear reservoir channel routing
+
+### [Simulation](simulation.md)
+Main simulation engine and time-stepping loop.
+
+- [`Simulation`](simulation.md#mobidic.core.simulation.Simulation) - Main simulation class
+- [`SimulationState`](simulation.md#mobidic.core.simulation.SimulationState) - Container for state variables
+- [`SimulationResults`](simulation.md#mobidic.core.simulation.SimulationResults) - Container for simulation results
+
+### [State I/O](state.md)
+Save and load simulation state variables (NetCDF format).
+
+- [`save_state()`](state.md#mobidic.io.state.save_state) - Save state to NetCDF
+- [`load_state()`](state.md#mobidic.io.state.load_state) - Load state from NetCDF
+
+### [Report I/O](report.md)
+Export discharge and lateral inflow time series.
+
+- [`save_discharge_report()`](report.md#mobidic.io.report.save_discharge_report) - Export discharge time series
+
 ## Quick Import
 
 All public APIs are available from the top-level `mobidic` package:
@@ -68,6 +98,7 @@ from mobidic import (
     load_config,
     MOBIDICConfig,
     configure_logger,
+    configure_logger_from_config,
     # GIS I/O
     grid_to_matrix,
     read_shapefile,
@@ -91,6 +122,23 @@ from mobidic import (
     load_gisdata,
     # Preprocessing Workflow
     run_preprocessing,
+    # Soil Water Balance
+    soil_mass_balance,
+    capillary_rise,
+    # Routing
+    hillslope_routing,
+    linear_channel_routing,
+    # Simulation
+    Simulation,
+    SimulationState,
+    SimulationResults,
+    # State I/O
+    save_state,
+    load_state,
+    # Report I/O
+    save_discharge_report,
+    # Constants
+    constants,
 )
 ```
 
@@ -106,11 +154,16 @@ MOBIDICpy is in **pre-alpha** (v0.0.1). Currently implemented:
 - ✅ Meteorological preprocessing
 - ✅ Data I/O and consolidation
 - ✅ Complete preprocessing workflow
+- ✅ Soil water balance (4 reservoirs: capillary, gravitational, plants, surface)
+- ✅ Linear routing (hillslope + channel)
+- ✅ Simulation engine (basic)
+- ✅ State I/O (NetCDF)
+- ✅ Report I/O (CSV/Parquet discharge time series)
 
 Coming soon:
 
-- ⏳ Soil water balance
-- ⏳ Linear routing
-- ⏳ Energy balance module
-- ⏳ Groundwater models
-- ⏳ Simulation engine
+- ⏳ Energy balance module (1L, 5L schemes, Snow)
+- ⏳ Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
+- ⏳ Advanced routing (Muskingum-Cunge)
+- ⏳ Reservoir module
+- ⏳ Real-time capability

@@ -22,6 +22,11 @@ nav:
     - Meteorological Data: reference/meteo.md
     - Data I/O: reference/io.md
     - Preprocessing Workflow: reference/preprocessing.md
+    - Soil Water Balance: reference/soil_water_balance.md
+    - Routing: reference/routing.md
+    - Simulation: reference/simulation.md
+    - State I/O: reference/state.md
+    - Report I/O: reference/report.md
 
 theme:
   name: "material"
