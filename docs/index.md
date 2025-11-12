@@ -23,18 +23,23 @@ pip install --no-cache-dir --editable .[dev]
 ### Basic Usage
 
 ```python
-from mobidic import load_config, run_preprocessing
+import mobidic
 
-# Load configuration from YAML
-config = load_config("path/to/config.yaml")
+# 1. Load configuration
+config = mobidic.load_config("config.yaml")
 
-# Run preprocessing pipeline
-gisdata = run_preprocessing(config)
+# 2. GIS preprocessing
+gisdata = mobidic.run_preprocessing(config)
 
-# Access processed data
-print(f"Basin: {config.basin.id}")
-print(f"Network reaches: {len(gisdata.network)}")
+# 3. Load meteorological data
+forcing = mobidic.MeteoData.from_netcdf(config.paths.meteodata)
+
+# 4. Run simulation
+sim = mobidic.Simulation(gisdata, forcing, config)
+results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
 ```
+
+See [examples/run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blob/main/examples/run_example_Arno.py) for a complete working example with visualization.
 
 ## Features
 
@@ -46,15 +51,20 @@ print(f"Network reaches: {len(gisdata.network)}")
 - River network processing (topology, Strahler ordering, routing parameters)
 - Hillslope-reach mapping
 - Meteorological data preprocessing (MAT to NetCDF conversion)
+- Meteorological data spatial interpolation (IDW and nearest neighbor)
 - Consolidated I/O for preprocessed data
-
-**Coming Soon**
-
-- Soil water balance module
+- Soil water balance module (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope and channel)
+- Basic I/O (NetCDF states, Parquet time series)
+
+**To be implemented**
+
+- Meteorological gap filling and quality control
+- Reservoir module
 - Energy balance schemes (1L, 5L, Snow)
 - Groundwater models (Linear, Dupuit, MODFLOW)
 - Advanced routing (Muskingum-Cunge)
+- CLI interface
 - Real-time simulation capability
 
 ## Documentation Structure
