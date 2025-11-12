@@ -2,7 +2,7 @@
 
 MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a raster-based distributed hydrological model that simulates the water and energy balance of the hydrological cycle at the cell level.
 
-**MOBIDICpy** is a Python implementation of the MOBIDIC model, originally developed in MATLAB by Castelli et al.. See [References](#references) for more details.
+**MOBIDICpy** is a Python implementation of the MOBIDIC model, originally developed in MATLAB by Castelli et al. See [References](#references) for more details.
 
 ## Quick Start
 
