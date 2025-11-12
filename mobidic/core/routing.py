@@ -393,8 +393,11 @@ def linear_channel_routing(
     qL_total = np.zeros(n_reaches, dtype=np.float64)
 
     # Calculate routing coefficients for all reaches using lag_time_s as K
-    C3 = np.exp(-dt / K)  # Recession coefficient
-    C4 = 1 - C3  # Lateral inflow coefficient
+    # Note: Division by zero (K=0) and NaN (K=NaN) are handled in the kernel
+    # (line 231: if np.isnan(K[ki]) or K[ki] <= 0), so we suppress warnings here
+    with np.errstate(divide="ignore", invalid="ignore"):
+        C3 = np.exp(-dt / K)  # Recession coefficient
+        C4 = 1 - C3  # Lateral inflow coefficient
 
     # Call Numba-compiled kernel for maximum performance
     _linear_routing_kernel(
