@@ -279,7 +279,7 @@ simulation:
   # [positive value in float or exp notation, eg: 86400 for daily data]
   timestep: 900
 
-  # REQUIRED: Degradation factor from grid data space resolution to model space resolution, non dimensional
+  # REQUIRED: Decimation factor from grid data space resolution to model space resolution, non dimensional
   # [positive integer number]
   resample: 1
 
