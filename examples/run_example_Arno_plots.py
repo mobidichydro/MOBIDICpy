@@ -71,7 +71,7 @@ def compare_variable(
         python_prefix: Prefix for Python column names (e.g., "reach")
         matlab_prefix: Prefix for MATLAB column names (e.g., "Q_reach", "qL_reach")
         unit: Unit string (e.g., "m³/s")
-        variable_label: Y-axis label (e.g., "Discharge [m³/s]")
+        variable_label: Y-axis label (e.g., "Discharge (m³/s)")
 
     Returns:
         tuple: (mean_rmse, n_reaches, n_timesteps)
@@ -210,7 +210,7 @@ def compare_variable(
     gs = GridSpec(n_reaches, 2, figure=fig, width_ratios=[3, 1], hspace=0.3, wspace=0.3)
 
     fig.suptitle(
-        f"MOBIDIC: Python vs MATLAB {variable_name} Comparison - Arno Basin",
+        f"MOBIDIC: Python vs MATLAB {variable_name} comparison - Arno River basin",
         fontsize=14,
         fontweight="bold",
         y=0.995,
@@ -347,71 +347,38 @@ def compare_observed_discharge(output_dir: Path, data_dir: Path, observed_file: 
     # Calculate metrics
     print("Calculating performance metrics...")
     metrics = calculate_metrics(df_observed_aligned.values, df_python_aligned.values)
-
-    # Calculate Nash-Sutcliffe Efficiency (NSE)
     mask = ~(np.isnan(df_observed_aligned.values) | np.isnan(df_python_aligned.values))
     obs = df_observed_aligned.values[mask]
     sim = df_python_aligned.values[mask]
 
-    if len(obs) > 0:
-        nse = 1 - np.sum((obs - sim) ** 2) / np.sum((obs - np.mean(obs)) ** 2)
-        metrics["NSE"] = nse
-
     print(f"  RMSE: {metrics['RMSE']:.3f} m³/s")
     print(f"  Bias: {metrics['bias']:.3f} m³/s")
-    print(f"  NSE:  {metrics['NSE']:.3f}")
     print()
 
     # Create plots
     print("Creating plots...")
-    fig = plt.figure(figsize=(14, 6))
-    gs = GridSpec(1, 2, figure=fig, width_ratios=[3, 1], hspace=0.3, wspace=0.3)
+    fig = plt.figure(figsize=(10, 4))
 
-    fig.suptitle(
-        f"MOBIDIC: Observed vs Python Discharge - Reach {mobidic_id:04d} (Nave di Rosano)",
-        fontsize=14,
-        fontweight="bold",
-    )
+    plt.plot(common_index, df_observed_aligned, "b-", linewidth=1.5, alpha=0.7, label="Observed")
+    plt.plot(common_index, df_python_aligned, "r--", linewidth=1.0, alpha=0.8, label="MOBIDICpy")
 
-    # Time series plot
-    ax_ts = fig.add_subplot(gs[0, 0])
-    ax_ts.plot(common_index, df_observed_aligned, "b-", linewidth=1.5, alpha=0.7, label="Observed")
-    ax_ts.plot(common_index, df_python_aligned, "r--", linewidth=1.0, alpha=0.8, label="MOBIDIC")
-
-    ax_ts.set_xlabel("Time")
-    ax_ts.set_ylabel("Discharge [m³/s]")
-    ax_ts.set_title(f"Time Series (RMSE={metrics['RMSE']:.3f} m³/s, NSE={metrics['NSE']:.3f})")
-    ax_ts.grid(True, alpha=0.3)
-    ax_ts.legend(loc="best")
-    ax_ts.tick_params(axis="x", rotation=45)
-
-    # Scatter plot
-    ax_scatter = fig.add_subplot(gs[0, 1])
-    ax_scatter.scatter(df_observed_aligned, df_python_aligned, alpha=0.5, s=20, c="blue")
-
-    # Add 1:1 line
-    min_val = min(df_observed_aligned.min(), df_python_aligned.min())
-    max_val = max(df_observed_aligned.max(), df_python_aligned.max())
-    ax_scatter.plot([min_val, max_val], [min_val, max_val], "k--", linewidth=1.5, label="1:1 line")
-
-    ax_scatter.set_xlabel("Observed Discharge [m³/s]")
-    ax_scatter.set_ylabel("Python Discharge [m³/s]")
-    ax_scatter.set_title("Scatter Plot")
-    ax_scatter.grid(True, alpha=0.3)
-    ax_scatter.legend(loc="best")
-    ax_scatter.set_aspect("equal", adjustable="box")
+    plt.xlabel("Time")
+    plt.ylabel("Discharge (m³/s)")
+    plt.title(f"Observed vs MOBIDICpy - Reach {mobidic_id:04d} (Nave di Rosano)")
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc="best")
+    plt.tick_params(axis="x", rotation=45)
 
     plt.tight_layout()
     plt.show()
 
     print("=" * 80)
-    print("Observed vs MOBIDIC Discharge Comparison Summary")
+    print("Observed vs MOBIDIC Discharge comparison summary")
     print("=" * 80)
     print(f"Reach: {mobidic_id:04d}")
     print(f"Time steps: {len(common_index)}")
     print(f"RMSE: {metrics['RMSE']:.3f} m³/s")
     print(f"Bias: {metrics['bias']:.3f} m³/s")
-    print(f"NSE:  {metrics['NSE']:.3f}")
     print("=" * 80)
 
     return metrics
@@ -436,7 +403,7 @@ def main():
         python_prefix="reach",
         matlab_prefix="Q_reach",
         unit="m³/s",
-        variable_label="Discharge [m³/s]",
+        variable_label="Discharge (m³/s)",
     )
 
     # Compare lateral inflow
@@ -449,7 +416,7 @@ def main():
         python_prefix="reach",
         matlab_prefix="qL_reach",
         unit="m³/s",
-        variable_label="Lateral Inflow [m³/s]",
+        variable_label="Lateral Inflow (m³/s)",
     )
 
     # Compare with observed discharge at Nave di Rosano (reach 292)
@@ -470,10 +437,7 @@ def main():
     if lateral_results[0] is not None:
         print(f"Lateral Inflow: Mean RMSE = {lateral_results[0]:.6f} m³/s")
     if observed_results is not None:
-        print(
-            f"Observed vs Python (Reach 292): RMSE = {observed_results['RMSE']:.3f} m³/s, "
-            f"NSE = {observed_results['NSE']:.3f}"
-        )
+        print(f"Observed vs MOBIDICpy (Reach 292): RMSE = {observed_results['RMSE']:.3f} m³/s")
     print("=" * 80)
 
 
