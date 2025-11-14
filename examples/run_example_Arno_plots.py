@@ -347,9 +347,6 @@ def compare_observed_discharge(output_dir: Path, data_dir: Path, observed_file: 
     # Calculate metrics
     print("Calculating performance metrics...")
     metrics = calculate_metrics(df_observed_aligned.values, df_python_aligned.values)
-    mask = ~(np.isnan(df_observed_aligned.values) | np.isnan(df_python_aligned.values))
-    obs = df_observed_aligned.values[mask]
-    sim = df_python_aligned.values[mask]
 
     print(f"  RMSE: {metrics['RMSE']:.3f} m³/s")
     print(f"  Bias: {metrics['bias']:.3f} m³/s")
@@ -357,7 +354,7 @@ def compare_observed_discharge(output_dir: Path, data_dir: Path, observed_file: 
 
     # Create plots
     print("Creating plots...")
-    fig = plt.figure(figsize=(10, 4))
+    plt.figure(figsize=(10, 4))
 
     plt.plot(common_index, df_observed_aligned, "b-", linewidth=1.5, alpha=0.7, label="Observed")
     plt.plot(common_index, df_python_aligned, "r--", linewidth=1.0, alpha=0.8, label="MOBIDICpy")
