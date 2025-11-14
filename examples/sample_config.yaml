@@ -276,9 +276,9 @@ simulation:
   # [positive value in float or exp notation, eg: 86400 for daily data]
   timestep: 900
 
-  # REQUIRED: Degradation factor from grid data space resolution to model space resolution, non dimensional
+  # REQUIRED: Decimation factor from grid data space resolution to model space resolution, non dimensional
   # [positive integer number]
-  resample: 1
+  decimation: 1
 
   # REQUIRED: Type of soil hydrology scheme
   # [one among the following options 'Bucket', 'CN']
@@ -289,8 +289,8 @@ simulation:
   energy_balance: None
 
   ## OPTIONAL: Precipitation interpolation method
-  # [one among the following options: 'nearest', 'idw' (default)]
-  precipitation_interp: idw
+  # [one among the following options: 'Nearest', 'IDW' (default)]
+  precipitation_interp: IDW
 
 
 ####### OUTPUT CONTROLS
