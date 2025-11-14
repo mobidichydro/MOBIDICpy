@@ -157,19 +157,19 @@ parameters:
 
     # REQUIRED: Percolation coefficient, in 1/s
     # [positive number in float or exp notation]
-    gamma: 1.679033e-08
+    gamma: 5.0e-04
 
     # REQUIRED: Adsorption coefficient, in 1/s
     # [positive number in float or exp notation]
-    kappa: 1.818725e-08
+    kappa: 1.0e-04
 
     # REQUIRED: Hypodermic flow coefficient, in 1/s
     # [positive number in float or exp notation]
-    beta: 1.576345e-05
+    beta: 5.0e-05
 
     # REQUIRED: Hillslope flow coefficient, in 1/s
     # [positive number in float or exp notation]
-    alpha: 5.722441e-06
+    alpha: 8.0e-06
   
   energy:
     # REQUIRED: Deep ground temperature, in deg. Kelvin
