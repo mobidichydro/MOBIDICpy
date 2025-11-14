@@ -11,7 +11,7 @@ import numpy as np
 from loguru import logger
 
 
-def degrade_raster(
+def decimate_raster(
     data: np.ndarray,
     factor: int,
     min_valid_fraction: float = 0.125,
@@ -24,36 +24,36 @@ def degrade_raster(
 
     Args:
         data: 2D numpy array with raster values (NaN for nodata).
-        factor: Degradation factor (e.g., 2 means 2x2 blocks -> 1 cell).
+        factor: Decimation factor (e.g., 2 means 2x2 blocks -> 1 cell).
         min_valid_fraction: Minimum fraction of valid cells required in each block
             to compute the mean. Default is 0.125 (1/8 of cells).
 
     Returns:
-        Degraded 2D numpy array with shape (floor(nr/factor), floor(nc/factor)).
+        Decimated 2D numpy array with shape (floor(nr/factor), floor(nc/factor)).
 
     Examples:
         >>> import numpy as np
         >>> data = np.random.rand(100, 100)
-        >>> degraded = degrade_raster(data, factor=2)
-        >>> degraded.shape
+        >>> decimated = decimate_raster(data, factor=2)
+        >>> decimated.shape
         (50, 50)
     """
     if factor < 1:
-        logger.error(f"Degradation factor must be >= 1, got {factor}")
-        raise ValueError(f"Degradation factor must be >= 1, got {factor}")
+        logger.error(f"Decimation factor must be >= 1, got {factor}")
+        raise ValueError(f"Decimation factor must be >= 1, got {factor}")
 
     if factor == 1:
-        logger.debug("Degradation factor is 1, returning original data")
+        logger.debug("Decimation factor is 1, returning original data")
         return data.copy()
 
     nr, nc = data.shape
     nrv = nr // factor
     ncv = nc // factor
 
-    logger.info(f"Degrading raster from {data.shape} to ({nrv}, {ncv}) with factor {factor}")
+    logger.info(f"Decimating raster from {data.shape} to ({nrv}, {ncv}) with factor {factor}")
 
     # Initialize output array
-    degraded = np.full((nrv, ncv), np.nan, dtype=float)
+    decimated = np.full((nrv, ncv), np.nan, dtype=float)
 
     # Minimum number of valid cells required
     min_valid_cells = int(factor * factor * min_valid_fraction)
@@ -75,14 +75,14 @@ def degrade_raster(
 
             # Compute mean if enough valid cells
             if n_valid >= min_valid_cells:
-                degraded[i, j] = np.nanmean(block)
+                decimated[i, j] = np.nanmean(block)
 
-    logger.success(f"Raster degradation complete: {np.sum(np.isfinite(degraded))} valid cells")
+    logger.success(f"Raster decimation complete: {np.sum(np.isfinite(decimated))} valid cells")
 
-    return degraded
+    return decimated
 
 
-def degrade_flow_direction(
+def decimate_flow_direction(
     flow_dir: np.ndarray,
     flow_acc: np.ndarray,
     factor: int,
@@ -98,12 +98,12 @@ def degrade_flow_direction(
     Args:
         flow_dir: 2D numpy array with flow directions (1-8 notation, NaN for nodata).
         flow_acc: 2D numpy array with flow accumulation values (NaN for nodata).
-        factor: Degradation factor (e.g., 2 means 2x2 blocks -> 1 cell).
+        factor: Decimation factor (e.g., 2 means 2x2 blocks -> 1 cell).
         min_valid_fraction: Minimum fraction of valid cells required in each block.
             Default is 0.125 (1/8 of cells).
 
     Returns:
-        Tuple of (degraded_flow_dir, degraded_flow_acc) as 2D numpy arrays.
+        Tuple of (decimated_flow_dir, decimated_flow_acc) as 2D numpy arrays.
         Flow accumulation is normalized by factor **2 to account for cell size change.
 
     Notes:
@@ -113,14 +113,14 @@ def degrade_flow_direction(
     Examples:
         >>> flow_dir = np.array([[2, 2], [2, 2]])  # All cells flow north
         >>> flow_acc = np.array([[1, 1], [3, 4]])  # Different accumulation
-        >>> deg_dir, deg_acc = degrade_flow_direction(flow_dir, flow_acc, factor=2)
+        >>> dec_dir, dec_acc = decimate_flow_direction(flow_dir, flow_acc, factor=2)
     """
     if factor < 1:
-        logger.error(f"Degradation factor must be >= 1, got {factor}")
-        raise ValueError(f"Degradation factor must be >= 1, got {factor}")
+        logger.error(f"Decimation factor must be >= 1, got {factor}")
+        raise ValueError(f"Decimation factor must be >= 1, got {factor}")
 
     if factor == 1:
-        logger.debug("Degradation factor is 1, returning original data")
+        logger.debug("Decimation factor is 1, returning original data")
         return flow_dir.copy(), flow_acc.copy()
 
     if flow_dir.shape != flow_acc.shape:
@@ -131,11 +131,11 @@ def degrade_flow_direction(
     nrv = nr // factor
     ncv = nc // factor
 
-    logger.info(f"Degrading flow direction/accumulation from {flow_dir.shape} to ({nrv}, {ncv})")
+    logger.info(f"Decimating flow direction/accumulation from {flow_dir.shape} to ({nrv}, {ncv})")
 
     # Initialize output arrays
-    flow_dir_degraded = np.full((nrv, ncv), np.nan, dtype=float)
-    flow_acc_degraded = np.full((nrv, ncv), np.nan, dtype=float)
+    flow_dir_decimated = np.full((nrv, ncv), np.nan, dtype=float)
+    flow_acc_decimated = np.full((nrv, ncv), np.nan, dtype=float)
 
     # Direction offsets for Grass 1-8 notation to MOBIDIC notation
     # 1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E
@@ -177,14 +177,14 @@ def degrade_flow_direction(
             max_i, max_j = np.unravel_index(max_idx, block_acc_masked.shape)
 
             # Store normalized flow accumulation
-            flow_acc_degraded[i, j] = np.nanmax(block_acc_masked) / (factor * factor)
+            flow_acc_decimated[i, j] = np.nanmax(block_acc_masked) / (factor * factor)
 
             # Get flow direction of the cell with max accumulation
             direction = int(block_dir[max_i, max_j])
 
             if not (1 <= direction <= 8):
                 # Invalid direction, try to find a valid neighbor
-                flow_dir_degraded[i, j] = -999
+                flow_dir_decimated[i, j] = -999
                 continue
 
             # Calculate which coarse cell this fine cell drains to
@@ -201,7 +201,7 @@ def degrade_flow_direction(
 
             # Check if target is within bounds
             if not (0 <= target_coarse_i < nrv and 0 <= target_coarse_j < ncv):
-                flow_dir_degraded[i, j] = -999
+                flow_dir_decimated[i, j] = -999
                 continue
 
             # Map coarse cell offset to direction (1-8)
@@ -217,10 +217,10 @@ def degrade_flow_direction(
                 (0, -1): 8,  # E  (IP=0,  JP=-1 -> -1  -> case 8)
             }
 
-            flow_dir_degraded[i, j] = offset_to_dir.get((coarse_di, coarse_dj), -999)
+            flow_dir_decimated[i, j] = offset_to_dir.get((coarse_di, coarse_dj), -999)
 
     # Fix invalid directions by finding valid neighbors
-    invalid_mask = flow_dir_degraded == -999
+    invalid_mask = flow_dir_decimated == -999
     if np.any(invalid_mask):
         logger.debug(f"Fixing {np.sum(invalid_mask)} invalid flow directions")
 
@@ -234,17 +234,17 @@ def degrade_flow_direction(
                 jj = j + dj[d]
 
                 if 0 <= ii < nrv and 0 <= jj < ncv:
-                    if flow_dir_degraded[ii, jj] > 0:
-                        flow_dir_degraded[i, j] = d + 1
+                    if flow_dir_decimated[ii, jj] > 0:
+                        flow_dir_decimated[i, j] = d + 1
                         break
 
     logger.success(
-        f"Flow direction degradation complete: "
-        f"{np.sum(np.isfinite(flow_dir_degraded))} valid cells, "
-        f"{np.sum(flow_dir_degraded == -999)} invalid directions"
+        f"Flow direction decimation complete: "
+        f"{np.sum(np.isfinite(flow_dir_decimated))} valid cells, "
+        f"{np.sum(flow_dir_decimated == -999)} invalid directions"
     )
 
-    return flow_dir_degraded, flow_acc_degraded
+    return flow_dir_decimated, flow_acc_decimated
 
 
 def convert_to_mobidic_notation(

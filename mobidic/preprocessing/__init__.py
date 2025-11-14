@@ -5,8 +5,8 @@ from mobidic.preprocessing.gis_reader import (
     grid_to_matrix,
 )
 from mobidic.preprocessing.grid_operations import (
-    degrade_flow_direction,
-    degrade_raster,
+    decimate_flow_direction,
+    decimate_raster,
     convert_to_mobidic_notation,
 )
 from mobidic.preprocessing.river_network import (
@@ -34,8 +34,8 @@ from mobidic.preprocessing.meteo_preprocessing import (
 __all__ = [
     "read_shapefile",
     "grid_to_matrix",
-    "degrade_flow_direction",
-    "degrade_raster",
+    "decimate_flow_direction",
+    "decimate_raster",
     "convert_to_mobidic_notation",
     "process_river_network",
     "compute_hillslope_cells",

@@ -248,15 +248,15 @@ class Simulation(BaseModel):
 
     realtime: Literal[0, 1, -1] = Field(..., description="Option to wait for new data at end of computation")
     timestep: float = Field(..., description="Data and model time step, in seconds")
-    resample: int = Field(
-        ..., description="Degradation factor from grid data space resolution to model space resolution"
+    decimation: int = Field(
+        ..., description="Decimation factor from grid data space resolution to model space resolution"
     )
     soil_scheme: Literal["Bucket", "CN"] = Field(..., description="Type of soil hydrology scheme")
     energy_balance: Literal["None", "1L", "5L", "Snow"] = Field(
         ..., description="Type of surface energy balance scheme"
     )
-    precipitation_interp: Optional[Literal["nearest", "idw"]] = Field(
-        "idw", description="Precipitation interpolation method"
+    precipitation_interp: Optional[Literal["Nearest", "IDW"]] = Field(
+        "IDW", description="Precipitation interpolation method"
     )
 
     @field_validator("timestep")
@@ -267,12 +267,12 @@ class Simulation(BaseModel):
             raise ValueError("timestep must be positive")
         return v
 
-    @field_validator("resample")
+    @field_validator("decimation")
     @classmethod
-    def check_resample_positive(cls, v: int) -> int:
-        """Validate that resample is a positive integer."""
+    def check_decimation_positive(cls, v: int) -> int:
+        """Validate that decimation is a positive integer."""
         if v <= 0:
-            raise ValueError("resample must be a positive integer")
+            raise ValueError("decimation must be a positive integer")
         return v
 
 

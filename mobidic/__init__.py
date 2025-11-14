@@ -9,8 +9,8 @@ from mobidic.preprocessing import GISData
 
 from mobidic.preprocessing import (
     grid_to_matrix,
-    degrade_raster,
-    degrade_flow_direction,
+    decimate_raster,
+    decimate_flow_direction,
     read_shapefile,
     process_river_network,
     compute_hillslope_cells,
@@ -48,8 +48,8 @@ __all__ = [
     "configure_logger_from_config",
     "GISData",
     "grid_to_matrix",
-    "degrade_raster",
-    "degrade_flow_direction",
+    "decimate_raster",
+    "decimate_flow_direction",
     "read_shapefile",
     "process_river_network",
     "compute_hillslope_cells",

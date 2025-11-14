@@ -480,7 +480,7 @@ class Simulation:
                 # Get precipitation interpolation method from config
                 precip_interp = self.config.simulation.precipitation_interp
 
-                if precip_interp == "nearest":
+                if precip_interp == "Nearest":
                     # Use nearest neighbor for precipitation (MATLAB: pluviomap.m when thiessen=1)
                     grid_values = precipitation_interpolation(
                         station_x,
@@ -491,7 +491,7 @@ class Simulation:
                         self.yllcorner,
                         resolution,
                     )
-                else:  # "idw"
+                else:  # "IDW"
                     # Use IDW without elevation correction for precipitation
                     # MATLAB mobidic_sid.m line 1246: uses tmww3 with expon=2
                     # tmww3 = tmww^3 where tmww = 1/dist^2, so tmww3 = 1/dist^6
@@ -668,11 +668,11 @@ class Simulation:
             # Determine interpolation settings based on variable type
             if variable == "precipitation":
                 precip_interp = self.config.simulation.precipitation_interp
-                if precip_interp == "nearest":
+                if precip_interp == "Nearest":
                     # Nearest neighbor doesn't use weights matrix
                     logger.debug(f"{variable}: using nearest neighbor (no weights needed)")
                     weights_cache[variable] = None
-                else:  # "idw"
+                else:  # "IDW"
                     # IDW with power=6 for precipitation
                     logger.debug(f"{variable}: pre-computing IDW weights (power=6)")
                     weights_cache[variable] = compute_idw_weights(

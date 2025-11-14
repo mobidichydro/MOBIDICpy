@@ -99,7 +99,7 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     ds.attrs["basin_baricenter_lat"] = gisdata.config.basin.baricenter.lat
     ds.attrs["resolution_x"] = resolution[0]
     ds.attrs["resolution_y"] = resolution[1]
-    ds.attrs["resample_factor"] = gisdata.config.simulation.resample
+    ds.attrs["decimation_factor"] = gisdata.config.simulation.decimation
     ds.attrs["flow_dir_notation"] = "MOBIDIC"
     ds.attrs["Conventions"] = "CF-1.12"
     ds.attrs["title"] = "MOBIDIC preprocessed GIS data"

@@ -24,7 +24,7 @@ def mock_config():
     config.basin.paramset_id = "TestParams"
     config.basin.baricenter.lon = 11.0
     config.basin.baricenter.lat = 44.0
-    config.simulation.resample = 1
+    config.simulation.decimation = 1
     return config
 
 

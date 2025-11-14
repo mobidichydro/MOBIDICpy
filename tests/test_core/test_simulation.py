@@ -73,7 +73,7 @@ def simple_config():
         "simulation": {
             "realtime": 0,
             "timestep": 900,
-            "resample": 1,
+            "decimation": 1,
             "soil_scheme": "Bucket",
             "energy_balance": "None",
         },

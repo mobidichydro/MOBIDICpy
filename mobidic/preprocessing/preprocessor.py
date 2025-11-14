@@ -18,8 +18,8 @@ from mobidic import __version__
 from mobidic.config.schema import MOBIDICConfig
 from mobidic.preprocessing.gis_reader import grid_to_matrix
 from mobidic.preprocessing.grid_operations import (
-    degrade_raster,
-    degrade_flow_direction,
+    decimate_raster,
+    decimate_flow_direction,
     convert_to_mobidic_notation,
 )
 from mobidic.preprocessing.river_network import process_river_network
@@ -166,7 +166,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     This function orchestrates the entire preprocessing pipeline:
     1. Load raster grids (DTM, flow direction, soil parameters, etc.)
-    2. Apply grid degradation if needed (resample factor > 1)
+    2. Apply grid decimation if needed (decimation factor > 1)
     3. Convert flow direction to MOBIDIC notation
     4. Process river network (topology, Strahler ordering, routing parameters)
     5. Compute hillslope cells for each reach
@@ -300,37 +300,37 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.success(f"Loaded {len(grids)} raster grids. Shape: {grids['dtm'].shape}, cellsize: {cellsize} m")
     logger.info("")
 
-    # Step 2: Apply grid downsampling if needed
-    logger.info("Step 2/6: Applying grid downsampling")
+    # Step 2: Apply grid decimation if needed
+    logger.info("Step 2/6: Applying grid decimation")
     logger.info("-" * 80)
 
-    resample_factor = config.simulation.resample
+    decimation_factor = config.simulation.decimation
 
-    if resample_factor > 1:
-        logger.info(f"Downsampling grids by factor {resample_factor}")
+    if decimation_factor > 1:
+        logger.info(f"Decimating grids by factor {decimation_factor}")
 
-        # Downsample most grids using simple averaging
+        # Decimate most grids using simple averaging
         for name in grids.keys():
             if name not in ["flow_dir", "flow_acc"]:
-                logger.debug(f"Downsampling {name}")
-                grids[name] = degrade_raster(grids[name], resample_factor)
+                logger.debug(f"Decimating {name}")
+                grids[name] = decimate_raster(grids[name], decimation_factor)
 
-        # Downsample flow direction and accumulation
-        logger.debug("Downsampling flow_dir and flow_acc")
-        grids["flow_dir"], grids["flow_acc"] = degrade_flow_direction(
-            grids["flow_dir"], grids["flow_acc"], resample_factor
+        # Decimate flow direction and accumulation
+        logger.debug("Decimating flow_dir and flow_acc")
+        grids["flow_dir"], grids["flow_acc"] = decimate_flow_direction(
+            grids["flow_dir"], grids["flow_acc"], decimation_factor
         )
 
         # Update metadata
         metadata["shape"] = grids["dtm"].shape
         metadata["resolution"] = (
-            metadata["resolution"][0] * resample_factor,
-            metadata["resolution"][1] * resample_factor,
+            metadata["resolution"][0] * decimation_factor,
+            metadata["resolution"][1] * decimation_factor,
         )
 
-        logger.success(f"Grid downsampling complete. New shape: {metadata['shape']}")
+        logger.success(f"Grid decimation complete. New shape: {metadata['shape']}")
     else:
-        logger.info("No grid downsampling applied (resample factor = 1)")
+        logger.info("No grid decimation applied (decimation factor = 1)")
 
     logger.info("")
 

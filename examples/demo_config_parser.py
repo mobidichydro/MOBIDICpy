@@ -173,7 +173,7 @@ logger.info("Simulation Settings:")
 logger.info("=" * 60)
 logger.info(f"Realtime Mode: {config.simulation.realtime}")
 logger.info(f"Timestep: {config.simulation.timestep} seconds")
-logger.info(f"Resample Factor: {config.simulation.resample}")
+logger.info(f"Decimation Factor: {config.simulation.decimation}")
 logger.info(f"Soil Scheme: {config.simulation.soil_scheme}")
 logger.info(f"Energy Balance: {config.simulation.energy_balance}")
 
@@ -271,7 +271,7 @@ parameters:
 simulation:
   realtime: 0
   timestep: -100
-  resample: 1
+  decimation: 1
   soil_scheme: Bucket
   energy_balance: None
 output_states:

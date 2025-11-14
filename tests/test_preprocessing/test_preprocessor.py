@@ -58,7 +58,7 @@ def mock_config():
     config.parameters.energy.CH = 1e-3
     config.parameters.energy.Alb = 0.2
 
-    config.simulation.resample = 1
+    config.simulation.decimation = 1
 
     return config
 
@@ -236,27 +236,27 @@ class TestPreprocessor:
         assert isinstance(gisdata.hillslope_reach_map, np.ndarray)
 
     @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
-    @patch("mobidic.preprocessing.preprocessor.degrade_raster")
-    @patch("mobidic.preprocessing.preprocessor.degrade_flow_direction")
+    @patch("mobidic.preprocessing.preprocessor.decimate_raster")
+    @patch("mobidic.preprocessing.preprocessor.decimate_flow_direction")
     @patch("mobidic.preprocessing.preprocessor.convert_to_mobidic_notation")
     @patch("mobidic.preprocessing.preprocessor.process_river_network")
     @patch("mobidic.preprocessing.preprocessor.compute_hillslope_cells")
     @patch("mobidic.preprocessing.preprocessor.map_hillslope_to_reach")
-    def test_run_preprocessing_with_degradation(
+    def test_run_preprocessing_with_decimation(
         self,
         mock_map_hillslope,
         mock_compute_hillslope,
         mock_process_network,
         mock_convert_notation,
-        mock_degrade_flowdir,
-        mock_degrade_raster,
+        mock_decimate_flowdir,
+        mock_decimate_raster,
         mock_grid_to_matrix,
         mock_config,
         mock_network,
     ):
-        """Test run_preprocessing with grid degradation."""
-        # Setup config with degradation
-        mock_config.simulation.resample = 2
+        """Test run_preprocessing with grid decimation."""
+        # Setup config with decimation
+        mock_config.simulation.decimation = 2
 
         # Setup mocks
         mock_grid_to_matrix.return_value = {
@@ -266,8 +266,8 @@ class TestPreprocessor:
             "cellsize": 10.0,
             "crs": "EPSG:32632",
         }
-        mock_degrade_raster.return_value = np.random.rand(10, 10)
-        mock_degrade_flowdir.return_value = (
+        mock_decimate_raster.return_value = np.random.rand(10, 10)
+        mock_decimate_flowdir.return_value = (
             np.random.randint(1, 9, size=(10, 10)),
             np.random.randint(1, 100, size=(10, 10)),
         )
@@ -279,9 +279,9 @@ class TestPreprocessor:
         # Run preprocessing
         gisdata = run_preprocessing(mock_config)
 
-        # Verify degradation was called
-        assert mock_degrade_raster.call_count > 0
-        mock_degrade_flowdir.assert_called_once()
+        # Verify decimation was called
+        assert mock_decimate_raster.call_count > 0
+        mock_decimate_flowdir.assert_called_once()
 
         # Verify result
         assert isinstance(gisdata, GISData)
