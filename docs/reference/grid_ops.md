@@ -1,6 +1,6 @@
 # Grid Operations
 
-The grid operations module provides functions for processing and transforming gridded raster data, including resolution degradation and flow direction conversions.
+The grid operations module provides functions for processing and transforming gridded raster data, including resolution decimation and flow direction conversions.
 
 ## Overview
 
@@ -16,9 +16,9 @@ All functions handle NaN values appropriately and provide comprehensive logging.
 
 ### Resolution Degradation
 
-::: mobidic.preprocessing.grid_operations.degrade_raster
+::: mobidic.preprocessing.grid_operations.decimate_raster
 
-::: mobidic.preprocessing.grid_operations.degrade_flow_direction
+::: mobidic.preprocessing.grid_operations.decimate_flow_direction
 
 ### Flow Direction Conversion
 
@@ -29,21 +29,21 @@ All functions handle NaN values appropriately and provide comprehensive logging.
 ### Coarsening a Raster
 
 ```python
-from mobidic import grid_to_matrix, degrade_raster
+from mobidic import grid_to_matrix, decimate_raster
 import numpy as np
 
 # Read high-resolution DTM (e.g., 10m)
 dtm = grid_to_matrix("dtm_10m.tif")
 
 # Degrade to 50m resolution (factor = 5)
-dtm_degraded = degrade_raster(
+dtm_decimated = decimate_raster(
     data=dtm['data'],
     factor=5,
     min_valid_fraction=0.125  # Require at least 1/8 valid cells
 )
 
 print(f"Original shape: {dtm['data'].shape}")
-print(f"Degraded shape: {dtm_degraded.shape}")
+print(f"Decimated shape: {dtm_decimated.shape}")
 print(f"Original cellsize: {dtm['cellsize']} m")
 print(f"New cellsize: {dtm['cellsize'] * 5} m")
 ```
@@ -51,14 +51,14 @@ print(f"New cellsize: {dtm['cellsize'] * 5} m")
 ### Coarsening Flow Direction
 
 ```python
-from mobidic import grid_to_matrix, degrade_flow_direction
+from mobidic import grid_to_matrix, decimate_flow_direction
 
 # Read flow direction and accumulation grids
 flow_dir_data = grid_to_matrix("flow_direction.tif")
 flow_acc_data = grid_to_matrix("flow_accumulation.tif")
 
 # Degrade both grids together
-flow_dir_coarse, flow_acc_coarse = degrade_flow_direction(
+flow_dir_coarse, flow_acc_coarse = decimate_flow_direction(
     flow_dir=flow_dir_data['data'],
     flow_acc=flow_acc_data['data'],
     factor=5,
@@ -66,7 +66,7 @@ flow_dir_coarse, flow_acc_coarse = degrade_flow_direction(
 )
 
 print(f"Original shape: {flow_dir_data['data'].shape}")
-print(f"Degraded shape: {flow_dir_coarse.shape}")
+print(f"Decimated shape: {flow_dir_coarse.shape}")
 ```
 
 ### Converting Flow Direction Notation

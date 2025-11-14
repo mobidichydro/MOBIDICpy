@@ -21,10 +21,10 @@ Read and write geospatial data (rasters and vectors).
 - [`read_shapefile()`](gis_io.md#mobidic.preprocessing.gis_reader.read_shapefile) - Read vector files (Shapefile)
 
 ### [Grid Operations](grid_ops.md)
-Process and transform gridded data (resolution degradation, flow direction conversion).
+Process and transform gridded data (resolution decimation, flow direction conversion).
 
-- [`degrade_raster()`](grid_ops.md#mobidic.preprocessing.grid_operations.degrade_raster) - Coarsen raster resolution
-- [`degrade_flow_direction()`](grid_ops.md#mobidic.preprocessing.grid_operations.degrade_flow_direction) - Coarsen flow direction grids
+- [`decimate_raster()`](grid_ops.md#mobidic.preprocessing.grid_operations.decimate_raster) - Coarsen raster resolution
+- [`decimate_flow_direction()`](grid_ops.md#mobidic.preprocessing.grid_operations.decimate_flow_direction) - Coarsen flow direction grids
 - [`convert_to_mobidic_notation()`](grid_ops.md#mobidic.preprocessing.grid_operations.convert_to_mobidic_notation) - Convert flow direction to MOBIDIC notation
 
 ### [River Network Processing](network.md)
@@ -103,8 +103,8 @@ from mobidic import (
     grid_to_matrix,
     read_shapefile,
     # Grid Operations
-    degrade_raster,
-    degrade_flow_direction,
+    decimate_raster,
+    decimate_flow_direction,
     convert_to_mobidic_notation,
     # River Network
     process_river_network,
