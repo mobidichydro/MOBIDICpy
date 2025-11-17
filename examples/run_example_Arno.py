@@ -208,13 +208,13 @@ reach_id = 329
 
 # Create figure with subplots
 fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-fig.suptitle("MOBIDIC Simulation Results - Arno River Basin", fontsize=14, fontweight="bold")
+fig.suptitle("MOBIDIC simulation results - Arno River Basin", fontsize=14, fontweight="bold")
 
-# Plot 1: Discharge hydrograph at outlet
-axes[0].plot(time_ts, discharge_ts[:, reach_id], "b-", linewidth=2, label=f"Outlet (reach {reach_id})")
+# Plot 1: Discharge hydrograph at a specific reach
+axes[0].plot(time_ts, discharge_ts[:, reach_id], "b-", linewidth=2, label=f"Reach {reach_id}")
 axes[0].set_xlabel("Time")
-axes[0].set_ylabel("Discharge [m³/s]")
-axes[0].set_title(f"Discharge Hydrograph at reach {reach_id}")
+axes[0].set_ylabel("Discharge (m³/s)")
+axes[0].set_title(f"Hydrograph at reach {reach_id}")
 axes[0].grid(True, alpha=0.3)
 axes[0].legend()
 
@@ -223,11 +223,11 @@ q_mean = np.mean(discharge_ts, axis=1)
 q_max = np.max(discharge_ts, axis=1)
 q_min = np.min(discharge_ts, axis=1)
 
-axes[1].plot(time_ts, q_mean, "b-", linewidth=2, label="Mean")
+axes[1].plot(time_ts, q_mean, "b-", linewidth=2, label="Average")
 axes[1].fill_between(time_ts, q_min, q_max, alpha=0.3, label="Range (min-max)")
 axes[1].set_xlabel("Time")
-axes[1].set_ylabel("Discharge [m³/s]")
-axes[1].set_title("Network-Wide Discharge Statistics")
+axes[1].set_ylabel("Discharge (m³/s)")
+axes[1].set_title("Network-wide statistics")
 axes[1].grid(True, alpha=0.3)
 axes[1].legend()
 
