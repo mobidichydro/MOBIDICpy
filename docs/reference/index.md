@@ -80,7 +80,7 @@ Main simulation engine and time-stepping loop.
 ### [State I/O](state.md)
 Save and load simulation state variables (NetCDF format).
 
-- [`save_state()`](state.md#mobidic.io.state.save_state) - Save state to NetCDF
+- [`StateWriter`](state.md#mobidic.io.state.StateWriter) - Incremental state writer with buffering
 - [`load_state()`](state.md#mobidic.io.state.load_state) - Load state from NetCDF
 
 ### [Report I/O](report.md)
@@ -133,7 +133,7 @@ from mobidic import (
     SimulationState,
     SimulationResults,
     # State I/O
-    save_state,
+    StateWriter,
     load_state,
     # Report I/O
     save_discharge_report,

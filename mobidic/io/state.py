@@ -1,7 +1,8 @@
 """State file I/O for MOBIDIC simulations.
 
-This module provides functions to save and load simulation state variables
-(soil water content, discharge, etc.) in NetCDF format.
+This module provides functions to load simulation state variables
+(soil water content, discharge, etc.) from NetCDF format and the StateWriter
+class for saving states incrementally to a single file.
 """
 
 from pathlib import Path
@@ -13,197 +14,21 @@ from loguru import logger
 from mobidic import __version__
 
 
-def save_state(
-    state: "SimulationState",  # noqa: F821
-    output_path: str | Path,
-    time: datetime,
-    grid_metadata: dict,
-    network_size: int,
-    output_states: "OutputStates",  # noqa: F821
-    add_metadata: dict | None = None,
-) -> None:
-    """
-    Save simulation state to NetCDF file.
-
-    Args:
-        state: SimulationState object containing state variables
-        output_path: Path to output NetCDF file
-        time: Current simulation time
-        grid_metadata: Dictionary with grid metadata (shape, resolution, crs, etc.)
-        network_size: Number of reaches in network
-        output_states: Configuration object specifying which state variables to save
-        add_metadata: Additional global attributes (optional)
-
-    Examples:
-        >>> from mobidic import Simulation
-        >>> sim = Simulation(gisdata, forcing, config)
-        >>> # After running simulation
-        >>> from mobidic.io import save_state
-        >>> save_state(sim.state, "state_2020-01-01.nc", datetime(2020, 1, 1),
-        ...            sim.gisdata.metadata, len(sim.network),
-        ...            config.output_states)
-    """
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Get grid dimensions
-    nrows, ncols = grid_metadata["shape"]
-    resolution = grid_metadata["resolution"]
-    xllcorner = grid_metadata["xllcorner"]
-    yllcorner = grid_metadata["yllcorner"]
-
-    # Create coordinate arrays
-    x = xllcorner + np.arange(ncols) * resolution[0]
-    y = yllcorner + np.arange(nrows) * resolution[1]
-
-    # Create data variables dictionary based on configuration
-    data_vars = {}
-
-    # Add state variables based on output_states configuration
-    if output_states.soil_capillary:
-        data_vars["Wc"] = (["y", "x"], state.wc)
-
-    if output_states.soil_gravitational:
-        data_vars["Wg"] = (["y", "x"], state.wg)
-
-    if output_states.soil_plant and state.wp is not None:
-        data_vars["Wp"] = (["y", "x"], state.wp)
-
-    if output_states.soil_surface:
-        data_vars["Ws"] = (["y", "x"], state.ws)
-
-    if output_states.discharge:
-        data_vars["discharge"] = (["reach"], state.discharge)
-        data_vars["lateral_inflow"] = (["reach"], state.lateral_inflow)
-
-    # Add grid mapping variable for CRS (CF-1.12 compliance)
-    data_vars["crs"] = ([], 0)
-
-    # Create coordinates dictionary
-    coords = {
-        "x": (["x"], x),
-        "y": (["y"], y),
-        "time": time,
-    }
-
-    # Add reach coordinate only if discharge is enabled
-    if output_states.discharge:
-        reaches = np.arange(network_size)
-        coords["reach"] = (["reach"], reaches)
-
-    # Create dataset
-    ds = xr.Dataset(
-        data_vars=data_vars,
-        coords=coords,
-    )
-
-    # Add grid mapping attributes (CF-1.12 compliance)
-    crs_string = str(grid_metadata.get("crs", ""))
-    ds["crs"].attrs = {
-        "grid_mapping_name": "spatial_ref",
-        "crs_wkt": crs_string,
-        "spatial_ref": crs_string,
-    }
-
-    # Add coordinate attributes
-    ds["x"].attrs = {
-        "standard_name": "projection_x_coordinate",
-        "long_name": "x coordinate of projection",
-        "units": "m",
-        "axis": "X",
-    }
-    ds["y"].attrs = {
-        "standard_name": "projection_y_coordinate",
-        "long_name": "y coordinate of projection",
-        "units": "m",
-        "axis": "Y",
-    }
-    if "reach" in ds.coords:
-        ds["reach"].attrs = {
-            "long_name": "reach index",
-            "description": "MOBIDIC reach ID (mobidic_id)",
-            "units": "1",
-        }
-    ds["time"].attrs = {
-        "long_name": "simulation time",
-    }
-
-    # Add variable metadata (conditionally, based on which variables are present)
-    if "Wc" in ds:
-        ds["Wc"].attrs = {
-            "long_name": "Capillary Water Content",
-            "units": "m",
-            "description": "Water held by capillary forces in soil",
-            "grid_mapping": "crs",
-        }
-
-    if "Wg" in ds:
-        ds["Wg"].attrs = {
-            "long_name": "Gravitational Water Content",
-            "units": "m",
-            "description": "Drainable water in soil large pores",
-            "grid_mapping": "crs",
-        }
-
-    if "Wp" in ds:
-        ds["Wp"].attrs = {
-            "long_name": "Plant/Canopy Water Content",
-            "units": "m",
-            "description": "Water intercepted by vegetation canopy",
-            "grid_mapping": "crs",
-        }
-
-    if "Ws" in ds:
-        ds["Ws"].attrs = {
-            "long_name": "Surface Water Content",
-            "units": "m",
-            "description": "Water in surface depressions",
-            "grid_mapping": "crs",
-        }
-
-    if "discharge" in ds:
-        ds["discharge"].attrs = {
-            "long_name": "River Discharge",
-            "units": "m3 s-1",
-            "description": "Discharge at downstream end of each reach",
-        }
-
-    if "lateral_inflow" in ds:
-        ds["lateral_inflow"].attrs = {
-            "long_name": "Lateral Inflow",
-            "units": "m3 s-1",
-            "description": "Lateral inflow from hillslope to each reach",
-        }
-
-    # Add global attributes
-    ds.attrs["Conventions"] = "CF-1.12"
-    ds.attrs["title"] = "MOBIDIC simulation state"
-    ds.attrs["source"] = "MOBIDICpy simulation"
-    ds.attrs["history"] = f"Created by MOBIDICpy version {__version__} at {datetime.now().isoformat()}"
-    ds.attrs["simulation_time"] = time.isoformat()
-
-    # Add custom metadata if provided
-    if add_metadata:
-        ds.attrs.update(add_metadata)
-
-    # Save to NetCDF with compression
-    encoding = {var: {"zlib": True, "complevel": 4} for var in ds.data_vars if var != "crs"}
-    ds.to_netcdf(output_path, encoding=encoding, engine="netcdf4")
-
-    logger.success(f"State saved to {output_path}")
-    logger.debug(f"File size: {output_path.stat().st_size / 1024:.2f} KB")
-
-
 def load_state(
     input_path: str | Path,
     network_size: int,
+    time_index: int = -1,
 ) -> tuple["SimulationState", datetime, dict]:  # noqa: F821
     """
     Load simulation state from NetCDF file.
 
+    Supports both single-timestep and multi-timestep state files.
+    For multi-timestep files, loads the specified time index (default: last timestep).
+
     Args:
         input_path: Path to input NetCDF file
         network_size: Expected number of reaches in network
+        time_index: Index of timestep to load (default: -1 = last timestep)
 
     Returns:
         Tuple of (state, time, metadata) where:
@@ -217,8 +42,10 @@ def load_state(
 
     Examples:
         >>> from mobidic.io import load_state
-        >>> state, time, metadata = load_state("state_2020-01-01.nc", 1235)
-        >>> print(f"Loaded state at {time}")
+        >>> # Load last timestep
+        >>> state, time, metadata = load_state("states.nc", 1235)
+        >>> # Load first timestep
+        >>> state, time, metadata = load_state("states.nc", 1235, time_index=0)
     """
     input_path = Path(input_path)
 
@@ -229,6 +56,15 @@ def load_state(
 
     # Load dataset
     ds = xr.open_dataset(input_path)
+
+    # Check if time is a dimension or scalar coordinate
+    has_time_dim = "time" in ds.dims
+    if has_time_dim:
+        num_times = len(ds.time)
+        logger.debug(f"Multi-timestep file detected: {num_times} timesteps available")
+        # Select the specified timestep
+        ds = ds.isel(time=time_index)
+        logger.info(f"Loading timestep {time_index} (out of {num_times})")
 
     # Get grid shape from coordinates (needed for initializing missing variables)
     nrows = len(ds.y)
@@ -260,10 +96,14 @@ def load_state(
     # Network variables: initialize with zeros if missing
     if "discharge" in ds:
         discharge = ds["discharge"].values
+        # For multi-timestep files, discharge might be 1D after isel
+        # For single-timestep files, it's already 1D
+        if discharge.ndim > 1:
+            discharge = discharge.flatten()
         # Check array shapes
-        if discharge.shape[0] != network_size:
+        if len(discharge) != network_size:
             logger.warning(
-                f"Network size mismatch: expected {network_size}, got {discharge.shape[0]}. "
+                f"Network size mismatch: expected {network_size}, got {len(discharge)}. "
                 "This may cause issues if network has changed."
             )
     else:
@@ -272,6 +112,9 @@ def load_state(
 
     if "lateral_inflow" in ds:
         lateral_inflow = ds["lateral_inflow"].values
+        # For multi-timestep files, lateral_inflow might be 1D after isel
+        if lateral_inflow.ndim > 1:
+            lateral_inflow = lateral_inflow.flatten()
     else:
         logger.warning("lateral_inflow not found in state file, initializing with zeros")
         lateral_inflow = np.zeros(network_size)
@@ -305,3 +148,369 @@ def load_state(
     logger.success(f"State loaded: time={time.isoformat()}, grid={nrows}x{ncols}, reaches={len(discharge)}")
 
     return state, time, metadata
+
+
+class StateWriter:
+    """
+    Incremental NetCDF state writer with buffering and flushing control.
+
+    This class manages writing simulation states to a single NetCDF file
+    across multiple timesteps, with configurable memory buffering and
+    periodic flushing to disk.
+
+    Args:
+        output_path: Path to output NetCDF file (will be created/overwritten)
+        grid_metadata: Dictionary with grid metadata (shape, resolution, crs, etc.)
+        network_size: Number of reaches in network
+        output_states: Configuration object specifying which state variables to save
+        flushing: Flush interval (positive int = every N steps, -1 = only at end)
+        add_metadata: Additional global attributes (optional)
+
+    Examples:
+        >>> writer = StateWriter("states.nc", metadata, 1235, config.output_states, flushing=10)
+        >>> for step in range(num_steps):
+        ...     writer.append_state(state, current_time)
+        >>> writer.close()
+    """
+
+    def __init__(
+        self,
+        output_path: str | Path,
+        grid_metadata: dict,
+        network_size: int,
+        output_states: "OutputStates",  # noqa: F821
+        flushing: int = -1,
+        add_metadata: dict | None = None,
+    ):
+        """Initialize the state writer and create the NetCDF file."""
+        self.output_path = Path(output_path)
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Remove existing file if present to avoid appending to old data
+        if self.output_path.exists():
+            logger.info(f"Removing existing state file: {self.output_path}")
+            self.output_path.unlink()
+
+        self.grid_metadata = grid_metadata
+        self.network_size = network_size
+        self.output_states = output_states
+        self.flushing = flushing
+        self.add_metadata = add_metadata or {}
+
+        # Get grid dimensions
+        self.nrows, self.ncols = grid_metadata["shape"]
+        resolution = grid_metadata["resolution"]
+        xllcorner = grid_metadata["xllcorner"]
+        yllcorner = grid_metadata["yllcorner"]
+
+        # Create coordinate arrays
+        self.x = xllcorner + np.arange(self.ncols) * resolution[0]
+        self.y = yllcorner + np.arange(self.nrows) * resolution[1]
+        self.reaches = np.arange(network_size)
+
+        # Initialize buffer for states
+        self.buffer = []
+        self.buffer_times = []
+        self.step_count = 0
+
+        # Create the NetCDF file structure
+        self._initialize_file()
+
+        logger.debug(f"StateWriter initialized: {self.output_path}, flushing={self.flushing}")
+
+    def _initialize_file(self) -> None:
+        """Create the NetCDF file with unlimited time dimension."""
+        # Create coordinates dictionary
+        coords = {
+            "x": (["x"], self.x),
+            "y": (["y"], self.y),
+        }
+
+        # Add reach coordinate if discharge is enabled
+        if self.output_states.discharge:
+            coords["reach"] = (["reach"], self.reaches)
+
+        # Create empty dataset with coordinates only (no time yet)
+        self.ds = xr.Dataset(coords=coords)
+
+        # Add coordinate attributes
+        self.ds["x"].attrs = {
+            "standard_name": "projection_x_coordinate",
+            "long_name": "x coordinate of projection",
+            "units": "m",
+            "axis": "X",
+        }
+        self.ds["y"].attrs = {
+            "standard_name": "projection_y_coordinate",
+            "long_name": "y coordinate of projection",
+            "units": "m",
+            "axis": "Y",
+        }
+        if "reach" in self.ds.coords:
+            self.ds["reach"].attrs = {
+                "long_name": "reach index",
+                "description": "MOBIDIC reach ID (mobidic_id)",
+                "units": "1",
+            }
+
+        # Add grid mapping variable for CRS (CF-1.12 compliance)
+        crs_string = str(self.grid_metadata.get("crs", ""))
+        self.ds["crs"] = ([], 0)
+        self.ds["crs"].attrs = {
+            "grid_mapping_name": "spatial_ref",
+            "crs_wkt": crs_string,
+            "spatial_ref": crs_string,
+        }
+
+        # Add global attributes
+        self.ds.attrs["Conventions"] = "CF-1.12"
+        self.ds.attrs["title"] = "MOBIDIC simulation states"
+        self.ds.attrs["source"] = "MOBIDICpy simulation"
+        self.ds.attrs["history"] = f"Created by MOBIDICpy version {__version__} at {datetime.now().isoformat()}"
+        self.ds.attrs.update(self.add_metadata)
+
+    def append_state(self, state: "SimulationState", time: datetime) -> None:  # noqa: F821
+        """
+        Add a state to the buffer and flush if necessary.
+
+        Args:
+            state: SimulationState object containing state variables
+            time: Current simulation time
+        """
+        # Import here to avoid circular import
+        from mobidic.core.simulation import SimulationState
+
+        # Create a copy of the state to avoid storing references to mutable arrays
+        # This is critical because the same state object is reused across timesteps
+        state_copy = SimulationState(
+            wc=state.wc.copy(),
+            wg=state.wg.copy(),
+            wp=state.wp.copy() if state.wp is not None else None,
+            ws=state.ws.copy(),
+            discharge=state.discharge.copy(),
+            lateral_inflow=state.lateral_inflow.copy(),
+        )
+
+        # Add to buffer
+        self.buffer.append(state_copy)
+        self.buffer_times.append(time)
+        self.step_count += 1
+
+        # Check if we need to flush
+        should_flush = False
+        if self.flushing > 0 and self.step_count % self.flushing == 0:
+            should_flush = True
+
+        if should_flush:
+            self.flush()
+            logger.debug(f"StateWriter flushed at step {self.step_count}")
+
+    def flush(self) -> None:
+        """Write buffered states to disk using efficient append mode."""
+        if not self.buffer:
+            return
+
+        logger.debug(f"Flushing {len(self.buffer)} states to {self.output_path}")
+
+        # Convert buffer to arrays with time dimension
+        num_buffered = len(self.buffer)
+
+        # Initialize data arrays for this flush
+        data_vars = {}
+
+        # Grid variables
+        if self.output_states.soil_capillary:
+            wc_data = np.array([s.wc for s in self.buffer])
+            data_vars["Wc"] = (["time", "y", "x"], wc_data)
+
+        if self.output_states.soil_gravitational:
+            wg_data = np.array([s.wg for s in self.buffer])
+            data_vars["Wg"] = (["time", "y", "x"], wg_data)
+
+        if self.output_states.soil_plant:
+            # Check if any state has wp (plant water)
+            has_wp = any(s.wp is not None for s in self.buffer)
+            if has_wp:
+                wp_data = np.array(
+                    [s.wp if s.wp is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["Wp"] = (["time", "y", "x"], wp_data)
+
+        if self.output_states.soil_surface:
+            ws_data = np.array([s.ws for s in self.buffer])
+            data_vars["Ws"] = (["time", "y", "x"], ws_data)
+
+        # Network variables
+        if self.output_states.discharge:
+            discharge_data = np.array([s.discharge for s in self.buffer])
+            lateral_inflow_data = np.array([s.lateral_inflow for s in self.buffer])
+            data_vars["discharge"] = (["time", "reach"], discharge_data)
+            data_vars["lateral_inflow"] = (["time", "reach"], lateral_inflow_data)
+
+        # Create dataset for this flush
+        flush_ds = xr.Dataset(
+            data_vars=data_vars,
+            coords={
+                "time": (["time"], self.buffer_times),
+                "x": (["x"], self.x),
+                "y": (["y"], self.y),
+            },
+        )
+
+        # Add reach coordinate if discharge is enabled
+        if self.output_states.discharge:
+            flush_ds.coords["reach"] = (["reach"], self.reaches)
+
+        # Add variable attributes
+        if "Wc" in flush_ds:
+            flush_ds["Wc"].attrs = {
+                "long_name": "Capillary Water Content",
+                "units": "m",
+                "description": "Water held by capillary forces in soil",
+                "grid_mapping": "crs",
+            }
+
+        if "Wg" in flush_ds:
+            flush_ds["Wg"].attrs = {
+                "long_name": "Gravitational Water Content",
+                "units": "m",
+                "description": "Drainable water in soil large pores",
+                "grid_mapping": "crs",
+            }
+
+        if "Wp" in flush_ds:
+            flush_ds["Wp"].attrs = {
+                "long_name": "Plant/Canopy Water Content",
+                "units": "m",
+                "description": "Water intercepted by vegetation canopy",
+                "grid_mapping": "crs",
+            }
+
+        if "Ws" in flush_ds:
+            flush_ds["Ws"].attrs = {
+                "long_name": "Surface Water Content",
+                "units": "m",
+                "description": "Water in surface depressions",
+                "grid_mapping": "crs",
+            }
+
+        if "discharge" in flush_ds:
+            flush_ds["discharge"].attrs = {
+                "long_name": "River Discharge",
+                "units": "m3 s-1",
+                "description": "Discharge at downstream end of each reach",
+            }
+
+        if "lateral_inflow" in flush_ds:
+            flush_ds["lateral_inflow"].attrs = {
+                "long_name": "Lateral Inflow",
+                "units": "m3 s-1",
+                "description": "Lateral inflow from hillslope to each reach",
+            }
+
+        # Add time attributes
+        flush_ds["time"].attrs = {
+            "long_name": "simulation time",
+            "axis": "T",
+        }
+
+        # Add coordinate attributes
+        flush_ds["x"].attrs = {
+            "standard_name": "projection_x_coordinate",
+            "long_name": "x coordinate of projection",
+            "units": "m",
+            "axis": "X",
+        }
+        flush_ds["y"].attrs = {
+            "standard_name": "projection_y_coordinate",
+            "long_name": "y coordinate of projection",
+            "units": "m",
+            "axis": "Y",
+        }
+        if "reach" in flush_ds.coords:
+            flush_ds["reach"].attrs = {
+                "long_name": "reach index",
+                "description": "MOBIDIC reach ID (mobidic_id)",
+                "units": "1",
+            }
+
+        # Determine write mode: first write or append
+        is_first_write = not self.output_path.exists()
+
+        if is_first_write:
+            # First write - add CRS variable and global attributes
+            crs_string = str(self.grid_metadata.get("crs", ""))
+            flush_ds["crs"] = xr.DataArray(
+                data=np.int32(0),  # Explicitly use int32 to avoid type issues
+                dims=[],
+                attrs={
+                    "grid_mapping_name": "spatial_ref",
+                    "crs_wkt": crs_string,
+                    "spatial_ref": crs_string,
+                },
+            )
+            flush_ds.attrs["Conventions"] = "CF-1.12"
+            flush_ds.attrs["title"] = "MOBIDIC simulation states"
+            flush_ds.attrs["source"] = "MOBIDICpy simulation"
+            flush_ds.attrs["history"] = f"Created by MOBIDICpy version {__version__} at {datetime.now().isoformat()}"
+            flush_ds.attrs.update(self.add_metadata)
+
+            # Write initial file with compression
+            encoding = {var: {"zlib": True, "complevel": 4} for var in flush_ds.data_vars if var != "crs"}
+            encoding["crs"] = {"dtype": "int32"}  # Explicitly set CRS dtype
+
+            flush_ds.to_netcdf(self.output_path, encoding=encoding, engine="netcdf4", mode="w", unlimited_dims=["time"])
+            flush_ds.close()
+        else:
+            # Append mode - use efficient NetCDF append via netCDF4 library
+            # This avoids the slow read-concatenate-write cycle
+            import netCDF4 as nc4
+
+            # Open existing file in append mode
+            with nc4.Dataset(self.output_path, "a") as nc_file:
+                # Get current time dimension length
+                time_dim_len = len(nc_file.dimensions["time"])
+
+                # Extend time dimension
+                new_time_len = time_dim_len + num_buffered
+
+                # Append time values
+                time_var = nc_file.variables["time"]
+                for i, t in enumerate(self.buffer_times):
+                    time_var[time_dim_len + i] = nc4.date2num(t, time_var.units, time_var.calendar)
+
+                # Append data variables
+                for var_name in flush_ds.data_vars:
+                    if var_name == "crs":
+                        continue  # Skip CRS - it's a scalar
+
+                    nc_var = nc_file.variables[var_name]
+                    data = flush_ds[var_name].values
+
+                    # Append along time dimension
+                    nc_var[time_dim_len:new_time_len, ...] = data
+
+            flush_ds.close()
+
+        # Clear buffer
+        self.buffer = []
+        self.buffer_times = []
+
+    def close(self) -> None:
+        """Flush any remaining buffered states and close the writer."""
+        # Flush remaining buffer
+        if self.buffer:
+            self.flush()
+
+        logger.success(f"States file saved: {self.output_path} ({self.step_count} states written)")
+        if self.output_path.exists():
+            logger.debug(f"File size: {self.output_path.stat().st_size / 1024 / 1024:.2f} MB")
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensures file is closed."""
+        self.close()
+        return False

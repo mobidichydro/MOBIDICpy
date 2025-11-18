@@ -48,8 +48,6 @@ def save_discharge_report(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Saving discharge report to Parquet: {output_path}")
-
     # Determine which reaches to include
     if reach_selection == "all":
         reach_indices = network["mobidic_id"].values
@@ -186,8 +184,6 @@ def save_lateral_inflow_report(
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    logger.info(f"Saving lateral inflow report to Parquet: {output_path}")
 
     # Use same logic as discharge report
     if reach_selection == "all":

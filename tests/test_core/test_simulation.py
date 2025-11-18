@@ -272,22 +272,6 @@ class TestSimulationResults:
 
         assert results.simulation is mock_sim
 
-    def test_save_states_no_state_raises_error(self, simple_config, tmp_path):
-        """Test save_states raises error when no state available."""
-        results = SimulationResults(simple_config)
-        output_path = tmp_path / "state.nc"
-
-        with pytest.raises(ValueError, match="No state to save"):
-            results.save_states(output_path)
-
-    def test_save_states_no_simulation_raises_error(self, simple_config):
-        """Test save_states raises error when no simulation object."""
-        results = SimulationResults(simple_config)
-        results.final_state = MagicMock()  # Set a state
-
-        with pytest.raises(ValueError, match="Cannot save state without simulation object"):
-            results.save_states("state.nc")
-
     def test_save_report_no_data_raises_error(self, simple_config):
         """Test save_report raises error when no discharge data."""
         results = SimulationResults(simple_config)
@@ -309,21 +293,6 @@ class TestSimulationResults:
 
         with pytest.raises(ValueError, match="No lateral inflow data to save"):
             results.save_lateral_inflow_report("lateral_inflow.parquet")
-
-    def test_save_final_state_no_state_raises_error(self, simple_config):
-        """Test save_final_state raises error when no state."""
-        results = SimulationResults(simple_config)
-
-        with pytest.raises(ValueError, match="No final state to save"):
-            results.save_final_state("state.nc")
-
-    def test_save_final_state_no_time_raises_error(self, simple_config):
-        """Test save_final_state raises error when no time information."""
-        results = SimulationResults(simple_config, simulation=MagicMock())
-        results.final_state = MagicMock()
-
-        with pytest.raises(ValueError, match="No time information available"):
-            results.save_final_state("state.nc")
 
 
 class TestSimulationInitialization:
@@ -775,8 +744,7 @@ class TestSimulationRun:
         # Check that save function was called
         mock_save.assert_called_once()
 
-    @patch("mobidic.io.save_state")
-    def test_run_saves_final_state(self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path):
+    def test_run_saves_final_state(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test that run() saves final state when enabled."""
         simple_config.paths.output = str(tmp_path / "output")
         simple_config.paths.states = str(tmp_path / "states")
@@ -785,13 +753,17 @@ class TestSimulationRun:
         sim = Simulation(simple_gisdata, simple_meteo, simple_config)
         _ = sim.run("2020-01-01 00:00", "2020-01-01 01:00")
 
-        # Check that save function was called once (only final state)
-        mock_save.assert_called_once()
+        # Check that states.nc file exists with only 1 timestep (final state)
+        states_file = tmp_path / "states" / "states.nc"
+        assert states_file.exists()
 
-    @patch("mobidic.io.save_state")
-    def test_run_saves_all_states_every_timestep(
-        self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path
-    ):
+        import xarray as xr
+
+        ds = xr.open_dataset(states_file)
+        assert len(ds.time) == 1
+        ds.close()
+
+    def test_run_saves_all_states_every_timestep(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test that run() saves states at every timestep when output_states='all' and no interval."""
         simple_config.paths.output = str(tmp_path / "output")
         simple_config.paths.states = str(tmp_path / "states")
@@ -802,11 +774,17 @@ class TestSimulationRun:
         # Run for 2 hours with 900s timestep = 9 timesteps (inclusive of end time)
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
-        # Check that save function was called 9 times (in loop) + 1 time (final) = 10 times
-        assert mock_save.call_count == 10
+        # Check that states.nc file contains all 9 timesteps
+        states_file = tmp_path / "states" / "states.nc"
+        assert states_file.exists()
 
-    @patch("mobidic.io.save_state")
-    def test_run_saves_all_states_with_interval(self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        import xarray as xr
+
+        ds = xr.open_dataset(states_file)
+        assert len(ds.time) == 9
+        ds.close()
+
+    def test_run_saves_all_states_with_interval(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test that run() saves states at specified interval when output_states='all'."""
         simple_config.paths.output = str(tmp_path / "output")
         simple_config.paths.states = str(tmp_path / "states")
@@ -815,14 +793,20 @@ class TestSimulationRun:
 
         sim = Simulation(simple_gisdata, simple_meteo, simple_config)
         # Run for 2 hours with 900s timestep = 9 timesteps (indices 0-8)
-        # Should save at steps 1, 3, 5, 7 (4 times, when (step+1) % 2 == 0) + final state = 5 times
+        # Should save at steps 1, 3, 5, 7 (4 times, when (step+1) % 2 == 0)
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
-        # Check that save function was called 4 times (in loop) + 1 time (final) = 5 times
-        assert mock_save.call_count == 5
+        # Check that states.nc file contains 4 timesteps
+        states_file = tmp_path / "states" / "states.nc"
+        assert states_file.exists()
 
-    @patch("mobidic.io.save_state")
-    def test_run_saves_states_by_list(self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        import xarray as xr
+
+        ds = xr.open_dataset(states_file)
+        assert len(ds.time) == 4
+        ds.close()
+
+    def test_run_saves_states_by_list(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test that run() saves states at specified datetimes when output_states='list'."""
         simple_config.paths.output = str(tmp_path / "output")
         simple_config.paths.states = str(tmp_path / "states")
@@ -838,13 +822,17 @@ class TestSimulationRun:
         # Run for 2 hours with 900s timestep = 9 timesteps
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
-        # Check that save function was called 4 times (only the specified datetimes, no final state)
-        assert mock_save.call_count == 4
+        # Check that states.nc file contains 4 timesteps (only specified datetimes)
+        states_file = tmp_path / "states" / "states.nc"
+        assert states_file.exists()
 
-    @patch("mobidic.io.save_state")
-    def test_run_saves_states_by_list_including_final(
-        self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path
-    ):
+        import xarray as xr
+
+        ds = xr.open_dataset(states_file)
+        assert len(ds.time) == 4
+        ds.close()
+
+    def test_run_saves_states_by_list_including_final(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test that run() saves states correctly when list includes final timestep."""
         simple_config.paths.output = str(tmp_path / "output")
         simple_config.paths.states = str(tmp_path / "states")
@@ -859,8 +847,15 @@ class TestSimulationRun:
         # Run for 2 hours with 900s timestep = 9 timesteps
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
-        # Check that save function was called 3 times (specified datetimes in loop, no separate final)
-        assert mock_save.call_count == 3
+        # Check that states.nc file contains 3 timesteps (specified datetimes)
+        states_file = tmp_path / "states" / "states.nc"
+        assert states_file.exists()
+
+        import xarray as xr
+
+        ds = xr.open_dataset(states_file)
+        assert len(ds.time) == 3
+        ds.close()
 
     def test_run_warns_about_missing_output_list_states(
         self, simple_gisdata, simple_meteo, simple_config, tmp_path, caplog

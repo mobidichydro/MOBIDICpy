@@ -311,6 +311,11 @@ class OutputStatesSettings(BaseModel):
         default_factory=list,
         description="List of datetime strings (YYYY-MM-DD HH:MM:SS) to save (used when output_states='list')",
     )
+    flushing: Optional[int] = Field(
+        -1,
+        description="How often to flush states to disk during simulation. "
+        "Positive integer N = flush every N timesteps, -1 = flush only at end",
+    )
 
     @field_validator("output_interval")
     @classmethod
@@ -338,6 +343,16 @@ class OutputStatesSettings(BaseModel):
                     f"output_list[{i}] = '{date_str}' is not a valid datetime. "
                     f"Expected format: 'YYYY-MM-DD HH:MM:SS'. Error: {e}"
                 ) from e
+        return v
+
+    @field_validator("flushing")
+    @classmethod
+    def check_flushing_valid(cls, v: Optional[int]) -> Optional[int]:
+        """Validate that flushing is either -1 or a positive integer."""
+        if v is None:
+            return -1
+        if v != -1 and v <= 0:
+            raise ValueError("flushing must be either -1 (flush at end) or a positive integer")
         return v
 
     @model_validator(mode="after")

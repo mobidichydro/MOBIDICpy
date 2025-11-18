@@ -345,14 +345,19 @@ output_states_settings:
 
   # OPTIONAL: Which time steps to save
   # [one among the following options: 'all' (default), 'final', 'list']
-  output_states: list
+  output_states: final
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
   output_interval: 
 
   # OPTIONAL: List of time steps to save, as dates with format 'YYYY-MM-DD HH:MM:SS'. Used with output_states=list.
-  output_list: ['2023-11-04 23:00:00']
+  output_list: []
+
+  # OPTIONAL: How often to flush states to disk during simulation (controls memory usage)
+  # [positive integer N = flush every N timesteps, -1 = flush only at end (default)]
+  # Examples:
+  flushing:
 
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
