@@ -18,58 +18,88 @@ State files enable:
 - **Model evaluation**: Compare simulated states against observations
 - **Ensemble runs**: Initialize multiple simulations from different states
 
-## Functions
+## Classes and Functions
 
-::: mobidic.io.state.save_state
+::: mobidic.io.state.StateWriter
 
 ::: mobidic.io.state.load_state
 
 ## Examples
 
-### Saving State During Simulation
+### Saving States Incrementally with StateWriter
 
 ```python
-from mobidic import Simulation, load_config, load_gisdata, MeteoData
-from datetime import datetime
+from mobidic.io import StateWriter
+from mobidic import load_config, load_gisdata
+from datetime import datetime, timedelta
 
-# Initialize and run simulation
+# Load configuration and data
 config = load_config("config.yaml")
 gisdata = load_gisdata("gisdata.nc", "network.parquet")
-forcing = MeteoData.from_netcdf("meteo.nc")
-sim = Simulation(gisdata, forcing, config)
 
-results = sim.run("2020-01-01", "2020-12-31")
-
-# Save final state
-results.save_final_state("output/state_final.nc")
-
-# Or save with custom metadata
-results.save_final_state(
-    "output/state_final.nc",
+# Create StateWriter with flushing every 10 timesteps
+with StateWriter(
+    output_path="output/states.nc",
+    grid_metadata=gisdata.metadata,
+    network_size=len(gisdata.network),
+    output_states=config.output_states,
+    flushing=10,  # Flush every 10 timesteps (-1 = only at end)
     add_metadata={
         "simulation_version": "v1.0",
         "calibration_run": "baseline",
         "notes": "Calibration run with default parameters"
     }
+) as writer:
+    # Simulation loop
+    current_time = datetime(2020, 1, 1)
+    dt = timedelta(seconds=900)  # 15-minute timesteps
+
+    for step in range(num_steps):
+        # ... run simulation step ...
+        # state = perform_simulation_step(...)
+
+        # Append state to file (buffered)
+        writer.append_state(state, current_time)
+        current_time += dt
+
+    # States are automatically flushed and file closed when exiting context
+
+# Alternatively, manually manage the writer
+writer = StateWriter(
+    output_path="output/states.nc",
+    grid_metadata=gisdata.metadata,
+    network_size=len(gisdata.network),
+    output_states=config.output_states,
+    flushing=-1,  # Only flush at end
 )
+
+for step in range(num_steps):
+    # ... simulation ...
+    writer.append_state(state, current_time)
+    current_time += dt
+
+writer.close()  # Don't forget to close!
 ```
 
-### Manual State Saving
+### Saving Only Final State
 
 ```python
-from mobidic.io import save_state
+from mobidic.io import StateWriter
 from datetime import datetime
 
-# After running simulation
-save_state(
-    state=sim.state,
-    output_path="output/state_2020-06-15.nc",
-    time=datetime(2020, 6, 15),
-    grid_metadata=sim.gisdata.metadata,
-    network_size=len(sim.network),
+# Create writer with flushing=-1 (only flush at end)
+writer = StateWriter(
+    output_path="output/state_final.nc",
+    grid_metadata=gisdata.metadata,
+    network_size=len(gisdata.network),
     output_states=config.output_states,
-    add_metadata={"run_type": "spinup"}
+    flushing=-1,
+    add_metadata={"run_type": "final_state"}
 )
+
+# Only save the final state
+writer.append_state(final_state, datetime(2020, 12, 31, 23, 45))
+writer.close()
 ```
 
 ### Loading State for Warm Start
@@ -78,9 +108,9 @@ save_state(
 from mobidic.io import load_state
 from mobidic import Simulation
 
-# Load previously saved state
+# Load last timestep from multi-timestep file (default)
 state, time, metadata = load_state(
-    input_path="output/state_2020-06-15.nc",
+    input_path="output/states.nc",
     network_size=1235  # Number of reaches in network
 )
 
@@ -88,6 +118,19 @@ print(f"Loaded state at {time}")
 print(f"Grid shape: {metadata['shape']}")
 print(f"Mean capillary water: {state.wc.mean():.3f} m")
 print(f"Mean discharge: {state.discharge.mean():.3f} m³/s")
+
+# Load specific timestep (e.g., first timestep)
+state_first, time_first, _ = load_state(
+    input_path="output/states.nc",
+    network_size=1235,
+    time_index=0  # 0 = first, -1 = last (default)
+)
+
+# Load from single-timestep file
+state_final, time_final, _ = load_state(
+    input_path="output/state_final.nc",
+    network_size=1235
+)
 
 # Use state to initialize simulation
 sim = Simulation(gisdata, forcing, config)
@@ -103,31 +146,52 @@ results = sim.run("2020-06-15", "2020-12-31")
 import xarray as xr
 import matplotlib.pyplot as plt
 
-# Open state file
-ds = xr.open_dataset("output/state_final.nc")
+# Open multi-timestep state file
+ds = xr.open_dataset("output/states.nc")
 
 # Examine contents
 print(ds)
 print(f"\nVariables: {list(ds.data_vars)}")
 print(f"Coordinates: {list(ds.coords)}")
-print(f"Time: {ds.time.values}")
+print(f"Number of timesteps: {len(ds.time)}")
+print(f"Time range: {ds.time.values[0]} to {ds.time.values[-1]}")
 
-# Plot capillary water content
+# Plot capillary water content at last timestep
 if "Wc" in ds:
     fig, ax = plt.subplots(figsize=(10, 8))
-    ds["Wc"].plot(ax=ax, cmap="Blues", cbar_kwargs={"label": "Wc [m]"})
-    ax.set_title("Capillary Water Content")
+    ds["Wc"].isel(time=-1).plot(ax=ax, cmap="Blues", cbar_kwargs={"label": "Wc [m]"})
+    ax.set_title(f"Capillary Water Content at {ds.time.values[-1]}")
     plt.savefig("output/Wc_map.png")
 
-# Plot discharge along network
+# Plot time series of mean soil moisture
+if "Wc" in ds:
+    mean_wc = ds["Wc"].mean(dim=["x", "y"])
+    plt.figure(figsize=(12, 4))
+    mean_wc.plot()
+    plt.ylabel("Mean Wc [m]")
+    plt.title("Mean Capillary Water Content Over Time")
+    plt.grid(True)
+    plt.savefig("output/Wc_timeseries.png")
+
+# Plot discharge along network at last timestep
 if "discharge" in ds:
     plt.figure(figsize=(12, 4))
-    plt.plot(ds["reach"], ds["discharge"], 'b-', linewidth=0.5)
+    plt.plot(ds["reach"], ds["discharge"].isel(time=-1), 'b-', linewidth=0.5)
     plt.xlabel("Reach ID")
     plt.ylabel("Discharge [m³/s]")
-    plt.title("River Discharge")
+    plt.title(f"River Discharge at {ds.time.values[-1]}")
     plt.grid(True)
     plt.savefig("output/discharge_profile.png")
+
+# Plot discharge time series for a specific reach
+if "discharge" in ds:
+    reach_id = 500  # Example reach
+    plt.figure(figsize=(12, 4))
+    ds["discharge"].isel(reach=reach_id).plot()
+    plt.ylabel("Discharge [m³/s]")
+    plt.title(f"Discharge Time Series for Reach {reach_id}")
+    plt.grid(True)
+    plt.savefig("output/discharge_ts.png")
 
 ds.close()
 ```
@@ -137,16 +201,19 @@ ds.close()
 ```python
 import xarray as xr
 import numpy as np
+import matplotlib.pyplot as plt
 
-# Load two states to compare
-ds1 = xr.open_dataset("output/state_run1.nc")
-ds2 = xr.open_dataset("output/state_run2.nc")
+# Load two state files to compare
+ds1 = xr.open_dataset("output/states_run1.nc")
+ds2 = xr.open_dataset("output/states_run2.nc")
 
-# Compare capillary water
+# Compare capillary water at last timestep
 if "Wc" in ds1 and "Wc" in ds2:
-    diff = ds1["Wc"] - ds2["Wc"]
+    wc1_final = ds1["Wc"].isel(time=-1)
+    wc2_final = ds2["Wc"].isel(time=-1)
+    diff = wc1_final - wc2_final
 
-    print(f"Wc difference statistics:")
+    print(f"Wc difference statistics (final timestep):")
     print(f"  Mean: {float(diff.mean()):.6f} m")
     print(f"  Std: {float(diff.std()):.6f} m")
     print(f"  Max abs diff: {float(np.abs(diff).max()):.6f} m")
@@ -156,6 +223,20 @@ if "Wc" in ds1 and "Wc" in ds2:
     diff.plot(ax=ax, cmap="RdBu_r", center=0)
     ax.set_title("Capillary Water Difference (Run1 - Run2)")
     plt.savefig("output/Wc_diff.png")
+
+# Compare time series
+if "Wc" in ds1 and "Wc" in ds2:
+    mean_wc1 = ds1["Wc"].mean(dim=["x", "y"])
+    mean_wc2 = ds2["Wc"].mean(dim=["x", "y"])
+
+    plt.figure(figsize=(12, 4))
+    mean_wc1.plot(label="Run 1")
+    mean_wc2.plot(label="Run 2")
+    plt.ylabel("Mean Wc [m]")
+    plt.title("Mean Capillary Water Content Comparison")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("output/Wc_comparison.png")
 
 ds1.close()
 ds2.close()
@@ -191,38 +272,44 @@ output_states_settings:
 NetCDF state files contain:
 
 ### Dimensions
+- `time`: Unlimited dimension for multiple timesteps
 - `x`: Grid columns
 - `y`: Grid rows
 - `reach`: Number of reaches (if discharge enabled)
 
 ### Coordinates
+- `time(time)`: Simulation time [datetime64]
 - `x(x)`: X coordinates [m]
 - `y(y)`: Y coordinates [m]
 - `reach(reach)`: Reach indices [dimensionless]
-- `time`: Simulation time [datetime64]
 
 ### Data Variables
-- `Wc(y, x)`: Capillary water content [m]
-- `Wg(y, x)`: Gravitational water content [m]
-- `Wp(y, x)`: Plant/canopy water content [m] (optional)
-- `Ws(y, x)`: Surface water content [m]
-- `discharge(reach)`: River discharge [m³/s] (if enabled)
-- `lateral_inflow(reach)`: Lateral inflow to reaches [m³/s] (if enabled)
-- `crs`: Grid mapping (CRS metadata)
+- `Wc(time, y, x)`: Capillary water content [m] (if enabled)
+- `Wg(time, y, x)`: Gravitational water content [m] (if enabled)
+- `Wp(time, y, x)`: Plant/canopy water content [m] (optional, if enabled)
+- `Ws(time, y, x)`: Surface water content [m] (if enabled)
+- `discharge(time, reach)`: River discharge [m³/s] (if enabled)
+- `lateral_inflow(time, reach)`: Lateral inflow to reaches [m³/s] (if enabled)
+- `crs()`: Grid mapping (CRS metadata, scalar)
 
 ### Global Attributes
-- `title`: "MOBIDIC Simulation State"
-- `source`: "MOBIDICpy vX.X.X"
+- `title`: "MOBIDIC simulation states"
+- `source`: "MOBIDICpy simulation"
 - `Conventions`: "CF-1.12"
-- `creation_date`: ISO 8601 timestamp
+- `history`: Creation timestamp with MOBIDICpy version
 - Custom metadata from `add_metadata` parameter
 
 ## Design Features
 
 - **CF-1.12 compliant**: Follows Climate and Forecast metadata conventions
+- **Incremental writing**: StateWriter appends states to a single file with unlimited time dimension
+- **Memory efficient**: Configurable buffering with periodic flushing to disk
+- **Fast append mode**: Uses netCDF4 library for efficient appending (avoids read-concatenate-write)
 - **Compression**: zlib compression (level 4) for efficient storage
 - **Selective saving**: Only configured state variables are saved
+- **Context manager support**: Automatic resource cleanup with `with` statement
 - **Flexible loading**: Missing variables initialized with sensible defaults (NaN for grids, zeros for networks)
+- **Multi-timestep support**: Can load any timestep from multi-timestep files
 - **CRS preservation**: Coordinate Reference System stored as WKT
 - **Robust error handling**: Clear warnings for missing data or size mismatches
 
