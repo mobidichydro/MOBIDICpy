@@ -923,6 +923,42 @@ class Simulation:
 
         return lateral_inflow
 
+    def _should_save_state(self, step: int, current_time: datetime) -> bool:
+        """Determine if state should be saved at current timestep.
+
+        Args:
+            step: Current timestep index (0-indexed)
+            current_time: Current simulation datetime
+
+        Returns:
+            True if state should be saved, False otherwise
+        """
+        state_settings = self.config.output_states_settings
+
+        if state_settings.output_states == "final":
+            # Only save final state (handled after loop)
+            return False
+        elif state_settings.output_states == "all":
+            # Save at intervals specified by output_interval
+            if state_settings.output_interval is None:
+                # No interval specified, save every timestep
+                return True
+            else:
+                # Check if enough time has elapsed since start
+                # We save at multiples of output_interval
+                interval_steps = int(state_settings.output_interval / self.dt)
+                return (step + 1) % interval_steps == 0
+        elif state_settings.output_states == "list":
+            # Save at specific datetimes specified in output_list
+            # Convert datetime strings to datetime objects and check if current_time matches
+            for date_str in state_settings.output_list:
+                target_time = datetime.fromisoformat(date_str.replace(" ", "T"))
+                if current_time == target_time:
+                    return True
+            return False
+        else:
+            return False
+
     def run(
         self,
         start_date: str | datetime,
@@ -955,8 +991,6 @@ class Simulation:
             start_date = datetime.fromisoformat(start_date)
         if isinstance(end_date, str):
             end_date = datetime.fromisoformat(end_date)
-
-        logger.info(f"Starting simulation: {start_date} to {end_date}, dt={self.dt}s")
 
         # Initialize state
         self.state = self._initial_state()
@@ -999,6 +1033,11 @@ class Simulation:
         steps_per_intervals = max(1, n_steps // 20)
         progress_step_interval = steps_per_intervals
         progress_time_interval = 30.0  # seconds
+
+        # Prepare states directory for intermediate state saving
+        states_dir = Path(self.config.paths.states)
+        states_dir.mkdir(parents=True, exist_ok=True)
+        state_settings = self.config.output_states_settings
 
         # Main time loop
         logger.info("Starting simulation main loop")
@@ -1185,6 +1224,28 @@ class Simulation:
             lateral_inflow_ts.append(lateral_inflow.copy())
             time_ts.append(current_time)
 
+            # 9. Save intermediate states if configured
+            if self._should_save_state(step, current_time):
+                state_filename = f"state_{current_time.strftime('%Y%m%d_%H%M%S')}.nc"
+                state_path = states_dir / state_filename
+                logger.debug(f"Saving intermediate state at step {step + 1}/{n_steps}")
+
+                from mobidic.io import save_state
+
+                save_state(
+                    state=self.state,
+                    output_path=state_path,
+                    time=current_time,
+                    grid_metadata=self.gisdata.metadata,
+                    network_size=len(self.network),
+                    output_states=self.config.output_states,
+                    add_metadata={
+                        "basin_id": self.config.basin.id,
+                        "paramset_id": self.config.basin.paramset_id,
+                        "timestep": step,
+                    },
+                )
+
             # Log progress based on step interval or time interval (whichever comes first)
             current_wall_time = time.time()
             time_since_last_log = current_wall_time - last_log_time
@@ -1271,11 +1332,9 @@ class Simulation:
                 selected_reaches=selected_reaches,
             )
 
-        # Save final state if enabled
-        states_dir = Path(self.config.paths.states)
-        states_dir.mkdir(parents=True, exist_ok=True)
-        state_settings = self.config.output_states_settings
-
+        # Save final state if enabled (states_dir already created earlier in run())
+        # For "final" and "all" modes, always save final state
+        # For "list" mode, final state was already saved in loop if requested
         if state_settings.output_states in ["final", "all"]:
             final_time = results.time_series["time"][-1]
             state_filename = f"state_{final_time.strftime('%Y%m%d_%H%M%S')}.nc"

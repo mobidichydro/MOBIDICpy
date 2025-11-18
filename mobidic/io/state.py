@@ -46,8 +46,6 @@ def save_state(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info(f"Saving simulation state to NetCDF: {output_path}")
-
     # Get grid dimensions
     nrows, ncols = grid_metadata["shape"]
     resolution = grid_metadata["resolution"]
