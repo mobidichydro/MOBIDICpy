@@ -1,11 +1,10 @@
 """Tests for mobidic.io.state module."""
 
 from datetime import datetime
-from pathlib import Path
 import numpy as np
 import xarray as xr
 import pytest
-from mobidic.io.state import save_state, load_state
+from mobidic.io.state import load_state, StateWriter
 from mobidic.core.simulation import SimulationState
 from mobidic.config.schema import OutputStates
 
@@ -73,281 +72,18 @@ def minimal_states():
     )
 
 
-class TestSaveState:
-    """Tests for save_state function."""
-
-    def test_save_all_states(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test saving state with all variables enabled."""
-        output_path = tmp_path / "state_all.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-        )
-
-        # Check file exists
-        assert output_path.exists()
-
-        # Load and verify
-        ds = xr.open_dataset(output_path)
-
-        # Check all variables are present
-        assert "Wc" in ds
-        assert "Wg" in ds
-        assert "Wp" in ds
-        assert "Ws" in ds
-        assert "discharge" in ds
-        assert "lateral_inflow" in ds
-        assert "crs" in ds
-
-        # Check dimensions
-        assert ds.Wc.shape == (10, 15)
-        assert ds.discharge.shape == (5,)
-
-        # Check coordinates
-        assert "x" in ds.coords
-        assert "y" in ds.coords
-        assert "reach" in ds.coords
-        assert "time" in ds.coords
-
-        # Check data values
-        np.testing.assert_array_almost_equal(ds.Wc.values, sample_state.wc)
-        np.testing.assert_array_almost_equal(ds.discharge.values, sample_state.discharge)
-
-        ds.close()
-
-    def test_save_minimal_states(self, tmp_path, sample_state, sample_grid_metadata, minimal_states):
-        """Test saving with only required states."""
-        output_path = tmp_path / "state_minimal.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=minimal_states,
-        )
-
-        # Load and verify
-        ds = xr.open_dataset(output_path)
-
-        # Check only minimal variables are present
-        assert "Wc" in ds
-        assert "Wg" in ds
-        assert "Wp" not in ds
-        assert "Ws" not in ds
-        assert "discharge" not in ds
-        assert "lateral_inflow" not in ds
-
-        # Check reach coordinate not present when discharge disabled
-        assert "reach" not in ds.coords
-
-        ds.close()
-
-    def test_save_without_plant_water(self, tmp_path, sample_grid_metadata, all_states_enabled):
-        """Test saving state when plant water is None."""
-        nrows, ncols = sample_grid_metadata["shape"]
-        n_reaches = 5
-
-        # Create state without plant water
-        state = SimulationState(
-            wc=np.random.rand(nrows, ncols) * 0.2,
-            wg=np.random.rand(nrows, ncols) * 0.1,
-            wp=None,  # No plant water
-            ws=np.random.rand(nrows, ncols) * 0.01,
-            discharge=np.random.rand(n_reaches) * 10.0,
-            lateral_inflow=np.random.rand(n_reaches) * 2.0,
-        )
-
-        output_path = tmp_path / "state_no_wp.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=n_reaches,
-            output_states=all_states_enabled,
-        )
-
-        # Load and verify
-        ds = xr.open_dataset(output_path)
-
-        # Wp should not be present even though soil_plant is True
-        assert "Wp" not in ds
-        assert "Wc" in ds
-        assert "Wg" in ds
-
-        ds.close()
-
-    def test_save_with_metadata(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test saving with additional metadata."""
-        output_path = tmp_path / "state_metadata.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        metadata = {
-            "basin": "Test Basin",
-            "model_version": "0.0.1",
-            "notes": "Test simulation",
-        }
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-            add_metadata=metadata,
-        )
-
-        # Load and check global attributes
-        ds = xr.open_dataset(output_path)
-
-        assert ds.attrs["basin"] == "Test Basin"
-        assert ds.attrs["model_version"] == "0.0.1"
-        assert ds.attrs["notes"] == "Test simulation"
-
-        # Check standard attributes
-        assert ds.attrs["Conventions"] == "CF-1.12"
-        assert ds.attrs["title"] == "MOBIDIC simulation state"
-        assert ds.attrs["simulation_time"] == time.isoformat()
-
-        ds.close()
-
-    def test_save_creates_parent_directory(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test that save_state creates parent directories if needed."""
-        output_path = tmp_path / "nested" / "dirs" / "state.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        assert not output_path.parent.exists()
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-        )
-
-        assert output_path.parent.exists()
-        assert output_path.exists()
-
-    def test_save_string_path(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test that function accepts string paths."""
-        output_path = str(tmp_path / "state.nc")
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-        )
-
-        assert Path(output_path).exists()
-
-    def test_cf_compliant_metadata(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test that output is CF-1.12 compliant."""
-        output_path = tmp_path / "state_cf.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-        )
-
-        ds = xr.open_dataset(output_path)
-
-        # Check CF conventions
-        assert ds.attrs["Conventions"] == "CF-1.12"
-
-        # Check coordinate attributes
-        assert ds.x.attrs["standard_name"] == "projection_x_coordinate"
-        assert ds.x.attrs["axis"] == "X"
-        assert ds.y.attrs["standard_name"] == "projection_y_coordinate"
-        assert ds.y.attrs["axis"] == "Y"
-
-        # Check variable attributes include grid_mapping
-        assert ds.Wc.attrs["grid_mapping"] == "crs"
-        assert ds.Wc.attrs["units"] == "m"
-
-        # Check CRS variable exists
-        assert "crs" in ds
-        assert "crs_wkt" in ds.crs.attrs
-
-        ds.close()
-
-    def test_compression_enabled(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test that NetCDF compression is enabled."""
-        output_path = tmp_path / "state_compressed.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-        )
-
-        # Open and check encoding
-        ds = xr.open_dataset(output_path)
-
-        # NetCDF4 with compression should be used
-        assert ds is not None
-
-        # File should exist and be reasonably sized
-        file_size = output_path.stat().st_size
-        assert file_size > 0
-        assert file_size < 1000000  # Should be less than 1MB with compression
-
-        ds.close()
-
-    def test_coordinate_arrays(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
-        """Test that coordinate arrays are correctly computed."""
-        output_path = tmp_path / "state_coords.nc"
-        time = datetime(2020, 6, 15, 12, 0)
-
-        save_state(
-            state=sample_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=sample_grid_metadata,
-            network_size=5,
-            output_states=all_states_enabled,
-        )
-
-        ds = xr.open_dataset(output_path)
-
-        # Check x coordinates
-        expected_x = sample_grid_metadata["xllcorner"] + np.arange(15) * 100.0
-        np.testing.assert_array_almost_equal(ds.x.values, expected_x)
-
-        # Check y coordinates
-        expected_y = sample_grid_metadata["yllcorner"] + np.arange(10) * 100.0
-        np.testing.assert_array_almost_equal(ds.y.values, expected_y)
-
-        # Check reach coordinates
-        np.testing.assert_array_equal(ds.reach.values, np.arange(5))
-
-        ds.close()
+def save_state_helper(state, output_path, time, grid_metadata, network_size, output_states, add_metadata=None):
+    """Helper function to save a single state using StateWriter (for tests)."""
+    writer = StateWriter(
+        output_path=output_path,
+        grid_metadata=grid_metadata,
+        network_size=network_size,
+        output_states=output_states,
+        flushing=-1,
+        add_metadata=add_metadata,
+    )
+    writer.append_state(state, time)
+    writer.close()
 
 
 class TestLoadState:
@@ -359,7 +95,7 @@ class TestLoadState:
         time = datetime(2020, 6, 15, 12, 0)
 
         # Save first
-        save_state(
+        save_state_helper(
             state=sample_state,
             output_path=output_path,
             time=time,
@@ -400,7 +136,7 @@ class TestLoadState:
         time = datetime(2020, 6, 15, 12, 0)
 
         # Save
-        save_state(
+        save_state_helper(
             state=sample_state,
             output_path=output_path,
             time=time,
@@ -587,7 +323,7 @@ class TestLoadState:
         time = datetime(2020, 6, 15, 12, 0)
 
         # Save with 5 reaches
-        save_state(
+        save_state_helper(
             state=sample_state,
             output_path=output_path,
             time=time,
@@ -608,7 +344,7 @@ class TestLoadState:
         time = datetime(2020, 6, 15, 12, 30, 45)
 
         # Save
-        save_state(
+        save_state_helper(
             state=sample_state,
             output_path=output_path,
             time=time,
@@ -642,7 +378,7 @@ class TestLoadState:
         time = datetime(2020, 6, 15, 12, 0)
 
         # Save with minimal states
-        save_state(
+        save_state_helper(
             state=sample_state,
             output_path=output_path,
             time=time,
@@ -689,7 +425,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_single_cell.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=state,
             output_path=output_path,
             time=time,
@@ -727,7 +463,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_large.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=state,
             output_path=output_path,
             time=time,
@@ -762,7 +498,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_zeros.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=state,
             output_path=output_path,
             time=time,
@@ -793,7 +529,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_tiny.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=state,
             output_path=output_path,
             time=time,
@@ -837,7 +573,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_no_network.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=state,
             output_path=output_path,
             time=time,
@@ -881,7 +617,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_diff_res.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=state,
             output_path=output_path,
             time=time,
@@ -908,7 +644,7 @@ class TestEdgeCases:
         output_path = tmp_path / "state_crs.nc"
         time = datetime(2020, 1, 1)
 
-        save_state(
+        save_state_helper(
             state=sample_state,
             output_path=output_path,
             time=time,
