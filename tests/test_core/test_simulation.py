@@ -861,3 +861,81 @@ class TestSimulationRun:
 
         # Check that save function was called 3 times (specified datetimes in loop, no separate final)
         assert mock_save.call_count == 3
+
+    def test_run_warns_about_missing_output_list_states(
+        self, simple_gisdata, simple_meteo, simple_config, tmp_path, caplog
+    ):
+        """Test that run() warns when output_list contains datetimes not in simulation timesteps."""
+        import logging
+
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "list"
+        simple_config.output_states_settings.output_list = [
+            "2020-01-01 00:00:00",  # Valid - matches timestep
+            "2020-01-01 00:17:00",  # Invalid - doesn't match any timestep (timestep=900s=15min)
+            "2020-01-01 00:30:00",  # Valid
+            "2020-01-01 00:42:30",  # Invalid - doesn't match any timestep
+            "2020-01-01 05:00:00",  # Invalid - outside simulation period
+        ]
+
+        # Capture loguru logs (loguru doesn't use standard logging)
+        # We need to use a different approach for loguru
+        from loguru import logger
+        import sys
+
+        # Store warnings
+        warnings = []
+
+        def sink(message):
+            warnings.append(message.record["message"])
+
+        # Add custom sink to capture logs
+        logger.add(sink, level="WARNING")
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 1 hour with 900s timestep (5 timesteps: 00:00, 00:15, 00:30, 00:45, 01:00)
+        _ = sim.run("2020-01-01 00:00", "2020-01-01 01:00")
+
+        # Check that warnings were issued for the 3 invalid datetimes
+        warning_messages = [w for w in warnings if "will NOT be saved" in w]
+        assert len(warning_messages) > 0
+
+        # Check that the specific missing states are mentioned in warnings
+        all_warnings = " ".join(warnings)
+        assert "2020-01-01 00:17:00" in all_warnings
+        assert "2020-01-01 00:42:30" in all_warnings
+        assert "2020-01-01 05:00:00" in all_warnings
+
+    def test_run_no_warning_when_all_output_list_states_valid(
+        self, simple_gisdata, simple_meteo, simple_config, tmp_path
+    ):
+        """Test that run() does not warn when all output_list datetimes are valid."""
+        from loguru import logger
+
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "list"
+        simple_config.output_states_settings.output_list = [
+            "2020-01-01 00:00:00",  # Valid
+            "2020-01-01 00:15:00",  # Valid
+            "2020-01-01 00:30:00",  # Valid
+        ]
+
+        # Store warnings
+        warnings = []
+
+        def sink(message):
+            if message.record["level"].name == "WARNING":
+                warnings.append(message.record["message"])
+
+        # Add custom sink to capture logs
+        logger.add(sink, level="WARNING")
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 1 hour with 900s timestep (5 timesteps: 00:00, 00:15, 00:30, 00:45, 01:00)
+        _ = sim.run("2020-01-01 00:00", "2020-01-01 01:00")
+
+        # Check that no warnings about missing states were issued
+        warning_messages = [w for w in warnings if "will NOT be saved" in w]
+        assert len(warning_messages) == 0

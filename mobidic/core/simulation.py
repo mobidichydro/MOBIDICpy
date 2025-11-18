@@ -1010,6 +1010,33 @@ class Simulation:
         simulation_times = pd.date_range(start=start_date, periods=n_steps, freq=f"{self.dt}s")
         self._time_indices_cache = self._precompute_time_indices(simulation_times, variables=["precipitation"])
 
+        # Validate output_list if using list-based state output
+        state_settings = self.config.output_states_settings
+        if state_settings.output_states == "list" and state_settings.output_list:
+            logger.debug("Validating output_list against simulation time steps")
+            missing_states = []
+            for date_str in state_settings.output_list:
+                try:
+                    target_time = datetime.fromisoformat(date_str.replace(" ", "T"))
+                    # Check if target_time exists in simulation_times
+                    if target_time not in simulation_times:
+                        missing_states.append(date_str)
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid datetime format in output_list: '{date_str}' - {e}")
+                    missing_states.append(date_str)
+
+            if missing_states:
+                logger.warning(
+                    f"The following {len(missing_states)} state(s) from output_list "
+                    f"will NOT be saved (not found among simulation time steps):"
+                )
+                for missing_state in missing_states:
+                    logger.warning(f"  - {missing_state}")
+                logger.warning(
+                    f"Simulation runs from {start_date.isoformat()} to {end_date.isoformat()} "
+                    f"with timestep={self.dt}s"
+                )
+
         # Get total soil capacity
         wtot0 = self.wc0 + self.wg0
 

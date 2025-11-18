@@ -352,7 +352,7 @@ output_states_settings:
   output_interval: 
 
   # OPTIONAL: List of time steps to save, as dates with format 'YYYY-MM-DD HH:MM:SS'. Used with output_states=list.
-  output_list: ['2023-11-04 22:44:00','2023-11-04 23:00:00']
+  output_list: ['2023-11-04 23:00:00']
 
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
