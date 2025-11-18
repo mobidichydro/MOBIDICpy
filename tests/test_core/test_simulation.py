@@ -866,7 +866,6 @@ class TestSimulationRun:
         self, simple_gisdata, simple_meteo, simple_config, tmp_path, caplog
     ):
         """Test that run() warns when output_list contains datetimes not in simulation timesteps."""
-        import logging
 
         simple_config.paths.output = str(tmp_path / "output")
         simple_config.paths.states = str(tmp_path / "states")
@@ -882,7 +881,6 @@ class TestSimulationRun:
         # Capture loguru logs (loguru doesn't use standard logging)
         # We need to use a different approach for loguru
         from loguru import logger
-        import sys
 
         # Store warnings
         warnings = []

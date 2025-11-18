@@ -1033,8 +1033,7 @@ class Simulation:
                 for missing_state in missing_states:
                     logger.warning(f"  - {missing_state}")
                 logger.warning(
-                    f"Simulation runs from {start_date.isoformat()} to {end_date.isoformat()} "
-                    f"with timestep={self.dt}s"
+                    f"Simulation runs from {start_date.isoformat()} to {end_date.isoformat()} with timestep={self.dt}s"
                 )
 
         # Get total soil capacity
