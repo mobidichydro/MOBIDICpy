@@ -291,7 +291,7 @@ simulation:
   # [one among the following options 'None', '1L', '5L', 'Snow']
   energy_balance: None
 
-  ## OPTIONAL: Precipitation interpolation method
+  ## OPTIONAL: Precipitation spatial interpolation method
   # [one among the following options: 'Nearest', 'IDW' (default)]
   precipitation_interp: IDW
 
@@ -345,14 +345,14 @@ output_states_settings:
 
   # OPTIONAL: Which time steps to save
   # [one among the following options: 'all' (default), 'final', 'list']
-  output_states: final
+  output_states: list
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
-  output_interval:
+  output_interval: 
 
-  # OPTIONAL: List of time steps to save, as integers. Used with output_states=list.
-  output_list: []
+  # OPTIONAL: List of time steps to save, as dates with format 'YYYY-MM-DD HH:MM:SS'. Used with output_states=list.
+  output_list: ['2023-11-04 22:44:00','2023-11-04 23:00:00']
 
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs

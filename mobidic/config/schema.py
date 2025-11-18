@@ -307,8 +307,9 @@ class OutputStatesSettings(BaseModel):
         "final", description="Which time steps to save: 'all', 'final', or 'list'"
     )
     output_interval: Optional[float] = Field(None, description="Time interval for state output, in seconds")
-    output_list: Optional[list[int]] = Field(
-        default_factory=list, description="List of time step indices to save (used when output_states='list')"
+    output_list: Optional[list[str]] = Field(
+        default_factory=list,
+        description="List of datetime strings (YYYY-MM-DD HH:MM:SS) to save (used when output_states='list')",
     )
 
     @field_validator("output_interval")
@@ -317,6 +318,26 @@ class OutputStatesSettings(BaseModel):
         """Validate that output_interval is positive if provided."""
         if v is not None and v <= 0:
             raise ValueError("output_interval must be positive")
+        return v
+
+    @field_validator("output_list")
+    @classmethod
+    def validate_datetime_strings(cls, v: Optional[list[str]]) -> Optional[list[str]]:
+        """Validate that output_list contains valid datetime strings."""
+        if v is None:
+            return v
+
+        from datetime import datetime
+
+        for i, date_str in enumerate(v):
+            try:
+                # Try to parse as datetime
+                datetime.fromisoformat(date_str.replace(" ", "T"))
+            except (ValueError, AttributeError) as e:
+                raise ValueError(
+                    f"output_list[{i}] = '{date_str}' is not a valid datetime. "
+                    f"Expected format: 'YYYY-MM-DD HH:MM:SS'. Error: {e}"
+                ) from e
         return v
 
     @model_validator(mode="after")
