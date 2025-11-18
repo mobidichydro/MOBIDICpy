@@ -581,6 +581,70 @@ class TestSimulationInterpolation:
 class TestSimulationRun:
     """Tests for Simulation.run() method."""
 
+    def test_should_save_state_final_mode(self, simple_gisdata, simple_meteo, simple_config):
+        """Test _should_save_state() for 'final' mode."""
+        from datetime import datetime
+
+        simple_config.output_states_settings.output_states = "final"
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Should never save in loop for 'final' mode
+        assert sim._should_save_state(0, datetime(2020, 1, 1, 0, 0)) is False
+        assert sim._should_save_state(5, datetime(2020, 1, 1, 1, 15)) is False
+        assert sim._should_save_state(10, datetime(2020, 1, 1, 2, 30)) is False
+
+    def test_should_save_state_all_mode_no_interval(self, simple_gisdata, simple_meteo, simple_config):
+        """Test _should_save_state() for 'all' mode without interval (every timestep)."""
+        from datetime import datetime
+
+        simple_config.output_states_settings.output_states = "all"
+        simple_config.output_states_settings.output_interval = None
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Should save every timestep
+        assert sim._should_save_state(0, datetime(2020, 1, 1, 0, 0)) is True
+        assert sim._should_save_state(1, datetime(2020, 1, 1, 0, 15)) is True
+        assert sim._should_save_state(10, datetime(2020, 1, 1, 2, 30)) is True
+
+    def test_should_save_state_all_mode_with_interval(self, simple_gisdata, simple_meteo, simple_config):
+        """Test _should_save_state() for 'all' mode with interval."""
+        from datetime import datetime
+
+        simple_config.output_states_settings.output_states = "all"
+        simple_config.output_states_settings.output_interval = 1800.0  # 2 timesteps (1800s / 900s)
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Should save at multiples of interval_steps
+        # interval_steps = 1800 / 900 = 2
+        # Save at steps where (step+1) % 2 == 0: steps 1, 3, 5, 7, etc.
+        assert sim._should_save_state(0, datetime(2020, 1, 1, 0, 0)) is False
+        assert sim._should_save_state(1, datetime(2020, 1, 1, 0, 15)) is True
+        assert sim._should_save_state(2, datetime(2020, 1, 1, 0, 30)) is False
+        assert sim._should_save_state(3, datetime(2020, 1, 1, 0, 45)) is True
+        assert sim._should_save_state(4, datetime(2020, 1, 1, 1, 0)) is False
+        assert sim._should_save_state(5, datetime(2020, 1, 1, 1, 15)) is True
+
+    def test_should_save_state_list_mode(self, simple_gisdata, simple_meteo, simple_config):
+        """Test _should_save_state() for 'list' mode."""
+        from datetime import datetime
+
+        simple_config.output_states_settings.output_states = "list"
+        simple_config.output_states_settings.output_list = [
+            "2020-01-01 00:00:00",
+            "2020-01-01 00:45:00",
+            "2020-01-01 01:15:00",
+        ]
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Should only save at specified datetimes
+        assert sim._should_save_state(0, datetime(2020, 1, 1, 0, 0)) is True
+        assert sim._should_save_state(1, datetime(2020, 1, 1, 0, 15)) is False
+        assert sim._should_save_state(2, datetime(2020, 1, 1, 0, 30)) is False
+        assert sim._should_save_state(3, datetime(2020, 1, 1, 0, 45)) is True
+        assert sim._should_save_state(4, datetime(2020, 1, 1, 1, 0)) is False
+        assert sim._should_save_state(5, datetime(2020, 1, 1, 1, 15)) is True
+        assert sim._should_save_state(6, datetime(2020, 1, 1, 1, 30)) is False
+
     def test_run_minimal(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test running a minimal simulation."""
         # Set output paths to tmp_path
@@ -721,5 +785,79 @@ class TestSimulationRun:
         sim = Simulation(simple_gisdata, simple_meteo, simple_config)
         _ = sim.run("2020-01-01 00:00", "2020-01-01 01:00")
 
-        # Check that save function was called
+        # Check that save function was called once (only final state)
         mock_save.assert_called_once()
+
+    @patch("mobidic.io.save_state")
+    def test_run_saves_all_states_every_timestep(
+        self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path
+    ):
+        """Test that run() saves states at every timestep when output_states='all' and no interval."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "all"
+        simple_config.output_states_settings.output_interval = None
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 2 hours with 900s timestep = 9 timesteps (inclusive of end time)
+        _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
+
+        # Check that save function was called 9 times (in loop) + 1 time (final) = 10 times
+        assert mock_save.call_count == 10
+
+    @patch("mobidic.io.save_state")
+    def test_run_saves_all_states_with_interval(self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test that run() saves states at specified interval when output_states='all'."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "all"
+        simple_config.output_states_settings.output_interval = 1800.0  # Every 2 timesteps (1800s)
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 2 hours with 900s timestep = 9 timesteps (indices 0-8)
+        # Should save at steps 1, 3, 5, 7 (4 times, when (step+1) % 2 == 0) + final state = 5 times
+        _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
+
+        # Check that save function was called 4 times (in loop) + 1 time (final) = 5 times
+        assert mock_save.call_count == 5
+
+    @patch("mobidic.io.save_state")
+    def test_run_saves_states_by_list(self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test that run() saves states at specified datetimes when output_states='list'."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "list"
+        simple_config.output_states_settings.output_list = [
+            "2020-01-01 00:00:00",
+            "2020-01-01 00:30:00",
+            "2020-01-01 01:00:00",
+            "2020-01-01 01:45:00",
+        ]
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 2 hours with 900s timestep = 9 timesteps
+        _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
+
+        # Check that save function was called 4 times (only the specified datetimes, no final state)
+        assert mock_save.call_count == 4
+
+    @patch("mobidic.io.save_state")
+    def test_run_saves_states_by_list_including_final(
+        self, mock_save, simple_gisdata, simple_meteo, simple_config, tmp_path
+    ):
+        """Test that run() saves states correctly when list includes final timestep."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "list"
+        simple_config.output_states_settings.output_list = [
+            "2020-01-01 00:00:00",
+            "2020-01-01 00:45:00",
+            "2020-01-01 02:00:00",  # Include last timestep
+        ]
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 2 hours with 900s timestep = 9 timesteps
+        _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
+
+        # Check that save function was called 3 times (specified datetimes in loop, no separate final)
+        assert mock_save.call_count == 3
