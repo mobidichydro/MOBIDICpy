@@ -27,6 +27,7 @@ from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
+from mobidic.io import StateWriter
 
 
 def _create_progress_bar(current: int, total: int, bar_length: int = 20) -> str:
@@ -101,37 +102,6 @@ class SimulationResults:
         self.time_series = {}  # Store time series data
         self.final_state = None  # Store final state
 
-    def save_states(self, output_path: str | Path, time: datetime | None = None) -> None:
-        """Save simulation states to NetCDF file.
-
-        Args:
-            output_path: Path to output NetCDF file
-            time: Time of state (if None, uses last time from time series)
-        """
-        if self.final_state is None:
-            raise ValueError("No state to save. Run simulation first.")
-
-        if self.simulation is None:
-            raise ValueError("Cannot save state without simulation object")
-
-        if time is None:
-            time = self.time_series["time"][-1]
-
-        from mobidic.io import save_state
-
-        save_state(
-            state=self.final_state,
-            output_path=output_path,
-            time=time,
-            grid_metadata=self.simulation.gisdata.metadata,
-            network_size=len(self.simulation.network),
-            output_states=self.config.output_states,
-            add_metadata={
-                "basin_id": self.config.basin.id,
-                "paramset_id": self.config.basin.paramset_id,
-            },
-        )
-
     def save_report(
         self,
         output_path: str | Path,
@@ -192,41 +162,6 @@ class SimulationResults:
             output_path=output_path,
             reach_selection=reach_selection,
             selected_reaches=selected_reaches,
-        )
-
-    def save_final_state(
-        self,
-        output_path: str | Path,
-        add_metadata: dict[str, Any] | None = None,
-    ) -> None:
-        """Save final simulation state to NetCDF file.
-
-        Args:
-            output_path: Path to output NetCDF file
-            add_metadata: Additional metadata to include in file
-        """
-        if self.final_state is None:
-            raise ValueError("No final state to save. Run simulation first.")
-
-        if self.simulation is None:
-            raise ValueError("Cannot save final state without simulation object")
-
-        if "time" not in self.time_series or not self.time_series["time"]:
-            raise ValueError("No time information available")
-
-        from mobidic.io import save_state
-
-        # Get final time
-        final_time = self.time_series["time"][-1]
-
-        save_state(
-            state=self.final_state,
-            output_path=output_path,
-            time=final_time,
-            grid_metadata=self.simulation.gisdata.metadata,
-            network_size=len(self.simulation.network),
-            output_states=self.config.output_states,
-            add_metadata=add_metadata,
         )
 
 
@@ -1060,10 +995,23 @@ class Simulation:
         progress_step_interval = steps_per_intervals
         progress_time_interval = 30.0  # seconds
 
-        # Prepare states directory for intermediate state saving
+        # Prepare states directory and initialize state writer
         states_dir = Path(self.config.paths.states)
         states_dir.mkdir(parents=True, exist_ok=True)
         state_settings = self.config.output_states_settings
+
+        # Initialize StateWriter for incremental state saving
+        state_writer = StateWriter(
+            output_path=states_dir / "states.nc",
+            grid_metadata=self.gisdata.metadata,
+            network_size=len(self.network),
+            output_states=self.config.output_states,
+            flushing=state_settings.flushing,
+            add_metadata={
+                "basin_id": self.config.basin.id,
+                "paramset_id": self.config.basin.paramset_id,
+            },
+        )
 
         # Main time loop
         logger.info("Starting simulation main loop")
@@ -1252,25 +1200,8 @@ class Simulation:
 
             # 9. Save intermediate states if configured
             if self._should_save_state(step, current_time):
-                state_filename = f"state_{current_time.strftime('%Y%m%d_%H%M%S')}.nc"
-                state_path = states_dir / state_filename
-                logger.debug(f"Saving intermediate state at step {step + 1}/{n_steps}")
-
-                from mobidic.io import save_state
-
-                save_state(
-                    state=self.state,
-                    output_path=state_path,
-                    time=current_time,
-                    grid_metadata=self.gisdata.metadata,
-                    network_size=len(self.network),
-                    output_states=self.config.output_states,
-                    add_metadata={
-                        "basin_id": self.config.basin.id,
-                        "paramset_id": self.config.basin.paramset_id,
-                        "timestep": step,
-                    },
-                )
+                logger.debug(f"Appending state to buffer at step {step + 1}/{n_steps}")
+                state_writer.append_state(self.state, current_time)
 
             # Log progress based on step interval or time interval (whichever comes first)
             current_wall_time = time.time()
@@ -1358,20 +1289,13 @@ class Simulation:
                 selected_reaches=selected_reaches,
             )
 
-        # Save final state if enabled (states_dir already created earlier in run())
-        # For "final" and "all" modes, always save final state
-        # For "list" mode, final state was already saved in loop if requested
-        if state_settings.output_states in ["final", "all"]:
+        # Save final state if enabled (for "final" mode, only save the last state)
+        if state_settings.output_states == "final":
             final_time = results.time_series["time"][-1]
-            state_filename = f"state_{final_time.strftime('%Y%m%d_%H%M%S')}.nc"
-            state_path = states_dir / state_filename
-            logger.info("Auto-saving final state")
-            results.save_final_state(
-                output_path=state_path,
-                add_metadata={
-                    "basin_id": self.config.basin.id,
-                    "paramset_id": self.config.basin.paramset_id,
-                },
-            )
+            logger.info("Saving final state")
+            state_writer.append_state(self.state, final_time)
+
+        # Close the state writer (flushes any remaining buffered states)
+        state_writer.close()
 
         return results

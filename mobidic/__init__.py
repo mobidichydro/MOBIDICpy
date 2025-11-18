@@ -33,7 +33,7 @@ from mobidic.core import (
     SimulationState,
     SimulationResults,
 )
-from mobidic.io import save_state, load_state, save_discharge_report
+from mobidic.io import load_state, StateWriter, save_discharge_report
 
 # Configure default logging behavior on package import
 # Users can reconfigure by calling configure_logger() with custom settings
@@ -68,7 +68,7 @@ __all__ = [
     "Simulation",
     "SimulationState",
     "SimulationResults",
-    "save_state",
     "load_state",
+    "StateWriter",
     "save_discharge_report",
 ]
