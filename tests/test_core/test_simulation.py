@@ -5,6 +5,7 @@ import pandas as pd
 import geopandas as gpd
 import pytest
 from datetime import datetime
+from pathlib import Path
 from shapely.geometry import LineString
 from unittest.mock import MagicMock, patch
 from mobidic.core.simulation import (
@@ -614,6 +615,30 @@ class TestSimulationRun:
         assert sim._should_save_state(5, datetime(2020, 1, 1, 1, 15)) is True
         assert sim._should_save_state(6, datetime(2020, 1, 1, 1, 30)) is False
 
+    def test_should_save_state_none_mode(self, simple_gisdata, simple_meteo, simple_config):
+        """Test _should_save_state() for None mode (no states saved)."""
+        from datetime import datetime
+
+        simple_config.output_states_settings.output_states = None
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Should never save in None mode
+        assert sim._should_save_state(0, datetime(2020, 1, 1, 0, 0)) is False
+        assert sim._should_save_state(5, datetime(2020, 1, 1, 1, 15)) is False
+        assert sim._should_save_state(10, datetime(2020, 1, 1, 2, 30)) is False
+
+    def test_should_save_state_none_string_mode(self, simple_gisdata, simple_meteo, simple_config):
+        """Test _should_save_state() for 'None' string mode (no states saved)."""
+        from datetime import datetime
+
+        simple_config.output_states_settings.output_states = "None"
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Should never save in 'None' string mode
+        assert sim._should_save_state(0, datetime(2020, 1, 1, 0, 0)) is False
+        assert sim._should_save_state(5, datetime(2020, 1, 1, 1, 15)) is False
+        assert sim._should_save_state(10, datetime(2020, 1, 1, 2, 30)) is False
+
     def test_run_minimal(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test running a minimal simulation."""
         # Set output paths to tmp_path
@@ -670,6 +695,26 @@ class TestSimulationRun:
         # Should have exactly 1 time step
         assert len(results.time_series["time"]) == 1
 
+    def test_run_with_no_state_output(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test that no state file is created when output_states is None."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = None
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Run simulation
+        results = sim.run("2020-01-01 00:00", "2020-01-01 01:00")
+
+        # Simulation should complete successfully
+        assert results.final_state is not None
+
+        # No state file should be created
+        states_dir = Path(tmp_path / "states")
+        if states_dir.exists():
+            state_files = list(states_dir.glob("*.nc"))
+            assert len(state_files) == 0, "No state files should be created when output_states=None"
+
     def test_run_state_evolution(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
         """Test that state evolves during simulation."""
         simple_config.paths.output = str(tmp_path / "output")
@@ -723,6 +768,8 @@ class TestSimulationRun:
 
         simple_config.paths.output = str(output_dir)
         simple_config.paths.states = str(states_dir)
+        # Enable state output so states_dir is created
+        simple_config.output_states_settings.output_states = "final"
 
         sim = Simulation(simple_gisdata, simple_meteo, simple_config)
         _ = sim.run("2020-01-01 00:00", "2020-01-01 00:00")
