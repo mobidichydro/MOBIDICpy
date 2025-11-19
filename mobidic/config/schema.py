@@ -303,8 +303,8 @@ class OutputStatesSettings(BaseModel):
     """Output state file settings."""
 
     output_format: Optional[Literal["netCDF"]] = Field("netCDF", description="Format for state output files")
-    output_states: Optional[Literal["all", "final", "list"]] = Field(
-        "final", description="Which time steps to save: 'all', 'final', or 'list'"
+    output_states: Optional[Literal["all", "final", "list", "None"]] = Field(
+        None, description="Which time steps to save: 'all', 'final', 'list', or 'None' (no states saved). Default: None"
     )
     output_interval: Optional[float] = Field(None, description="Time interval for state output, in seconds")
     output_list: Optional[list[str]] = Field(
