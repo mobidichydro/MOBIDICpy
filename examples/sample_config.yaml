@@ -342,7 +342,7 @@ output_states_settings:
   output_format: netCDF
 
   # OPTIONAL: Which time steps to save
-  # [one among the following options: 'all' (default), 'final', 'list']
+  # [one among the following options: 'all', 'final', 'list', 'None' (default)]
   output_states: all
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
