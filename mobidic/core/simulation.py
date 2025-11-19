@@ -995,23 +995,29 @@ class Simulation:
         progress_step_interval = steps_per_intervals
         progress_time_interval = 30.0  # seconds
 
-        # Prepare states directory and initialize state writer
-        states_dir = Path(self.config.paths.states)
-        states_dir.mkdir(parents=True, exist_ok=True)
+        # Prepare states directory and initialize state writer (if enabled)
         state_settings = self.config.output_states_settings
+        state_writer = None
 
-        # Initialize StateWriter for incremental state saving
-        state_writer = StateWriter(
-            output_path=states_dir / "states.nc",
-            grid_metadata=self.gisdata.metadata,
-            network_size=len(self.network),
-            output_states=self.config.output_states,
-            flushing=state_settings.flushing,
-            add_metadata={
-                "basin_id": self.config.basin.id,
-                "paramset_id": self.config.basin.paramset_id,
-            },
-        )
+        # Only instantiate StateWriter if state output is enabled
+        if state_settings.output_states not in [None, "None"]:
+            states_dir = Path(self.config.paths.states)
+            states_dir.mkdir(parents=True, exist_ok=True)
+
+            state_writer = StateWriter(
+                output_path=states_dir / "states.nc",
+                grid_metadata=self.gisdata.metadata,
+                network_size=len(self.network),
+                output_states=self.config.output_states,
+                flushing=state_settings.flushing,
+                add_metadata={
+                    "basin_id": self.config.basin.id,
+                    "paramset_id": self.config.basin.paramset_id,
+                },
+            )
+            logger.info(f"State output enabled: {state_settings.output_states}")
+        else:
+            logger.info("State output disabled (output_states=None)")
 
         # Main time loop
         logger.info("Starting simulation main loop")
@@ -1199,7 +1205,7 @@ class Simulation:
             time_ts.append(current_time)
 
             # 9. Save intermediate states if configured
-            if self._should_save_state(step, current_time):
+            if state_writer is not None and self._should_save_state(step, current_time):
                 logger.debug(f"Appending state to buffer at step {step + 1}/{n_steps}")
                 state_writer.append_state(self.state, current_time)
 
@@ -1290,12 +1296,13 @@ class Simulation:
             )
 
         # Save final state if enabled (for "final" mode, only save the last state)
-        if state_settings.output_states == "final":
-            final_time = results.time_series["time"][-1]
-            logger.info("Saving final state")
-            state_writer.append_state(self.state, final_time)
+        if state_writer is not None:
+            if state_settings.output_states == "final":
+                final_time = results.time_series["time"][-1]
+                logger.info("Saving final state")
+                state_writer.append_state(self.state, final_time)
 
-        # Close the state writer (flushes any remaining buffered states)
-        state_writer.close()
+            # Close the state writer (flushes any remaining buffered states)
+            state_writer.close()
 
         return results
