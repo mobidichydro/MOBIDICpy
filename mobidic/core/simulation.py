@@ -108,13 +108,16 @@ class SimulationResults:
         reach_selection: str = "all",
         selected_reaches: list[int] | None = None,
         add_metadata: dict[str, Any] | None = None,
+        output_format: str = "Parquet",
     ) -> None:
-        """Save discharge time series to Parquet file.
+        """Save discharge time series to file (Parquet or CSV).
 
         Args:
-            output_path: Path to output Parquet file
+            output_path: Path to output file
             reach_selection: "all", "outlets", or "list"
             selected_reaches: List of reach IDs (if reach_selection="list")
+            add_metadata: Additional metadata to save (optional)
+            output_format: Output format: "Parquet" or "csv" (default: "Parquet")
         """
         if "discharge" not in self.time_series:
             raise ValueError("No discharge data to save. Run simulation first.")
@@ -132,6 +135,7 @@ class SimulationResults:
             reach_selection=reach_selection,
             selected_reaches=selected_reaches,
             add_metadata=add_metadata,
+            output_format=output_format,
         )
 
     def save_lateral_inflow_report(
@@ -139,13 +143,15 @@ class SimulationResults:
         output_path: str | Path,
         reach_selection: str = "all",
         selected_reaches: list[int] | None = None,
+        output_format: str = "Parquet",
     ) -> None:
-        """Save lateral inflow time series to Parquet file.
+        """Save lateral inflow time series to file (Parquet or CSV).
 
         Args:
-            output_path: Path to output Parquet file
+            output_path: Path to output file
             reach_selection: "all", "outlets", or "list"
             selected_reaches: List of reach IDs (if reach_selection="list")
+            output_format: Output format: "Parquet" or "csv" (default: "Parquet")
         """
         if "lateral_inflow" not in self.time_series:
             raise ValueError("No lateral inflow data to save. Run simulation first.")
@@ -162,6 +168,7 @@ class SimulationResults:
             output_path=output_path,
             reach_selection=reach_selection,
             selected_reaches=selected_reaches,
+            output_format=output_format,
         )
 
 
@@ -1273,26 +1280,32 @@ class Simulation:
             selected_reaches = None
             reach_selection = settings.reach_selection
 
+        # Get output format from configuration
+        output_format = self.config.output_report_settings.output_format
+        file_extension = "csv" if output_format.lower() == "csv" else "parquet"
+
         # Save discharge report if enabled
         if self.config.output_report.discharge:
             start_str = start_date.strftime("%Y%m%d")
             end_str = end_date.strftime("%Y%m%d")
-            discharge_path = output_dir / f"discharge_{start_str}_{end_str}.parquet"
+            discharge_path = output_dir / f"discharge_{start_str}_{end_str}.{file_extension}"
             logger.info("Exporting discharges")
             results.save_report(
                 output_path=discharge_path,
                 reach_selection=reach_selection,
                 selected_reaches=selected_reaches,
+                output_format=output_format,
             )
 
         # Save lateral inflow report if enabled
         if self.config.output_report.lateral_inflow:
-            lateral_inflow_path = output_dir / f"lateral_inflow_{start_str}_{end_str}.parquet"
+            lateral_inflow_path = output_dir / f"lateral_inflow_{start_str}_{end_str}.{file_extension}"
             logger.info("Exporting lateral inflows")
             results.save_lateral_inflow_report(
                 output_path=lateral_inflow_path,
                 reach_selection=reach_selection,
                 selected_reaches=selected_reaches,
+                output_format=output_format,
             )
 
         # Save final state if enabled (for "final" mode, only save the last state)
