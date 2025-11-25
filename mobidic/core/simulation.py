@@ -107,6 +107,7 @@ class SimulationResults:
         output_path: str | Path,
         reach_selection: str = "all",
         selected_reaches: list[int] | None = None,
+        reach_file: str | Path | None = None,
         add_metadata: dict[str, Any] | None = None,
         output_format: str = "Parquet",
     ) -> None:
@@ -114,8 +115,9 @@ class SimulationResults:
 
         Args:
             output_path: Path to output file
-            reach_selection: "all", "outlets", or "list"
+            reach_selection: "all", "file", or "list"
             selected_reaches: List of reach IDs (if reach_selection="list")
+            reach_file: Path to JSON file containing reach IDs (if reach_selection="file")
             add_metadata: Additional metadata to save (optional)
             output_format: Output format: "Parquet" or "csv" (default: "Parquet")
         """
@@ -134,6 +136,7 @@ class SimulationResults:
             output_path=output_path,
             reach_selection=reach_selection,
             selected_reaches=selected_reaches,
+            reach_file=reach_file,
             add_metadata=add_metadata,
             output_format=output_format,
         )
@@ -143,14 +146,16 @@ class SimulationResults:
         output_path: str | Path,
         reach_selection: str = "all",
         selected_reaches: list[int] | None = None,
+        reach_file: str | Path | None = None,
         output_format: str = "Parquet",
     ) -> None:
         """Save lateral inflow time series to file (Parquet or CSV).
 
         Args:
             output_path: Path to output file
-            reach_selection: "all", "outlets", or "list"
+            reach_selection: "all", "file", or "list"
             selected_reaches: List of reach IDs (if reach_selection="list")
+            reach_file: Path to JSON file containing reach IDs (if reach_selection="file")
             output_format: Output format: "Parquet" or "csv" (default: "Parquet")
         """
         if "lateral_inflow" not in self.time_series:
@@ -168,6 +173,7 @@ class SimulationResults:
             output_path=output_path,
             reach_selection=reach_selection,
             selected_reaches=selected_reaches,
+            reach_file=reach_file,
             output_format=output_format,
         )
 
@@ -1339,19 +1345,14 @@ class Simulation:
 
         # Determine reach selection
         settings = self.config.output_report_settings
-        if settings.reach_selection == "file":
-            # Load reach IDs from file
-            import json
+        reach_selection = settings.reach_selection
+        selected_reaches = None
+        reach_file = None
 
-            with open(settings.sel_file) as f:
-                selected_reaches = json.load(f)
-            reach_selection = "list"
+        if settings.reach_selection == "file":
+            reach_file = settings.sel_file
         elif settings.reach_selection == "list":
             selected_reaches = settings.sel_list
-            reach_selection = "list"
-        else:
-            selected_reaches = None
-            reach_selection = settings.reach_selection
 
         # Get output format from configuration
         output_format = self.config.output_report_settings.output_format
@@ -1367,6 +1368,7 @@ class Simulation:
                 output_path=discharge_path,
                 reach_selection=reach_selection,
                 selected_reaches=selected_reaches,
+                reach_file=reach_file,
                 output_format=output_format,
             )
 
@@ -1378,6 +1380,7 @@ class Simulation:
                 output_path=lateral_inflow_path,
                 reach_selection=reach_selection,
                 selected_reaches=selected_reaches,
+                reach_file=reach_file,
                 output_format=output_format,
             )
 
