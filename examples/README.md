@@ -1,4 +1,4 @@
-# MOBIDIC examples
+# MOBIDICpy examples
 
 This directory contains example scripts and data for running MOBIDIC hydrological simulations.
 
@@ -6,7 +6,7 @@ This directory contains example scripts and data for running MOBIDIC hydrologica
 
 ### Arno River basin example
 
-The `run_example_Arno.py` script demonstrates the complete MOBIDIC workflow using data from the Arno River basin in Tuscany, Italy.
+The `run_example_Arno.py` script demonstrates the complete MOBIDICpy workflow using data from the Arno River basin in Tuscany, Italy.
 
 **Location:** `examples/run_example_Arno.py`
 
@@ -23,6 +23,18 @@ The `run_example_Arno_plots.py` script validates the Python implementation again
 - MATLAB reference discharge output (CSV format) in `Arno/output/matlab/discharge.csv`
 
 **Purpose:** Regression testing to ensure the Python implementation produces results equivalent to the original MATLAB code.
+
+### Restart capability demonstration
+
+The `run_example_Arno_restart.py` script demonstrates the simulation restart capability by running a simulation in two stages and comparing against a continuous run.
+
+**Location:** `examples/run_example_Arno_restart.py`
+
+**Purpose:**
+- Demonstrates how to save and load intermediate simulation states
+- Shows how to continue simulations after interruption
+- Validates that restarted simulations produce identical results to continuous runs
+- Illustrates multi-stage modeling workflows
 
 ## Quick Start
 
@@ -60,6 +72,16 @@ python examples/run_example_Arno_plots.py
 ```
 
 See [Validation against MATLAB reference](#validation-against-matlab-reference) for details.
+
+### Running the restart example
+
+Test the simulation restart capability:
+
+```bash
+python examples/run_example_Arno_restart.py
+```
+
+See [Restart from previous simulation state](#restart-from-previous-simulation-state) for details.
 
 ## What the example does
 
@@ -199,6 +221,69 @@ The script displays:
 - Overall average NSE and RMSE
 - Interactive comparison plots showing time series and scatter plots
 
+## Restart from previous simulation state
+
+The restart example demonstrates MOBIDICpy's ability to save intermediate states and continue simulations from previous simulation states.
+
+```bash
+python examples/run_example_Arno_restart.py
+```
+
+### What the restart example does
+
+The script performs the following workflow:
+
+1. **First simulation run**:
+   - Runs simulation from start to a midpoint (e.g., 50% of total period)
+   - Saves intermediate states to NetCDF file
+
+2. **Load saved state**:
+   - Loads the last saved state from the first run
+   - Uses `Simulation.set_initial_state()` to initialize from file
+
+3. **Second simulation run**:
+   - Restarts simulation from the saved state
+   - Continues to the end of the forcing period
+
+4. **Continuous simulation**:
+   - Runs a complete simulation without restart for comparison
+
+5. **Validation**:
+   - Compares restarted vs continuous results
+   - Calculates maximum and mean differences
+   - Verifies numerical equivalence (differences < 1e-6)
+
+6. **Visualization**:
+   - Plots discharge hydrographs (continuous vs restarted)
+   - Shows difference between runs
+   - Displays network-wide statistics
+
+### Customization
+
+You can customize the restart point by modifying the variable at the top of the script:
+
+```python
+restart_fraction = 0.5  # Run first simulation to 50% of period
+```
+
+### Use cases
+
+The restart capability enables:
+- **Long-term simulations**: Break long simulations into manageable chunks
+- **Checkpoint recovery**: Resume after system interruptions
+- **Multi-stage modeling**: Apply different parameters or forcings in different periods
+- **Ensemble forecasting**: Initialize multiple forecasts from a single spin-up run
+- **Real-time operations**: Save states at current time and restart with new forecast data
+
+### Expected output
+
+The script displays:
+- Simulation periods for first run, second run, and continuous run
+- Maximum difference between restarted and continuous results
+- Mean difference and relative error
+- Confirmation that results match within numerical precision
+- Three-panel visualization comparing discharge time series
+
 ## Additional resources
 
 - **User guide**: See `docs/` for detailed documentation
@@ -207,6 +292,6 @@ The script displays:
 
 ## Citation
 
-If you use MOBIDIC in your research, please cite:
+If you use MOBIDICpy in your research, please cite:
 
 [Citation information will be added]
