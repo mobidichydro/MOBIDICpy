@@ -2,52 +2,6 @@
 
 This page provides practical examples demonstrating the main features of MOBIDICpy. All example scripts are available in the `examples/` directory of the repository.
 
-## Complete Preprocessing Workflow
-
-The complete preprocessing workflow demonstrates how to process all GIS data and prepare it for simulation.
-
-**Script**: `examples/run_preprocessing.py`
-
-```python
-from pathlib import Path
-from mobidic import load_config, run_preprocessing, GISData, configure_logger
-
-# Configure logging
-configure_logger(level="INFO")
-
-# Load configuration
-config = load_config("examples/Arno/Arno.yaml")
-
-# Run complete preprocessing pipeline
-gisdata = run_preprocessing(config)
-
-# Save preprocessed data
-gisdata.save(
-    gisdata_path=config.paths.gisdata,
-    network_path=config.paths.network
-)
-
-# Display summary
-print(f"Basin: {config.basin.id}")
-print(f"Grid shape: {gisdata.metadata['shape']}")
-print(f"Network reaches: {len(gisdata.network)}")
-print(f"Total network length: {gisdata.network['length_m'].sum() / 1000:.1f} km")
-
-# Later: reload preprocessed data quickly
-loaded_gisdata = GISData.load(
-    gisdata_path=config.paths.gisdata,
-    network_path=config.paths.network
-)
-```
-
-**What it demonstrates:**
-- Loading configuration from YAML
-- Running the complete preprocessing pipeline
-- Saving preprocessed data for reuse
-- Loading preprocessed data quickly
-
----
-
 ## Configuration Parser
 
 This example shows how to load and validate MOBIDIC configuration files.
@@ -76,6 +30,7 @@ print(f"Wave celerity: {config.parameters.routing.wcel} m/s")
 ```
 
 **What it demonstrates:**
+
 - Loading YAML configuration files
 - Accessing nested configuration values
 - Automatic validation using Pydantic
@@ -119,6 +74,7 @@ save_network(network, config.paths.network, format="parquet")
 ```
 
 **What it demonstrates:**
+
 - Reading and processing river network shapefiles
 - Building network topology
 - Computing Strahler ordering
@@ -188,6 +144,7 @@ with rasterio.open(config.raster_files.flow_dir) as src:
 ```
 
 **What it demonstrates:**
+
 - Rasterizing river reaches onto the model grid
 - Following flow paths from hillslope to reaches
 - Creating a reach assignment map
@@ -195,7 +152,7 @@ with rasterio.open(config.raster_files.flow_dir) as src:
 
 ---
 
-## Meteorological Data Preprocessing
+## Meteorological data preprocessing
 
 Convert meteorological data from MATLAB format to CF-compliant NetCDF.
 
@@ -241,10 +198,149 @@ print(f"\nLoaded from NetCDF: {meteo_from_nc}")
 ```
 
 **What it demonstrates:**
+
 - Converting MATLAB .mat files to NetCDF
 - Loading and inspecting meteorological data
 - Reading CF-compliant NetCDF files
 - Working with station-based time series data
+
+---
+
+## Complete Preprocessing Workflow
+
+The complete preprocessing workflow demonstrates how to process all GIS data and prepare it for simulation.
+
+**Script**: `examples/run_preprocessing.py`
+
+```python
+from pathlib import Path
+from mobidic import load_config, run_preprocessing, GISData, configure_logger
+
+# Configure logging
+configure_logger(level="INFO")
+
+# Load configuration
+config = load_config("examples/Arno/Arno.yaml")
+
+# Run complete preprocessing pipeline
+gisdata = run_preprocessing(config)
+
+# Save preprocessed data
+gisdata.save(
+    gisdata_path=config.paths.gisdata,
+    network_path=config.paths.network
+)
+
+# Display summary
+print(f"Basin: {config.basin.id}")
+print(f"Grid shape: {gisdata.metadata['shape']}")
+print(f"Network reaches: {len(gisdata.network)}")
+print(f"Total network length: {gisdata.network['length_m'].sum() / 1000:.1f} km")
+
+# Later: reload preprocessed data quickly
+loaded_gisdata = GISData.load(
+    gisdata_path=config.paths.gisdata,
+    network_path=config.paths.network
+)
+```
+
+**What it demonstrates:**
+
+- Loading configuration from YAML
+- Running the complete preprocessing pipeline
+- Saving preprocessed data for reuse
+- Loading preprocessed data quickly
+
+---
+
+## Complete Simulation: Arno Basin
+
+The Arno basin example demonstrates a complete end-to-end MOBIDIC simulation workflow, from preprocessing through simulation to visualization.
+
+**Script**: `examples/run_example_Arno.py`
+
+```python
+from mobidic import load_config, run_preprocessing, MeteoData, Simulation
+
+# Load configuration
+config = load_config("examples/Arno/Arno.yaml")
+
+# Run or load preprocessing
+gisdata = run_preprocessing(config)
+
+# Convert and load meteorological data
+meteo_data = MeteoData.from_mat("examples/Arno/meteodata/meteodata.mat")
+meteo_data.to_netcdf(config.paths.meteodata)
+forcing = MeteoData.from_netcdf(config.paths.meteodata)
+
+# Run simulation
+sim = Simulation(gisdata, forcing, config)
+results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
+```
+
+**What it demonstrates:**
+
+- Complete MOBIDIC workflow from configuration to results
+- GIS preprocessing with caching
+- Meteorological data conversion (MATLAB .mat to NetCDF)
+- Running hydrological simulation with the `Simulation` class
+- Automatic output saving (discharge, lateral inflow, states)
+- Result visualization with matplotlib
+
+**Output files:**
+
+- Preprocessed GIS data: `Arno/gisdata/gisdata.nc`
+- Processed network: `Arno/gisdata/network.parquet`
+- Discharge time series: `Arno/output/discharge.parquet`
+- Final states: `Arno/output/states/states_*.nc`
+
+---
+
+## Simulation Restart Capability
+
+The restart example demonstrates MOBIDICpy's ability to save intermediate simulation states and continue from saved checkpoints, enabling multi-stage modeling workflows.
+
+**Script**: `examples/run_example_Arno_restart.py`
+
+```python
+from pathlib import Path
+from mobidic import load_config, load_gisdata, MeteoData, Simulation
+
+# Load configuration and data
+config = load_config("examples/Arno/Arno.yaml")
+gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+forcing = MeteoData.from_netcdf(config.paths.meteodata)
+
+# First run: simulate to midpoint
+sim1 = Simulation(gisdata, forcing, config)
+results_1 = sim1.run(start_date=start_date, end_date=restart_point)
+# States automatically saved to config.paths.states
+
+# Second run: restart from saved state
+sim2 = Simulation(gisdata, forcing, config)
+state_file = Path(config.paths.states) / "states_001.nc"
+sim2.set_initial_state(state_file=state_file, time_index=-1)
+results_2 = sim2.run(start_date=restart_point, end_date=end_date)
+
+# Validation: compare with continuous run
+sim_continuous = Simulation(gisdata, forcing, config)
+results_continuous = sim_continuous.run(start_date=start_date, end_date=end_date)
+```
+
+**What it demonstrates:**
+
+- Saving intermediate simulation states to NetCDF files
+- Loading states from file using `set_initial_state()`
+- Continuing simulations from saved checkpoints
+- Validating restart accuracy against continuous run (differences < 1e-6)
+
+**Use cases:**
+
+- **Long-term simulations**: Break simulations into manageable chunks
+- **Checkpoint recovery**: Resume after system interruptions
+- **Multi-stage modeling**: Apply different parameters or forcings in different periods
+- **Ensemble forecasting**: Initialize multiple forecasts from single spin-up
+- **Real-time operations**: Save current state and restart with new forecast data
 
 ---
 
@@ -271,6 +367,12 @@ Refer to this file as a template when creating your own configurations.
 All example scripts can be run from the repository root:
 
 ```bash
+# Complete Arno basin simulation
+python examples/run_example_Arno.py
+
+# Restart capability demonstration
+python examples/run_example_Arno_restart.py
+
 # Complete preprocessing
 python examples/run_preprocessing.py
 
@@ -290,6 +392,7 @@ python examples/demo_meteo_mat_to_nc.py
 ### Test Data
 
 Example data for the Arno basin is provided in `examples/Arno/`:
+
 - Configuration file: `Arno.yaml`
 - River network shapefile
 - Raster files (DTM, flow direction, soil parameters)
