@@ -316,6 +316,11 @@ class OutputStatesSettings(BaseModel):
         description="How often to flush states to disk during simulation. "
         "Positive integer N = flush every N timesteps, -1 = flush only at end",
     )
+    max_file_size: Optional[float] = Field(
+        500.0,
+        description="Maximum file size for state output files, in megabytes (MB). "
+        "When a file reaches this size, a new chunk file will be created. Default: 500 MB",
+    )
 
     @field_validator("output_interval")
     @classmethod
@@ -353,6 +358,16 @@ class OutputStatesSettings(BaseModel):
             return -1
         if v != -1 and v <= 0:
             raise ValueError("flushing must be either -1 (flush at end) or a positive integer")
+        return v
+
+    @field_validator("max_file_size")
+    @classmethod
+    def check_max_file_size_positive(cls, v: Optional[float]) -> Optional[float]:
+        """Validate that max_file_size is positive if provided."""
+        if v is None:
+            return 500.0
+        if v <= 0:
+            raise ValueError("max_file_size must be positive")
         return v
 
     @model_validator(mode="after")

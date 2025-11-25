@@ -345,7 +345,7 @@ output_states_settings:
 
   # OPTIONAL: Which time steps to save
   # [one among the following options: 'all', 'final', 'list', 'None' (default)]
-  output_states: final
+  output_states: all
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
@@ -357,7 +357,12 @@ output_states_settings:
   # OPTIONAL: How often to flush states to disk during simulation (controls memory usage)
   # [positive integer N = flush every N timesteps, -1 = flush only at end (default)]
   # Examples:
-  flushing:
+  flushing: -1
+
+  # OPTIONAL: Maximum file size for state output files, in megabytes (MB)
+  # NOTE: Effective only if flushing is set to a positive integer
+  # [positive float in MB. When a file reaches this size, a new chunk file will be created. Default: 500 MB]
+  max_file_size: 500
 
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs

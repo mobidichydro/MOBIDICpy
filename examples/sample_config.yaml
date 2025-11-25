@@ -356,6 +356,11 @@ output_states_settings:
   # [positive integer N = flush every N timesteps, -1 = flush only at end (default)]
   flushing:
 
+  # OPTIONAL: Maximum file size for state output files, in megabytes (MB)
+  # NOTE: Effective only if flushing is set to a positive integer
+  # [positive float in MB. When a file reaches this size, a new chunk file will be created. Default: 500 MB]
+  max_file_size: 500
+
 output_report:
   # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
   # [boolean]
