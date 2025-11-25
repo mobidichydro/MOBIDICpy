@@ -29,7 +29,7 @@ The configuration system ensures all required fields are present, validates rang
 
 ## Classes
 
-### Main Configuration
+### Main configuration
 
 ::: mobidic.config.schema.MOBIDICConfig
     options:
@@ -48,7 +48,7 @@ The configuration system ensures all required fields are present, validates rang
         - output_report_settings
         - advanced
 
-### Nested Models
+### Nested models
 
 The configuration is organized hierarchically using nested Pydantic models:
 
@@ -88,7 +88,7 @@ The configuration is organized hierarchically using nested Pydantic models:
 
 ::: mobidic.config.schema.Advanced
 
-## Configuration Structure
+## Configuration structure
 
 See the [sample configuration file](https://github.com/mobidichydro/mobidicpy/blob/main/examples/sample_config.yaml) for a complete annotated example with all available options and their descriptions.
 
@@ -103,3 +103,32 @@ The configuration system performs extensive validation:
 - **Path validation**: File paths can optionally be validated for existence
 
 Invalid configurations will raise `pydantic.ValidationError` with detailed error messages.
+
+## Auxiliary files
+
+### Reach selection file
+
+When using `reach_selection='file'` in the output report settings, you need to provide a JSON file containing the reach IDs to include in the output reports. The file should contain a simple JSON array of integer reach IDs (corresponding to `mobidic_id` values in the processed network).
+
+**Example `reach_ids.json`:**
+
+```json
+[
+  1000,
+  1050,
+  1100,
+  1200,
+  1234
+]
+```
+
+The reach IDs correspond to the `mobidic_id` field in the processed river network. 
+
+**Configuration example:**
+
+```yaml
+output_report_settings:
+  output_format: Parquet
+  reach_selection: file
+  sel_file: data/reach_ids.json  # Path to JSON file
+```
