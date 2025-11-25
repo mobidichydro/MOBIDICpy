@@ -99,17 +99,24 @@ class TestSaveDischargeReport:
         # Check data values
         np.testing.assert_array_almost_equal(df.values, discharge)
 
-    def test_save_outlets_only(self, tmp_path, sample_network, sample_timeseries):
-        """Test saving discharge report with outlets only."""
+    def test_save_from_file(self, tmp_path, sample_network, sample_timeseries):
+        """Test saving discharge report with reaches loaded from JSON file."""
         discharge, time_stamps = sample_timeseries
-        output_path = tmp_path / "discharge_outlets.parquet"
+        output_path = tmp_path / "discharge_from_file.parquet"
+
+        # Create a JSON file with reach IDs
+        reach_file = tmp_path / "reach_ids.json"
+        selected_reaches = [1, 3, 4]
+        with open(reach_file, "w") as f:
+            json.dump(selected_reaches, f)
 
         save_discharge_report(
             discharge_timeseries=discharge,
             time_stamps=time_stamps,
             network=sample_network,
             output_path=output_path,
-            reach_selection="outlets",
+            reach_selection="file",
+            reach_file=reach_file,
         )
 
         # Check file exists
@@ -119,12 +126,14 @@ class TestSaveDischargeReport:
         df = pd.read_parquet(output_path)
         assert len(df) == len(time_stamps)
 
-        # Only reach 4 is an outlet (downstream is NaN)
-        assert len(df.columns) == 1
-        assert df.columns[0] == "reach_0004"
+        # Check correct reaches were selected
+        assert len(df.columns) == len(selected_reaches)
+        expected_columns = [f"reach_{i:04d}" for i in selected_reaches]
+        assert list(df.columns) == expected_columns
 
-        # Check values match reach 4
-        np.testing.assert_array_almost_equal(df.values.flatten(), discharge[:, 4])
+        # Check values match
+        expected_data = discharge[:, selected_reaches]
+        np.testing.assert_array_almost_equal(df.values, expected_data)
 
     def test_save_selected_reaches_list(self, tmp_path, sample_network, sample_timeseries):
         """Test saving discharge report with selected reaches."""
@@ -508,26 +517,33 @@ class TestSaveLateralInflowReport:
         # Check data values
         np.testing.assert_array_almost_equal(df.values, lateral_inflow)
 
-    def test_save_lateral_inflow_outlets(self, tmp_path, sample_network, sample_timeseries):
-        """Test saving lateral inflow report with outlets only."""
+    def test_save_lateral_inflow_from_file(self, tmp_path, sample_network, sample_timeseries):
+        """Test saving lateral inflow report with reaches loaded from JSON file."""
         lateral_inflow, time_stamps = sample_timeseries
-        output_path = tmp_path / "lateral_inflow_outlets.parquet"
+        output_path = tmp_path / "lateral_inflow_from_file.parquet"
+
+        # Create a JSON file with reach IDs
+        reach_file = tmp_path / "reach_ids.json"
+        selected_reaches = [0, 2]
+        with open(reach_file, "w") as f:
+            json.dump(selected_reaches, f)
 
         save_lateral_inflow_report(
             lateral_inflow_timeseries=lateral_inflow,
             time_stamps=time_stamps,
             network=sample_network,
             output_path=output_path,
-            reach_selection="outlets",
+            reach_selection="file",
+            reach_file=reach_file,
         )
 
         # Load and verify
         df = pd.read_parquet(output_path)
 
-        # Only reach 4 is an outlet
-        assert len(df.columns) == 1
-        assert df.columns[0] == "reach_0004"
-        np.testing.assert_array_almost_equal(df.values.flatten(), lateral_inflow[:, 4])
+        # Check correct reaches were selected
+        assert len(df.columns) == len(selected_reaches)
+        expected_data = lateral_inflow[:, selected_reaches]
+        np.testing.assert_array_almost_equal(df.values, expected_data)
 
     def test_save_lateral_inflow_selected_list(self, tmp_path, sample_network, sample_timeseries):
         """Test saving lateral inflow report with selected reaches."""
@@ -766,37 +782,18 @@ class TestEdgeCases:
         df = load_discharge_report(output_path)
         np.testing.assert_allclose(df.values, discharge, rtol=1e-15)
 
-    def test_network_without_outlets(self, tmp_path):
-        """Test reach_selection='outlets' when no outlets exist (all reaches drain somewhere)."""
-        # Create circular network (no true outlet) - unrealistic but tests edge case
-        geometries = [
-            LineString([(0, 0), (1, 0)]),
-            LineString([(1, 0), (2, 0)]),
-        ]
+    def test_file_selection_missing_file(self, tmp_path, sample_network, sample_timeseries):
+        """Test error handling when reach_file doesn't exist."""
+        discharge, time_stamps = sample_timeseries
+        output_path = tmp_path / "discharge.parquet"
+        reach_file = tmp_path / "nonexistent.json"
 
-        network = gpd.GeoDataFrame(
-            {
-                "mobidic_id": [0, 1],
-                "upstream_1": [1.0, np.nan],
-                "upstream_2": [np.nan, np.nan],
-                "downstream": [1.0, 0.0],
-                "geometry": geometries,
-            }
-        )
-
-        discharge = np.ones((5, 2))
-        time_stamps = [datetime(2020, 1, 1, i) for i in range(5)]
-
-        output_path = tmp_path / "no_outlets.parquet"
-
-        # This should work but select no reaches
-        save_discharge_report(
-            discharge_timeseries=discharge,
-            time_stamps=time_stamps,
-            network=network,
-            output_path=output_path,
-            reach_selection="outlets",
-        )
-
-        df = load_discharge_report(output_path)
-        assert len(df.columns) == 0  # No outlets selected
+        with pytest.raises(FileNotFoundError, match="Reach file not found"):
+            save_discharge_report(
+                discharge_timeseries=discharge,
+                time_stamps=time_stamps,
+                network=sample_network,
+                output_path=output_path,
+                reach_selection="file",
+                reach_file=reach_file,
+            )

@@ -18,6 +18,7 @@ def save_discharge_report(
     output_path: str | Path,
     reach_selection: str = "all",
     selected_reaches: list[int] | None = None,
+    reach_file: str | Path | None = None,
     add_metadata: dict | None = None,
     output_format: str = "Parquet",
 ) -> None:
@@ -29,8 +30,9 @@ def save_discharge_report(
         time_stamps: List of datetime objects for each time step
         network: River network GeoDataFrame with reach metadata
         output_path: Path to output file
-        reach_selection: Reach selection mode: "all", "list", or "outlets"
+        reach_selection: Reach selection mode: "all", "file", or "list"
         selected_reaches: List of reach IDs (mobidic_id) to include (used if reach_selection="list")
+        reach_file: Path to JSON file containing reach IDs (used if reach_selection="file")
         add_metadata: Additional metadata to save (optional, saved as JSON in separate file)
         output_format: Output format: "Parquet" or "csv" (default: "Parquet")
 
@@ -44,7 +46,8 @@ def save_discharge_report(
         ...     results.time_series["time"],
         ...     sim.network,
         ...     "Arno_discharge.parquet",
-        ...     reach_selection="outlets",
+        ...     reach_selection="file",
+        ...     reach_file="reach_ids.json",
         ...     output_format="Parquet"
         ... )
     """
@@ -55,18 +58,26 @@ def save_discharge_report(
     if reach_selection == "all":
         reach_indices = network["mobidic_id"].values
         logger.debug(f"Saving all {len(reach_indices)} reaches")
-    elif reach_selection == "outlets":
-        # Select reaches with no downstream reach (outlets)
-        outlet_mask = pd.isna(network["downstream"])
-        reach_indices = network.loc[outlet_mask, "mobidic_id"].values
-        logger.debug(f"Saving {len(reach_indices)} outlet reaches")
+    elif reach_selection == "file":
+        # Load reach IDs from JSON file
+        if reach_file is None:
+            raise ValueError("reach_file must be provided when reach_selection='file'")
+        import json
+
+        reach_file_path = Path(reach_file)
+        if not reach_file_path.exists():
+            raise FileNotFoundError(f"Reach file not found: {reach_file_path}")
+        with open(reach_file_path) as f:
+            selected_reaches = json.load(f)
+        reach_indices = np.array(selected_reaches)
+        logger.debug(f"Saving {len(reach_indices)} reaches from file: {reach_file_path}")
     elif reach_selection == "list":
         if selected_reaches is None:
             raise ValueError("selected_reaches must be provided when reach_selection='list'")
         reach_indices = np.array(selected_reaches)
         logger.debug(f"Saving {len(reach_indices)} selected reaches")
     else:
-        raise ValueError(f"Invalid reach_selection: {reach_selection}. Must be 'all', 'outlets', or 'list'")
+        raise ValueError(f"Invalid reach_selection: {reach_selection}. Must be 'all', 'file', or 'list'")
 
     # Check that indices are valid
     max_reach_id = len(network) - 1
@@ -168,6 +179,7 @@ def save_lateral_inflow_report(
     output_path: str | Path,
     reach_selection: str = "all",
     selected_reaches: list[int] | None = None,
+    reach_file: str | Path | None = None,
     output_format: str = "Parquet",
 ) -> None:
     """
@@ -180,8 +192,9 @@ def save_lateral_inflow_report(
         time_stamps: List of datetime objects for each time step
         network: River network GeoDataFrame with reach metadata
         output_path: Path to output file
-        reach_selection: Reach selection mode: "all", "list", or "outlets"
+        reach_selection: Reach selection mode: "all", "file", or "list"
         selected_reaches: List of reach IDs to include (used if reach_selection="list")
+        reach_file: Path to JSON file containing reach IDs (used if reach_selection="file")
         output_format: Output format: "Parquet" or "csv" (default: "Parquet")
 
     Examples:
@@ -199,15 +212,24 @@ def save_lateral_inflow_report(
     # Use same logic as discharge report
     if reach_selection == "all":
         reach_indices = network["mobidic_id"].values
-    elif reach_selection == "outlets":
-        outlet_mask = pd.isna(network["downstream"])
-        reach_indices = network.loc[outlet_mask, "mobidic_id"].values
+    elif reach_selection == "file":
+        # Load reach IDs from JSON file
+        if reach_file is None:
+            raise ValueError("reach_file must be provided when reach_selection='file'")
+        import json
+
+        reach_file_path = Path(reach_file)
+        if not reach_file_path.exists():
+            raise FileNotFoundError(f"Reach file not found: {reach_file_path}")
+        with open(reach_file_path) as f:
+            selected_reaches = json.load(f)
+        reach_indices = np.array(selected_reaches)
     elif reach_selection == "list":
         if selected_reaches is None:
             raise ValueError("selected_reaches must be provided when reach_selection='list'")
         reach_indices = np.array(selected_reaches)
     else:
-        raise ValueError(f"Invalid reach_selection: {reach_selection}")
+        raise ValueError(f"Invalid reach_selection: {reach_selection}. Must be 'all', 'file', or 'list'")
 
     # Extract lateral inflow for selected reaches
     lateral_inflow_selected = lateral_inflow_timeseries[:, reach_indices.astype(int)]
