@@ -17,8 +17,9 @@ State files enable:
 - **State analysis**: Examine spatial patterns of soil moisture, discharge
 - **Model evaluation**: Compare simulated states against observations
 - **Ensemble runs**: Initialize multiple simulations from different states
+- **Large simulations**: Automatic file chunking for simulations exceeding size limits
 
-## Classes and Functions
+## Classes and functions
 
 ::: mobidic.io.state.StateWriter
 
@@ -26,7 +27,7 @@ State files enable:
 
 ## Examples
 
-### Saving States Incrementally with StateWriter
+### Saving states incrementally with StateWriter
 
 ```python
 from mobidic.io import StateWriter
@@ -44,6 +45,7 @@ with StateWriter(
     network_size=len(gisdata.network),
     output_states=config.output_states,
     flushing=10,  # Flush every 10 timesteps (-1 = only at end)
+    max_file_size=500.0,  # Create new chunk file when reaching 500 MB
     add_metadata={
         "simulation_version": "v1.0",
         "calibration_run": "baseline",
@@ -63,6 +65,7 @@ with StateWriter(
         current_time += dt
 
     # States are automatically flushed and file closed when exiting context
+    # May create: states_001.nc, states_002.nc, states_003.nc, etc.
 
 # Alternatively, manually manage the writer
 writer = StateWriter(
@@ -71,6 +74,7 @@ writer = StateWriter(
     network_size=len(gisdata.network),
     output_states=config.output_states,
     flushing=-1,  # Only flush at end
+    max_file_size=500.0,
 )
 
 for step in range(num_steps):
@@ -81,7 +85,7 @@ for step in range(num_steps):
 writer.close()  # Don't forget to close!
 ```
 
-### Saving Only Final State
+### Saving only final state
 
 ```python
 from mobidic.io import StateWriter
@@ -102,7 +106,7 @@ writer.append_state(final_state, datetime(2020, 12, 31, 23, 45))
 writer.close()
 ```
 
-### Loading State for Warm Start
+### Loading state for warm start
 
 ```python
 from mobidic.io import load_state
@@ -132,6 +136,13 @@ state_final, time_final, _ = load_state(
     network_size=1235
 )
 
+# Load from chunked files (automatically detects chunk files)
+# Even if you specify "states.nc", it will find and load "states_001.nc"
+state_chunk, time_chunk, _ = load_state(
+    input_path="output/states.nc",  # Auto-detects states_001.nc
+    network_size=1235
+)
+
 # Use state to initialize simulation
 sim = Simulation(gisdata, forcing, config)
 sim.state = state  # Override initial state
@@ -140,7 +151,7 @@ sim.state = state  # Override initial state
 results = sim.run("2020-06-15", "2020-12-31")
 ```
 
-### Inspecting State Files
+### Inspecting state files
 
 ```python
 import xarray as xr
@@ -196,7 +207,7 @@ if "discharge" in ds:
 ds.close()
 ```
 
-### Comparing States
+### Comparing states
 
 ```python
 import xarray as xr
@@ -242,7 +253,61 @@ ds1.close()
 ds2.close()
 ```
 
-## Configuration Control
+### Working with chunked state files
+
+When saving very large simulations, `StateWriter` automatically splits the output into multiple chunk files when the size limit is reached:
+
+```python
+from mobidic.io import StateWriter, load_state
+from datetime import datetime, timedelta
+
+# Create writer with 500 MB chunk size and regular flushing
+# NOTE: For chunking to work effectively, flushing must be > 0
+writer = StateWriter(
+    output_path="output/states.nc",
+    grid_metadata=gisdata.metadata,
+    network_size=len(gisdata.network),
+    output_states=config.output_states,
+    flushing=100,  # Flush every 100 steps (required for chunking)
+    max_file_size=500.0,  # 500 MB per chunk
+)
+
+# Run long simulation that generates > 500 MB of data
+for step in range(10000):
+    writer.append_state(state, current_time)
+    current_time += dt
+
+writer.close()
+
+# This creates multiple files:
+# - states_001.nc (500 MB)
+# - states_002.nc (500 MB)
+# - states_003.nc (200 MB)
+
+# Loading automatically detects and uses the first chunk
+state, time, metadata = load_state(
+    input_path="output/states.nc",  # Automatically finds states_001.nc
+    network_size=1235
+)
+
+# Or load from a specific chunk directly
+state_chunk2, time_chunk2, _ = load_state(
+    input_path="output/states_002.nc",  # Load from second chunk
+    network_size=1235,
+    time_index=-1  # Last timestep in this chunk
+)
+```
+
+**Important notes about chunking:**
+
+- Files may slightly exceed `max_file_size` by up to one flush worth of data
+- Size check occurs before writing each flush batch
+- For effective chunking, set `flushing > 0` (e.g., 10, 50, 100)
+- If `flushing=-1` (flush only at end), all data writes in one operation and chunking won't work as expected
+- Chunk files are numbered sequentially: `_001.nc`, `_002.nc`, `_003.nc`, etc.
+- Existing chunk files are automatically removed when creating a new StateWriter with the same base path
+
+## Configuration control
 
 State saving is controlled by the configuration file:
 
@@ -267,7 +332,7 @@ output_states_settings:
   output_list: [0, 100, 200]    # Timestep indices (for "list")
 ```
 
-## File Structure
+## File structure
 
 NetCDF state files contain:
 
@@ -283,7 +348,7 @@ NetCDF state files contain:
 - `y(y)`: Y coordinates [m]
 - `reach(reach)`: Reach indices [dimensionless]
 
-### Data Variables
+### Data variables
 - `Wc(time, y, x)`: Capillary water content [m] (if enabled)
 - `Wg(time, y, x)`: Gravitational water content [m] (if enabled)
 - `Wp(time, y, x)`: Plant/canopy water content [m] (optional, if enabled)
@@ -292,17 +357,28 @@ NetCDF state files contain:
 - `lateral_inflow(time, reach)`: Lateral inflow to reaches [m³/s] (if enabled)
 - `crs()`: Grid mapping (CRS metadata, scalar)
 
-### Global Attributes
+### Global attributes
 - `title`: "MOBIDIC simulation states"
 - `source`: "MOBIDICpy simulation"
 - `Conventions`: "CF-1.12"
 - `history`: Creation timestamp with MOBIDICpy version
 - Custom metadata from `add_metadata` parameter
 
-## Design Features
+### Chunked files
+
+When a simulation produces very large state files, `StateWriter` automatically creates multiple chunk files:
+
+- **Naming convention**: `states_001.nc`, `states_002.nc`, `states_003.nc`, etc.
+- **Size limit**: Each chunk is limited to `max_file_size` MB (default: 500 MB)
+- **Independent files**: Each chunk is a complete, self-contained NetCDF file with its own timesteps
+- **Sequential ordering**: Chunks are created in temporal order as the simulation progresses
+- **Automatic detection**: `load_state()` automatically finds `states_001.nc` when you specify `states.nc`
+
+## Design features
 
 - **CF-1.12 compliant**: Follows Climate and Forecast metadata conventions
 - **Incremental writing**: StateWriter appends states to a single file with unlimited time dimension
+- **Automatic chunking**: Splits large outputs into multiple files when size limit is reached (configurable via `max_file_size`)
 - **Memory efficient**: Configurable buffering with periodic flushing to disk
 - **Fast append mode**: Uses netCDF4 library for efficient appending (avoids read-concatenate-write)
 - **Compression**: zlib compression (level 4) for efficient storage
@@ -310,10 +386,11 @@ NetCDF state files contain:
 - **Context manager support**: Automatic resource cleanup with `with` statement
 - **Flexible loading**: Missing variables initialized with sensible defaults (NaN for grids, zeros for networks)
 - **Multi-timestep support**: Can load any timestep from multi-timestep files
+- **Chunk file detection**: `load_state()` automatically finds chunk files (e.g., `_001.nc`) when base path doesn't exist
 - **CRS preservation**: Coordinate Reference System stored as WKT
 - **Robust error handling**: Clear warnings for missing data or size mismatches
 
-## Error Handling
+## Error handling
 
 The module provides clear error messages for common issues:
 

@@ -7,12 +7,13 @@ The simulation module implements the main time-stepping loop of the MOBIDIC hydr
 The simulation engine coordinates:
 
 - **Input data loading**: GIS preprocessing and meteorological forcing
-- **State initialization**: Initial conditions for soil, surface, and channel states
+- **State initialization**: Initial conditions for soil, surface, and channel states (supports warm start)
 - **Time-stepping loop**: Sequential water balance and routing calculations
-- **Meteorological interpolation**: Station data → grid interpolation (IDW, nearest neighbor)
-- **PET calculation**: Hargreaves-Samani method
-- **Results storage**: Time series collection and state snapshots
-- **Output generation**: NetCDF states and Parquet reports
+- **Meteorological interpolation**: Station data: grid interpolation (IDW, nearest neighbor)
+- **PET calculation**: Simple 1 mm/day constant rate (energy balance not yet implemented)
+- **Results storage**: Time series collection and state snapshots with automatic file chunking
+- **Output generation**: NetCDF states (with chunking) and Parquet/CSV reports
+- **Restart capability**: Load and resume from previously saved states
 
 **Current implementation**: Simplified version without energy balance, groundwater models, or reservoirs.
 
@@ -28,23 +29,207 @@ The simulation engine coordinates:
 
 The main simulation loop performs the following operations for each time step:
 
-1. **Interpolate forcing**: Precipitation from station data to grid
-2. **Calculate PET**: Hargreaves-Samani method using temperature and solar radiation
-3. **Soil water balance**: Four-reservoir hillslope water balance
-4. **Hillslope routing**: Route surface runoff and lateral flow on grid
-5. **Reach mapping**: Accumulate hillslope contributions to river reaches
+1. **Interpolate forcing**: Precipitation from station data to grid (IDW or nearest neighbor)
+2. **Calculate PET**: Simple 1 mm/day method (constant rate)
+3. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep
+4. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows
+5. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
 6. **Channel routing**: Linear reservoir routing through river network
 7. **Store results**: Save discharge and lateral inflow time series
-8. **Output states**: Optionally save states
+8. **Output states**: Optionally save states (with automatic chunking if needed)
+9. **Update and advance**: Store flow fields for next timestep and advance simulation time
 
-## Performance 
+**Key feature**: The simulation uses a feedback loop where flows from timestep `t` are routed through the hillslope at timestep `t+1` before entering the soil water balance. This ensures proper spatial connectivity of overland flow.
+
+## Performance
 
 - **Meteorological interpolation caching**: Pre-computes time indices and spatial weights for all timesteps
 - **Numba JIT compilation**: Hillslope and channel routing use compiled kernels
 - **Memory efficiency**: State variables use NumPy arrays with F-contiguous memory layout
-- **Progress logging**: Adaptive logging interval (max 20 logs or every 30s)
+- **Contributing pixels optimization**: Processes only cells that can contribute flow to river network
+- **Network topology caching**: Pre-extracts network structure to numpy arrays for fast routing
+- **Progress logging**: Adaptive logging interval (max 20 logs or every 30s) with text-based progress bar
+- **Automatic file chunking**: State files automatically split when reaching size limit
 
-## Implementated modules
+## Examples
+
+### Basic simulation
+
+```python
+from mobidic import load_config, load_gisdata, Simulation, MeteoData
+
+# Load configuration and data
+config = load_config("config.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+forcing = MeteoData.from_netcdf("meteo.nc")
+
+# Create simulation
+sim = Simulation(gisdata, forcing, config)
+
+# Run simulation
+results = sim.run("2020-01-01", "2020-12-31")
+
+# Save discharge report
+results.save_report("discharge.parquet")
+
+# Save lateral inflow report
+results.save_lateral_inflow_report("lateral_inflow.parquet")
+```
+
+### Warm start (resume from saved simulation state)
+
+The simulation supports warm start capability, allowing you to resume from previously saved states. This is useful for:
+
+- **Multi-stage simulations**: Spin-up period followed by analysis period
+- **Interrupted simulations**: Resume after crashes or timeouts
+- **Ensemble runs**: Start multiple simulations from calibrated initial states
+- **Seasonal forecasts**: Initialize from observed states
+
+```python
+from mobidic import Simulation, load_state
+
+# Method 1: Load state from file and set before running
+sim = Simulation(gisdata, forcing, config)
+sim.set_initial_state(state_file="spinup_states.nc", time_index=-1)  # Use last timestep
+results = sim.run("2020-06-01", "2020-12-31")
+
+# Method 2: Load state object and use directly
+from mobidic.io import load_state
+state, time, metadata = load_state("spinup_states.nc", network_size=1235)
+sim.set_initial_state(state=state)
+results = sim.run("2020-06-01", "2020-12-31")
+
+# Method 3: Multi-stage simulation
+# Stage 1: Spin-up (1 year)
+sim1 = Simulation(gisdata, forcing, config)
+results1 = sim1.run("2019-01-01", "2019-12-31")  # Saves states.nc
+
+# Stage 2: Analysis period (resume from spin-up)
+sim2 = Simulation(gisdata, forcing, config)
+sim2.set_initial_state(state_file="output/states.nc")  # Load last state from spin-up
+results2 = sim2.run("2020-01-01", "2020-12-31")
+```
+
+### Working with large simulations and chunked states
+
+For long simulations that generate a large number of states, the simulation automatically creates chunked files:
+
+```python
+from mobidic import Simulation
+
+# Configure for large simulation
+# Edit config.yaml:
+# output_states_settings:
+#   output_states: "all"
+#   flushing: 100          # Flush every 100 timesteps (required for chunking)
+#   max_file_size: 500.0   # Create new chunk at 500 MB
+#   output_interval: 3600  # Save state every hour
+
+config = load_config("config.yaml")
+sim = Simulation(gisdata, forcing, config)
+
+# Run long simulation (e.g., 10 years at 15-minute timesteps)
+results = sim.run("2010-01-01", "2020-12-31")
+
+# This creates multiple chunk files:
+# - output/states_001.nc (500 MB)
+# - output/states_002.nc (500 MB)
+# - output/states_003.nc (350 MB)
+
+# Resume from last chunk (automatically detected)
+sim2 = Simulation(gisdata, forcing, config)
+sim2.set_initial_state(state_file="output/states.nc")  # Auto-finds states_001.nc
+results2 = sim2.run("2021-01-01", "2021-12-31")
+```
+
+### Custom report selection
+
+Control which reaches to include in output reports:
+
+```python
+# Method 1: Save all reaches
+results.save_report(
+    "discharge_all.parquet",
+    reach_selection="all"
+)
+
+# Method 2: Save reaches from file
+results.save_report(
+    "discharge_selected.parquet",
+    reach_selection="file",
+    reach_file="reach_ids.json"
+)
+
+# Method 3: Save specific reaches by mobidic_id
+selected_reaches = [0, 10, 25, 100, 500]  # mobidic_id values
+results.save_report(
+    "discharge_selected.parquet",
+    reach_selection="list",
+    selected_reaches=selected_reaches
+)
+
+# Method 4: Export as CSV instead of Parquet
+results.save_report(
+    "discharge.csv",
+    reach_selection="all",
+    output_format="csv"
+)
+```
+
+## Configuration
+
+The simulation behavior is controlled by the configuration file. Key sections:
+
+### Output states configuration
+
+```yaml
+output_states:
+  Wc: true              # Save capillary water
+  Wg: true              # Save gravitational water
+  Wp: false             # Plant water (not yet implemented)
+  Ws: true              # Save surface water
+  discharge: true       # Save channel discharge
+  lateral_inflow: true  # Save lateral inflow to reaches
+
+output_states_settings:
+  output_format: "netCDF"
+  output_states: "final"  # Options: "final", "all", "list", "None"
+  flushing: 10            # Flush to disk every N timesteps (-1 = only at end)
+  max_file_size: 500.0    # Maximum file size in MB (chunking threshold)
+  output_interval: 3600   # Save interval in seconds (for "all" mode)
+  output_list:            # List of specific datetimes (for "list" mode)
+    - "2020-06-01 00:00:00"
+    - "2020-12-31 23:45:00"
+```
+
+**Important notes about state output:**
+- **Chunking requires `flushing > 0`**: Set `flushing` to a positive value (e.g., 10, 50, 100) for file chunking to work effectively
+- **`flushing=-1` disables chunking**: All data is written at the end in one operation, preventing chunking
+- **File size may slightly exceed limit**: Files can exceed `max_file_size` by up to one flush worth of data
+
+### Output reports configuration
+
+```yaml
+output_report:
+  discharge: true        # Export discharge time series
+  lateral_inflow: true   # Export lateral inflow time series
+
+output_report_settings:
+  output_format: "Parquet"     # Options: "Parquet", "csv"
+  reach_selection: "all"       # Options: "all", "file", "list"
+  sel_list: [0, 10, 25, 100]  # List of reach IDs (for "list" mode)
+  sel_file: "reaches.json"     # Path to file with reach IDs (for "file" mode)
+```
+
+### Simulation configuration
+
+```yaml
+simulation:
+  timestep: 900                      # Time step in seconds (15 minutes)
+  precipitation_interp: "IDW"        # Options: "IDW", "Nearest"
+```
+
+## Implemented modules
 
 - [Soil Water Balance](soil_water_balance.md) - Hillslope water balance
 - [Routing](routing.md) - Hillslope and channel routing

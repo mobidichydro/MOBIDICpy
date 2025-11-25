@@ -87,6 +87,8 @@ Save and load simulation state variables (NetCDF format).
 Export discharge and lateral inflow time series.
 
 - [`save_discharge_report()`](report.md#mobidic.io.report.save_discharge_report) - Export discharge time series
+- [`save_lateral_inflow_report()`](report.md#mobidic.io.report.save_lateral_inflow_report) - Export lateral inflow time series
+- [`load_discharge_report()`](report.md#mobidic.io.report.load_discharge_report) - Load discharge time series
 
 ## Quick Import
 
@@ -137,6 +139,8 @@ from mobidic import (
     load_state,
     # Report I/O
     save_discharge_report,
+    save_lateral_inflow_report,
+    load_discharge_report,
     # Constants
     constants,
 )
