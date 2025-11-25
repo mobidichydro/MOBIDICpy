@@ -21,7 +21,6 @@ Usage:
 """
 
 from pathlib import Path
-import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -208,8 +207,8 @@ sim2 = Simulation(gisdata, forcing, config)
 
 # Load last state from first simulation
 print(f"  Loading last state from: {state_file}")
-sim2.set_initial_state(state_file=state_file, time_index=-1) # Load last saved state from file
-#sim2.set_initial_state(sim1.state) # Programmatically set state from first sim
+sim2.set_initial_state(state_file=state_file, time_index=-1)  # Load last saved state from file
+# sim2.set_initial_state(sim1.state) # Programmatically set state from first sim
 print()
 
 # Run second simulation from restart point to end
@@ -230,9 +229,7 @@ print("Step 8: Combining results from both runs...")
 # Concatenate discharge time series
 # Skip the first timestep of the second run to avoid duplication at restart_point
 # (The restart_point is the last timestep of run 1 and the first timestep of run 2)
-discharge_combined = np.concatenate(
-    [results_1.time_series["discharge"], results_2.time_series["discharge"]], axis=0
-)
+discharge_combined = np.concatenate([results_1.time_series["discharge"], results_2.time_series["discharge"]], axis=0)
 time_combined = results_1.time_series["time"] + results_2.time_series["time"]
 
 print(f"  [OK] Combined time series: {len(time_combined)} timesteps")
