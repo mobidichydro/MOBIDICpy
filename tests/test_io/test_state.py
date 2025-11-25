@@ -1,6 +1,6 @@
 """Tests for mobidic.io.state module."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import xarray as xr
 import pytest
@@ -472,9 +472,11 @@ class TestEdgeCases:
             output_states=all_states_enabled,
         )
 
-        # Check file exists and has reasonable size
-        assert output_path.exists()
-        file_size_mb = output_path.stat().st_size / (1024 * 1024)
+        # Check file exists (may be chunked)
+        chunk_path = output_path.parent / f"{output_path.stem}_001{output_path.suffix}"
+        assert chunk_path.exists() or output_path.exists()
+        actual_path = chunk_path if chunk_path.exists() else output_path
+        file_size_mb = actual_path.stat().st_size / (1024 * 1024)
         assert file_size_mb < 10.0  # Should be compressed
 
         # Load and verify shape
@@ -582,8 +584,10 @@ class TestEdgeCases:
             output_states=output_states,
         )
 
-        # Load and verify
-        ds = xr.open_dataset(output_path)
+        # Load and verify (use chunked filename if exists)
+        chunk_path = output_path.parent / f"{output_path.stem}_001{output_path.suffix}"
+        actual_path = chunk_path if chunk_path.exists() else output_path
+        ds = xr.open_dataset(actual_path)
 
         # Should not have discharge or reach coordinate
         assert "discharge" not in ds
@@ -653,11 +657,107 @@ class TestEdgeCases:
             output_states=all_states_enabled,
         )
 
-        # Load and verify CRS
-        ds = xr.open_dataset(output_path)
+        # Load and verify CRS (use chunked filename if exists)
+        chunk_path = output_path.parent / f"{output_path.stem}_001{output_path.suffix}"
+        actual_path = chunk_path if chunk_path.exists() else output_path
+        ds = xr.open_dataset(actual_path)
 
         # CRS should be in attributes
         assert "crs_wkt" in ds.crs.attrs
         assert "WGS_1984_UTM_Zone_32N" in ds.crs.attrs["crs_wkt"]
 
         ds.close()
+
+
+class TestChunking:
+    """Test file chunking functionality."""
+
+    def test_chunking_creates_multiple_files(self, tmp_path, all_states_enabled):
+        """Test that chunking creates multiple files when max_file_size is exceeded."""
+        # Create a large grid to force chunking with small max_file_size
+        grid_metadata = {
+            "shape": (200, 300),  # Large grid
+            "resolution": (50.0, 50.0),
+            "xllcorner": 500000.0,
+            "yllcorner": 4000000.0,
+            "crs": "EPSG:32632",
+        }
+
+        output_path = tmp_path / "chunked_states.nc"
+        base_time = datetime(2020, 1, 1)
+
+        # Use small max_file_size to force chunking (0.1 MB)
+        with StateWriter(
+            output_path=output_path,
+            grid_metadata=grid_metadata,
+            network_size=10,
+            output_states=all_states_enabled,
+            flushing=1,  # Flush after each state
+            max_file_size=0.1,  # Very small to force chunking
+        ) as writer:
+            # Write multiple states
+            for i in range(5):
+                state = SimulationState(
+                    wc=np.random.rand(200, 300) * 0.2,
+                    wg=np.random.rand(200, 300) * 0.1,
+                    wp=np.random.rand(200, 300) * 0.005,
+                    ws=np.random.rand(200, 300) * 0.01,
+                    discharge=np.random.rand(10) * 10.0,
+                    lateral_inflow=np.random.rand(10) * 2.0,
+                )
+                current_time = base_time + timedelta(hours=i)
+                writer.append_state(state, current_time)
+
+        # Check that multiple chunk files were created
+        chunk_001 = tmp_path / "chunked_states_001.nc"
+        chunk_002 = tmp_path / "chunked_states_002.nc"
+
+        assert chunk_001.exists(), "First chunk file should exist"
+        assert chunk_002.exists(), "Second chunk file should exist (file size exceeded limit)"
+
+        # Verify we can load from the first chunk
+        state, time, metadata = load_state(output_path, network_size=10, time_index=0)
+        assert state.wc.shape == (200, 300)
+        assert len(state.discharge) == 10
+
+    def test_no_chunking_below_size_limit(self, tmp_path, all_states_enabled):
+        """Test that no chunking occurs when files stay below max_file_size."""
+        grid_metadata = {
+            "shape": (10, 15),  # Small grid
+            "resolution": (100.0, 100.0),
+            "xllcorner": 1000000.0,
+            "yllcorner": 2000000.0,
+            "crs": "EPSG:32632",
+        }
+
+        output_path = tmp_path / "single_chunk.nc"
+        base_time = datetime(2020, 1, 1)
+
+        # Use large max_file_size - file will stay below this
+        with StateWriter(
+            output_path=output_path,
+            grid_metadata=grid_metadata,
+            network_size=5,
+            output_states=all_states_enabled,
+            flushing=1,
+            max_file_size=500.0,  # Large limit
+        ) as writer:
+            # Write a few states
+            for i in range(3):
+                state = SimulationState(
+                    wc=np.random.rand(10, 15) * 0.2,
+                    wg=np.random.rand(10, 15) * 0.1,
+                    wp=np.random.rand(10, 15) * 0.005,
+                    ws=np.random.rand(10, 15) * 0.01,
+                    discharge=np.random.rand(5) * 10.0,
+                    lateral_inflow=np.random.rand(5) * 2.0,
+                )
+                current_time = base_time + timedelta(hours=i)
+                writer.append_state(state, current_time)
+
+        # Check that only one chunk file was created
+        chunk_001 = tmp_path / "single_chunk_001.nc"
+        chunk_002 = tmp_path / "single_chunk_002.nc"
+
+        assert chunk_001.exists(), "First chunk file should exist"
+        assert not chunk_002.exists(), "Second chunk file should not exist (size limit not exceeded)"

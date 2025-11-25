@@ -801,12 +801,15 @@ class TestSimulationRun:
         _ = sim.run("2020-01-01 00:00", "2020-01-01 01:00")
 
         # Check that states.nc file exists with only 1 timestep (final state)
+        # May be chunked as states_001.nc
         states_file = tmp_path / "states" / "states.nc"
-        assert states_file.exists()
+        chunk_file = tmp_path / "states" / "states_001.nc"
+        actual_file = chunk_file if chunk_file.exists() else states_file
+        assert actual_file.exists(), f"Expected either {states_file} or {chunk_file}"
 
         import xarray as xr
 
-        ds = xr.open_dataset(states_file)
+        ds = xr.open_dataset(actual_file)
         assert len(ds.time) == 1
         ds.close()
 
@@ -822,12 +825,15 @@ class TestSimulationRun:
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
         # Check that states.nc file contains all 9 timesteps
+        # May be chunked as states_001.nc
         states_file = tmp_path / "states" / "states.nc"
-        assert states_file.exists()
+        chunk_file = tmp_path / "states" / "states_001.nc"
+        actual_file = chunk_file if chunk_file.exists() else states_file
+        assert actual_file.exists(), f"Expected either {states_file} or {chunk_file}"
 
         import xarray as xr
 
-        ds = xr.open_dataset(states_file)
+        ds = xr.open_dataset(actual_file)
         assert len(ds.time) == 9
         ds.close()
 
@@ -844,12 +850,15 @@ class TestSimulationRun:
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
         # Check that states.nc file contains 4 timesteps
+        # May be chunked as states_001.nc
         states_file = tmp_path / "states" / "states.nc"
-        assert states_file.exists()
+        chunk_file = tmp_path / "states" / "states_001.nc"
+        actual_file = chunk_file if chunk_file.exists() else states_file
+        assert actual_file.exists(), f"Expected either {states_file} or {chunk_file}"
 
         import xarray as xr
 
-        ds = xr.open_dataset(states_file)
+        ds = xr.open_dataset(actual_file)
         assert len(ds.time) == 4
         ds.close()
 
@@ -870,12 +879,15 @@ class TestSimulationRun:
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
         # Check that states.nc file contains 4 timesteps (only specified datetimes)
+        # May be chunked as states_001.nc
         states_file = tmp_path / "states" / "states.nc"
-        assert states_file.exists()
+        chunk_file = tmp_path / "states" / "states_001.nc"
+        actual_file = chunk_file if chunk_file.exists() else states_file
+        assert actual_file.exists(), f"Expected either {states_file} or {chunk_file}"
 
         import xarray as xr
 
-        ds = xr.open_dataset(states_file)
+        ds = xr.open_dataset(actual_file)
         assert len(ds.time) == 4
         ds.close()
 
@@ -895,12 +907,15 @@ class TestSimulationRun:
         _ = sim.run("2020-01-01 00:00", "2020-01-01 02:00")
 
         # Check that states.nc file contains 3 timesteps (specified datetimes)
+        # May be chunked as states_001.nc
         states_file = tmp_path / "states" / "states.nc"
-        assert states_file.exists()
+        chunk_file = tmp_path / "states" / "states_001.nc"
+        actual_file = chunk_file if chunk_file.exists() else states_file
+        assert actual_file.exists(), f"Expected either {states_file} or {chunk_file}"
 
         import xarray as xr
 
-        ds = xr.open_dataset(states_file)
+        ds = xr.open_dataset(actual_file)
         assert len(ds.time) == 3
         ds.close()
 
