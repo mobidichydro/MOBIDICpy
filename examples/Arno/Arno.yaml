@@ -345,7 +345,7 @@ output_states_settings:
 
   # OPTIONAL: Which time steps to save
   # [one among the following options: 'all', 'final', 'list', 'None' (default)]
-  output_states: all
+  output_states: final
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
