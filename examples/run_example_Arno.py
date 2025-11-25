@@ -169,7 +169,7 @@ print()
 # =========================================================================
 print("Step 6: Results summary...")
 print()
-print("  NOTE: Output files are automatically saved based on configuration:")
+print("  Output files are automatically saved based on configuration:")
 print(f"    - Discharge report: {config.output_report.discharge}")
 print(f"    - Lateral inflow report: {config.output_report.lateral_inflow}")
 print(f"    - Final state: {config.output_states_settings.output_states}")
@@ -178,19 +178,6 @@ print()
 # Output files have been automatically saved to:
 start_date_str = start_date.strftime("%Y%m%d")
 end_date_str1 = end_date.strftime("%Y%m%d")
-
-if config.output_report.discharge:
-    discharge_file = config.paths.output / f"discharge_{start_date_str}_{end_date_str1}.parquet"
-    print(f"  [OK] Discharge report saved to: {discharge_file}")
-
-if config.output_report.lateral_inflow:
-    lateral_inflow_file = config.paths.output / f"lateral_inflow_{start_date_str}_{end_date_str1}.parquet"
-    print(f"  [OK] Lateral inflow report saved to: {lateral_inflow_file}")
-
-if config.output_states_settings.output_states in ["final", "all"]:
-    final_time = results.time_series["time"][-1]
-    state_file = config.paths.states / f"state_{final_time.strftime('%Y%m%d_%H%M%S')}.nc"
-    print(f"  [OK] Final state saved to: {state_file}")
 
 print()
 
