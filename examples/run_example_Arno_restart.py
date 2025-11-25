@@ -1,12 +1,12 @@
 """
-MOBIDIC Example - Arno River Basin Simulation with Restart
+MOBIDIC Example - Arno River Basin simulation with restart
 
 This script demonstrates the simulation restart capability:
 1. Run simulation from start to a middle point (e.g., 50% of period)
 2. Save intermediate states
 3. Load the last saved state from the first run
 4. Restart simulation from the saved state and continue to the end
-5. Compare results with a continuous run
+5. Compare results vs a continuous run
 
 The example shows how to:
 - Set initial state from a previous simulation using set_initial_state()
@@ -146,7 +146,7 @@ print("Step 5: Determining simulation periods...")
 start_date = forcing.start_date
 end_date = forcing.end_date
 
-# Calculate restart point (e.g., 50% of simulation period)
+# Calculate restart point
 # Round to nearest timestep to ensure clean split
 total_duration = end_date - start_date
 restart_point_raw = start_date + pd.Timedelta(seconds=total_duration.total_seconds() * restart_fraction)
@@ -155,11 +155,12 @@ restart_point_raw = start_date + pd.Timedelta(seconds=total_duration.total_secon
 dt = config.simulation.timestep  # seconds
 seconds_from_start = (restart_point_raw - start_date).total_seconds()
 rounded_seconds = round(seconds_from_start / dt) * dt
-restart_point = start_date + pd.Timedelta(seconds=rounded_seconds)
+stop_point = start_date + pd.Timedelta(seconds=rounded_seconds)
+restart_point = stop_point + pd.Timedelta(seconds=dt)  # Start of next timestep
+
 
 print(f"  Full period: {start_date} to {end_date}")
 print(f"  Restart fraction: {restart_fraction * 100:.0f}%")
-print(f"  Restart point (raw): {restart_point_raw}")
 print(f"  Restart point (rounded): {restart_point}")
 print(f"  First run: {start_date} to {restart_point}")
 print(f"  Second run: {restart_point} to {end_date}")
@@ -175,25 +176,19 @@ print()
 sim1 = Simulation(gisdata, forcing, config)
 
 # Run first simulation
-print(f"  Running simulation from {start_date} to {restart_point}...")
-start_time_1 = time.time()
+print(f"  Running simulation from {start_date} to {stop_point}...")
 results_1 = sim1.run(
     start_date=start_date,
-    end_date=restart_point,
+    end_date=stop_point,
 )
-end_time_1 = time.time()
-elapsed_time_1 = end_time_1 - start_time_1
 
 print()
 print("  [OK] First simulation completed successfully!")
-print(f"  Execution time: {elapsed_time_1:.2f} seconds ({elapsed_time_1 / 60:.2f} minutes)")
 print()
 
 # Check that states were saved (handle chunked files)
 states_dir = Path(config.paths.states)
-states_file = states_dir / "states.nc"
-chunk_file = states_dir / "states_001.nc"
-state_file = chunk_file if chunk_file.exists() else states_file
+state_file = states_dir / "states_001.nc"
 
 if not state_file.exists():
     raise FileNotFoundError(
@@ -213,22 +208,18 @@ sim2 = Simulation(gisdata, forcing, config)
 
 # Load last state from first simulation
 print(f"  Loading last state from: {state_file}")
-sim2.set_initial_state(state_file=state_file, time_index=-1)
+sim2.set_initial_state(state_file=state_file, time_index=-1) # Load last saved state from file
+#sim2.set_initial_state(sim1.state) # Programmatically set state from first sim
 print()
 
 # Run second simulation from restart point to end
 print(f"  Running simulation from {restart_point} to {end_date}...")
-start_time_2 = time.time()
 results_2 = sim2.run(
     start_date=restart_point,
     end_date=end_date,
 )
-end_time_2 = time.time()
-elapsed_time_2 = end_time_2 - start_time_2
-
 print()
 print("  [OK] Second simulation completed successfully!")
-print(f"  Execution time: {elapsed_time_2:.2f} seconds ({elapsed_time_2 / 60:.2f} minutes)")
 print()
 
 # =========================================================================
@@ -240,9 +231,9 @@ print("Step 8: Combining results from both runs...")
 # Skip the first timestep of the second run to avoid duplication at restart_point
 # (The restart_point is the last timestep of run 1 and the first timestep of run 2)
 discharge_combined = np.concatenate(
-    [results_1.time_series["discharge"], results_2.time_series["discharge"][1:]], axis=0
+    [results_1.time_series["discharge"], results_2.time_series["discharge"]], axis=0
 )
-time_combined = results_1.time_series["time"] + results_2.time_series["time"][1:]
+time_combined = results_1.time_series["time"] + results_2.time_series["time"]
 
 print(f"  [OK] Combined time series: {len(time_combined)} timesteps")
 print(f"  First run: {len(results_1.time_series['time'])} timesteps")
@@ -250,7 +241,7 @@ print(f"  Second run: {len(results_2.time_series['time'])} timesteps (first time
 print()
 
 # =========================================================================
-# Step 9: Run Continuous Simulation for Comparison (Optional)
+# Step 9: Run continuous simulation for comparison
 # =========================================================================
 print("Step 9: Running continuous simulation for comparison...")
 print()
@@ -260,17 +251,13 @@ sim_continuous = Simulation(gisdata, forcing, config)
 
 # Run continuous simulation
 print(f"  Running continuous simulation from {start_date} to {end_date}...")
-start_time_cont = time.time()
 results_continuous = sim_continuous.run(
     start_date=start_date,
     end_date=end_date,
 )
-end_time_cont = time.time()
-elapsed_time_cont = end_time_cont - start_time_cont
 
 print()
 print("  [OK] Continuous simulation completed successfully!")
-print(f"  Execution time: {elapsed_time_cont:.2f} seconds ({elapsed_time_cont / 60:.2f} minutes)")
 print()
 
 # =========================================================================
@@ -309,7 +296,7 @@ reach_id = 329
 
 # Create figure with subplots
 fig, axes = plt.subplots(3, 1, figsize=(14, 10))
-fig.suptitle("MOBIDIC Simulation Restart Demonstration - Arno River Basin", fontsize=14, fontweight="bold")
+fig.suptitle("MOBIDIC simulation restart demo - Arno River Basin", fontsize=14, fontweight="bold")
 
 # Plot 1: Continuous vs Restarted simulation at specific reach
 axes[0].plot(time_continuous, discharge_continuous[:, reach_id], "b-", linewidth=2, label="Continuous run")
@@ -353,20 +340,11 @@ print()
 # Summary Statistics
 # =========================================================================
 print("=" * 80)
-print("Simulation Restart Summary")
+print("Simulation restart summary")
 print("=" * 80)
 print(f"Basin: {config.basin.id}")
 print(f"Full period: {start_date} to {end_date}")
 print(f"Restart point: {restart_point} ({restart_fraction * 100:.0f}% of period)")
-print()
-
-print("Execution times:")
-print(f"  First run: {elapsed_time_1:.2f} seconds ({elapsed_time_1 / 60:.2f} minutes)")
-print(f"  Second run: {elapsed_time_2:.2f} seconds ({elapsed_time_2 / 60:.2f} minutes)")
-print(
-    f"  Total (restarted): {elapsed_time_1 + elapsed_time_2:.2f} seconds ({(elapsed_time_1 + elapsed_time_2) / 60:.2f} minutes)"
-)
-print(f"  Continuous: {elapsed_time_cont:.2f} seconds ({elapsed_time_cont / 60:.2f} minutes)")
 print()
 
 print("Result comparison:")
