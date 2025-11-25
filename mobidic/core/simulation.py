@@ -1017,6 +1017,7 @@ class Simulation:
                 network_size=len(self.network),
                 output_states=self.config.output_states,
                 flushing=state_settings.flushing,
+                max_file_size=state_settings.max_file_size,
                 add_metadata={
                     "basin_id": self.config.basin.id,
                     "paramset_id": self.config.basin.paramset_id,

@@ -24,10 +24,13 @@ def load_state(
 
     Supports both single-timestep and multi-timestep state files.
     For multi-timestep files, loads the specified time index (default: last timestep).
+    Automatically detects chunk files (e.g., states_001.nc) when the base path
+    doesn't exist.
 
     Args:
-        input_path: Path to input NetCDF file
-        network_size: Expected number of reaches in network
+        input_path: Path to output NetCDF file (may be chunked as _001.nc, _002.nc, etc.)
+        network_size: Expected number of reaches in network. Validates consistency between
+                        the saved state and current model setup.
         time_index: Index of timestep to load (default: -1 = last timestep)
 
     Returns:
@@ -46,11 +49,25 @@ def load_state(
         >>> state, time, metadata = load_state("states.nc", 1235)
         >>> # Load first timestep
         >>> state, time, metadata = load_state("states.nc", 1235, time_index=0)
+        >>> # Works with chunked files too
+        >>> state, time, metadata = load_state("states.nc", 1235)  # Auto-loads states_001.nc
     """
     input_path = Path(input_path)
 
+    # Check if the exact path exists, otherwise look for chunk files
     if not input_path.exists():
-        raise FileNotFoundError(f"State file not found: {input_path}")
+        # Try to find chunk files
+        stem = input_path.stem
+        suffix = input_path.suffix
+        parent = input_path.parent
+
+        # Look for first chunk
+        first_chunk = parent / f"{stem}_001{suffix}"
+        if first_chunk.exists():
+            logger.info(f"Base file not found, using chunk file: {first_chunk}")
+            input_path = first_chunk
+        else:
+            raise FileNotFoundError(f"State file not found: {input_path} (also checked for {first_chunk})")
 
     logger.info(f"Loading simulation state from NetCDF: {input_path}")
 
@@ -152,11 +169,19 @@ def load_state(
 
 class StateWriter:
     """
-    Incremental NetCDF state writer with buffering and flushing control.
+    Incremental NetCDF state writer with buffering, flushing, and automatic chunking.
 
-    This class manages writing simulation states to a single NetCDF file
-    across multiple timesteps, with configurable memory buffering and
-    periodic flushing to disk.
+    This class manages writing simulation states to NetCDF files across multiple
+    timesteps, with configurable memory buffering, periodic flushing to disk, and
+    automatic file chunking when size limits are reached.
+
+    File chunking occurs when the current file reaches max_file_size before a new flush.
+    For effective chunking, flushing must be set to a positive integer (e.g., flush
+    every N timesteps). If flushing=-1 (flush only at end), all data is written in
+    one operation and chunking may not work as expected.
+
+    Note: Files may slightly exceed max_file_size by up to one flush worth of data,
+    since the size check occurs before writing each flush batch.
 
     Args:
         output_path: Path to output NetCDF file (will be created/overwritten)
@@ -164,13 +189,17 @@ class StateWriter:
         network_size: Number of reaches in network
         output_states: Configuration object specifying which state variables to save
         flushing: Flush interval (positive int = every N steps, -1 = only at end)
+        max_file_size: Maximum file size in MB before creating a new chunk (default: 500)
         add_metadata: Additional global attributes (optional)
 
     Examples:
-        >>> writer = StateWriter("states.nc", metadata, 1235, config.output_states, flushing=10)
+        >>> # With automatic chunking at 500 MB
+        >>> writer = StateWriter("states.nc", metadata, 1235, config.output_states,
+        ...                      flushing=10, max_file_size=500)
         >>> for step in range(num_steps):
         ...     writer.append_state(state, current_time)
         >>> writer.close()
+        >>> # This may create: states_001.nc, states_002.nc, states_003.nc, etc.
     """
 
     def __init__(
@@ -180,22 +209,27 @@ class StateWriter:
         network_size: int,
         output_states: "OutputStates",  # noqa: F821
         flushing: int = -1,
+        max_file_size: float = 500.0,
         add_metadata: dict | None = None,
     ):
         """Initialize the state writer and create the NetCDF file."""
-        self.output_path = Path(output_path)
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Remove existing file if present to avoid appending to old data
-        if self.output_path.exists():
-            logger.info(f"Removing existing state file: {self.output_path}")
-            self.output_path.unlink()
+        self.base_output_path = Path(output_path)
+        self.base_output_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.grid_metadata = grid_metadata
         self.network_size = network_size
         self.output_states = output_states
         self.flushing = flushing
+        self.max_file_size_bytes = max_file_size * 1024 * 1024  # Convert MB to bytes
         self.add_metadata = add_metadata or {}
+
+        # Chunking state
+        self.current_chunk = 1
+        self.output_path = self._get_chunk_path(self.current_chunk)
+        self.chunk_files_created = []
+
+        # Remove existing chunk files if present
+        self._remove_existing_chunks()
 
         # Get grid dimensions
         self.nrows, self.ncols = grid_metadata["shape"]
@@ -216,7 +250,66 @@ class StateWriter:
         # Create the NetCDF file structure
         self._initialize_file()
 
-        logger.debug(f"StateWriter initialized: {self.output_path}, flushing={self.flushing}")
+        logger.debug(
+            f"StateWriter initialized: {self.output_path}, flushing={self.flushing}, "
+            f"max_file_size={max_file_size:.1f} MB"
+        )
+
+    def _get_chunk_path(self, chunk_number: int) -> Path:
+        """
+        Generate path for a chunk file.
+
+        Args:
+            chunk_number: Chunk number (1-indexed)
+
+        Returns:
+            Path object with chunk suffix (e.g., states_001.nc)
+        """
+        stem = self.base_output_path.stem
+        suffix = self.base_output_path.suffix
+        parent = self.base_output_path.parent
+        return parent / f"{stem}_{chunk_number:03d}{suffix}"
+
+    def _remove_existing_chunks(self) -> None:
+        """Remove any existing chunk files matching the base path pattern."""
+        stem = self.base_output_path.stem
+        suffix = self.base_output_path.suffix
+        parent = self.base_output_path.parent
+
+        # Find and remove all chunk files
+        import glob
+
+        pattern = str(parent / f"{stem}_[0-9][0-9][0-9]{suffix}")
+        existing_chunks = glob.glob(pattern)
+
+        for chunk_file in existing_chunks:
+            chunk_path = Path(chunk_file)
+            logger.info(f"Removing existing chunk file: {chunk_path}")
+            chunk_path.unlink()
+
+    def _check_and_rotate_file(self) -> None:
+        """Check current file size and rotate to new chunk if needed."""
+        if not self.output_path.exists():
+            return
+
+        file_size = self.output_path.stat().st_size
+
+        if file_size >= self.max_file_size_bytes:
+            # Current chunk exceeded size limit - rotate to new chunk
+            file_size_mb = file_size / 1024 / 1024
+            logger.info(
+                f"File size limit reached ({file_size_mb:.1f} MB >= {self.max_file_size_bytes / 1024 / 1024:.1f} MB). "
+                f"Creating new chunk file."
+            )
+
+            # Record the completed chunk
+            self.chunk_files_created.append(self.output_path)
+
+            # Increment chunk number and update path
+            self.current_chunk += 1
+            self.output_path = self._get_chunk_path(self.current_chunk)
+
+            logger.info(f"Starting new chunk: {self.output_path}")
 
     def _initialize_file(self) -> None:
         """Create the NetCDF file with unlimited time dimension."""
@@ -309,6 +402,10 @@ class StateWriter:
         """Write buffered states to disk using efficient append mode."""
         if not self.buffer:
             return
+
+        # Check if we need to rotate to a new chunk BEFORE writing
+        # This prevents files from exceeding the size limit
+        self._check_and_rotate_file()
 
         logger.debug(f"Flushing {len(self.buffer)} states to {self.output_path}")
 
@@ -502,9 +599,23 @@ class StateWriter:
         if self.buffer:
             self.flush()
 
-        logger.success(f"States file saved: {self.output_path} ({self.step_count} states written)")
+        # Add the current (last) chunk to the list
         if self.output_path.exists():
-            logger.debug(f"File size: {self.output_path.stat().st_size / 1024 / 1024:.2f} MB")
+            self.chunk_files_created.append(self.output_path)
+
+        # Report summary
+        total_chunks = len(self.chunk_files_created)
+        if total_chunks == 1:
+            logger.success(f"States file saved: {self.chunk_files_created[0]} ({self.step_count} states written)")
+            logger.debug(f"File size: {self.chunk_files_created[0].stat().st_size / 1024 / 1024:.2f} MB")
+        else:
+            logger.success(f"States saved in {total_chunks} chunk files ({self.step_count} states total):")
+            total_size_mb = 0
+            for chunk_path in self.chunk_files_created:
+                size_mb = chunk_path.stat().st_size / 1024 / 1024
+                total_size_mb += size_mb
+                logger.info(f"  {chunk_path.name}: {size_mb:.2f} MB")
+            logger.debug(f"Total size: {total_size_mb:.2f} MB")
 
     def __enter__(self):
         """Context manager entry."""
