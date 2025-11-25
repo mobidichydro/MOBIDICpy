@@ -994,3 +994,170 @@ class TestSimulationRun:
         # Check that no warnings about missing states were issued
         warning_messages = [w for w in warnings if "will NOT be saved" in w]
         assert len(warning_messages) == 0
+
+
+class TestSimulationRestart:
+    """Tests for simulation restart functionality."""
+
+    def test_set_initial_state_from_state_object(self, simple_gisdata, simple_meteo, simple_config):
+        """Test set_initial_state() with a SimulationState object."""
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Create a custom state
+        wc = np.full((5, 5), 0.05)
+        wg = np.full((5, 5), 0.10)
+        wp = np.full((5, 5), 0.01)
+        ws = np.full((5, 5), 0.005)
+        wc[0, 0] = np.nan
+        wg[0, 0] = np.nan
+        wp[0, 0] = np.nan
+        ws[0, 0] = np.nan
+
+        discharge = np.array([5.0])
+        lateral_inflow = np.array([0.5])
+
+        custom_state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
+
+        # Set initial state
+        sim.set_initial_state(state=custom_state)
+
+        # Verify state was set correctly
+        assert sim.state is not None
+        assert np.array_equal(sim.state.wc, wc, equal_nan=True)
+        assert np.array_equal(sim.state.wg, wg, equal_nan=True)
+        assert np.array_equal(sim.state.wp, wp, equal_nan=True)
+        assert np.array_equal(sim.state.ws, ws, equal_nan=True)
+        assert np.array_equal(sim.state.discharge, discharge)
+        assert np.array_equal(sim.state.lateral_inflow, lateral_inflow)
+
+    def test_set_initial_state_from_file(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test set_initial_state() by loading from a state file."""
+        # First, run a simulation and save states
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "final"
+
+        sim1 = Simulation(simple_gisdata, simple_meteo, simple_config)
+        results1 = sim1.run("2020-01-01 00:00", "2020-01-01 01:00")
+
+        # Get state file path (chunked)
+        state_file = tmp_path / "states" / "states_001.nc"
+
+        assert state_file.exists(), f"Expected state file {state_file}"
+
+        # Create new simulation and set initial state from file
+        sim2 = Simulation(simple_gisdata, simple_meteo, simple_config)
+        sim2.set_initial_state(state_file=state_file, time_index=-1)
+
+        # Verify state was loaded correctly
+        assert sim2.state is not None
+        assert sim2.state.wc.shape == (5, 5)
+        assert sim2.state.discharge.shape == (1,)
+
+        # State should match final state from first simulation
+        assert np.allclose(sim2.state.wc, results1.final_state.wc, rtol=1e-6, equal_nan=True)
+        assert np.allclose(sim2.state.wg, results1.final_state.wg, rtol=1e-6, equal_nan=True)
+        assert np.allclose(sim2.state.discharge, results1.final_state.discharge, rtol=1e-6)
+
+    def test_set_initial_state_no_args_raises_error(self, simple_gisdata, simple_meteo, simple_config):
+        """Test set_initial_state() raises error when no arguments provided."""
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        with pytest.raises(ValueError, match="Either 'state' or 'state_file' must be provided"):
+            sim.set_initial_state()
+
+    def test_set_initial_state_nonexistent_file_raises_error(self, simple_gisdata, simple_meteo, simple_config):
+        """Test set_initial_state() raises error when state file doesn't exist."""
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        with pytest.raises(ValueError, match="State file not found"):
+            sim.set_initial_state(state_file="nonexistent.nc")
+
+    def test_run_skips_initialization_when_state_set(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test that run() skips default initialization when state is pre-set."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        # Create a custom state with specific values
+        wc = np.full((5, 5), 0.05)
+        wg = np.full((5, 5), 0.10)
+        wp = np.full((5, 5), 0.01)
+        ws = np.full((5, 5), 0.005)
+        wc[0, 0] = np.nan
+        wg[0, 0] = np.nan
+        wp[0, 0] = np.nan
+        ws[0, 0] = np.nan
+        discharge = np.array([5.0])
+        lateral_inflow = np.array([0.5])
+
+        custom_state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
+
+        # Set initial state
+        sim.set_initial_state(state=custom_state)
+
+        # Run simulation
+        results = sim.run("2020-01-01 00:00", "2020-01-01 00:00")  # Single timestep
+
+        # The first timestep should use the custom state (discharge=5.0)
+        # This is different from default initialization (discharge=0.0)
+        assert results.time_series["discharge"][0, 0] != 0.0
+
+    def test_restart_produces_same_result_as_continuous(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test that restarting a simulation produces the same result as continuous run."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "all"
+        simple_config.output_states_settings.output_interval = 900.0  # Save every timestep
+
+        # Run first half of simulation
+        sim1 = Simulation(simple_gisdata, simple_meteo, simple_config)
+        results1 = sim1.run("2020-01-01 00:00", "2020-01-01 01:00")
+
+        # Get state file
+        state_file = tmp_path / "states" / "states_001.nc"
+
+        # Run second half from saved state
+        simple_config.paths.states = str(tmp_path / "states2")  # Different dir to avoid conflicts
+        sim2 = Simulation(simple_gisdata, simple_meteo, simple_config)
+        sim2.set_initial_state(state_file=state_file, time_index=-1)
+        results2 = sim2.run("2020-01-01 01:15", "2020-01-01 02:00")
+
+        # Run continuous simulation for comparison
+        simple_config.paths.states = str(tmp_path / "states3")
+        sim_continuous = Simulation(simple_gisdata, simple_meteo, simple_config)
+        results_continuous = sim_continuous.run("2020-01-01 00:00", "2020-01-01 02:00")
+
+        # Combine restarted results
+        discharge_restarted = np.concatenate(
+            [results1.time_series["discharge"], results2.time_series["discharge"]], axis=0
+        )
+
+        # Compare with continuous run
+        discharge_continuous = results_continuous.time_series["discharge"]
+
+        # Results should match within numerical precision
+        assert np.allclose(discharge_restarted, discharge_continuous, rtol=1e-6, atol=1e-9)
+
+    def test_set_initial_state_with_specific_time_index(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """Test set_initial_state() with a specific time index (not last)."""
+        # Run simulation and save multiple states
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_config.output_states_settings.output_states = "all"
+        simple_config.output_states_settings.output_interval = None  # Save every timestep
+
+        sim1 = Simulation(simple_gisdata, simple_meteo, simple_config)
+        # Run for 2 hours = 9 timesteps
+        sim1.run("2020-01-01 00:00", "2020-01-01 02:00")
+
+        # Get state file
+        state_file = tmp_path / "states" / "states_001.nc"
+
+        # Load state from middle of simulation (time_index=4, halfway through)
+        sim2 = Simulation(simple_gisdata, simple_meteo, simple_config)
+        sim2.set_initial_state(state_file=state_file, time_index=4)
+
+        # Verify state was loaded
+        assert sim2.state is not None
