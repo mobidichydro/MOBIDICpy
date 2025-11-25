@@ -318,6 +318,75 @@ class Simulation:
 
         return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
 
+    def set_initial_state(
+        self,
+        state: SimulationState | None = None,
+        state_file: str | Path | None = None,
+        time_index: int = -1,
+    ) -> None:
+        """Set the initial simulation state from a previous simulation.
+
+        This method allows restarting a simulation from a previously saved state,
+        enabling warm starts, multi-stage simulations, or continuation after interruption.
+
+        Args:
+            state: SimulationState object to use as initial state. If provided, state_file is ignored.
+            state_file: Path to NetCDF state file to load. Used if state is None.
+            time_index: Time index to load from state file (default: -1 for last timestep).
+                Only used when loading from state_file.
+
+        Raises:
+            ValueError: If neither state nor state_file is provided, or if state_file doesn't exist.
+
+        Examples:
+            >>> # Method 1: Set state directly from SimulationState object
+            >>> sim.set_initial_state(state=previous_state)
+            >>>
+            >>> # Method 2: Load from state file (last timestep)
+            >>> sim.set_initial_state(state_file="states.nc")
+            >>>
+            >>> # Method 3: Load specific timestep from state file
+            >>> sim.set_initial_state(state_file="states.nc", time_index=10)
+        """
+        if state is not None:
+            # Use provided state directly
+            logger.info("Setting initial state from provided SimulationState object")
+            self.state = state
+            logger.success(
+                f"Initial state set. State contains: "
+                f"Wc={np.nanmean(state.wc) * 1000:.1f} mm, "
+                f"Wg={np.nanmean(state.wg) * 1000:.1f} mm, "
+                f"Ws={np.nanmean(state.ws) * 1000:.1f} mm, "
+                f"Q_mean={np.mean(state.discharge):.3f} m³/s"
+            )
+        elif state_file is not None:
+            # Load from state file
+            state_path = Path(state_file)
+            if not state_path.exists():
+                raise ValueError(f"State file not found: {state_path}")
+
+            logger.info(f"Loading initial state from file: {state_path}")
+
+            from mobidic.io import load_state
+
+            loaded_state, state_time, metadata = load_state(
+                input_path=state_path,
+                network_size=len(self.network),
+                time_index=time_index,
+            )
+
+            self.state = loaded_state
+            logger.success(
+                f"Initial state loaded from {state_path} at time {state_time}. "
+                f"State contains: "
+                f"Wc={np.nanmean(loaded_state.wc) * 1000:.1f} mm, "
+                f"Wg={np.nanmean(loaded_state.wg) * 1000:.1f} mm, "
+                f"Ws={np.nanmean(loaded_state.ws) * 1000:.1f} mm, "
+                f"Q_mean={np.mean(loaded_state.discharge):.3f} m³/s"
+            )
+        else:
+            raise ValueError("Either 'state' or 'state_file' must be provided")
+
     def _interpolate_forcing(
         self,
         time: datetime,
@@ -934,8 +1003,11 @@ class Simulation:
         if isinstance(end_date, str):
             end_date = datetime.fromisoformat(end_date)
 
-        # Initialize state
-        self.state = self._initial_state()
+        # Initialize state (skip if already set via set_initial_state())
+        if self.state is None:
+            self.state = self._initial_state()
+        else:
+            logger.info("Using pre-set initial state (skipping default initialization)")
 
         # Initialize results container
         results = SimulationResults(self.config, simulation=self)
