@@ -19,18 +19,20 @@ def save_discharge_report(
     reach_selection: str = "all",
     selected_reaches: list[int] | None = None,
     add_metadata: dict | None = None,
+    output_format: str = "Parquet",
 ) -> None:
     """
-    Save discharge time series to Parquet file.
+    Save discharge time series to file (Parquet or CSV).
 
     Args:
         discharge_timeseries: 2D array of discharge values [m³/s], shape (n_timesteps, n_reaches)
         time_stamps: List of datetime objects for each time step
         network: River network GeoDataFrame with reach metadata
-        output_path: Path to output Parquet file
+        output_path: Path to output file
         reach_selection: Reach selection mode: "all", "list", or "outlets"
         selected_reaches: List of reach IDs (mobidic_id) to include (used if reach_selection="list")
         add_metadata: Additional metadata to save (optional, saved as JSON in separate file)
+        output_format: Output format: "Parquet" or "csv" (default: "Parquet")
 
     Examples:
         >>> from mobidic import Simulation
@@ -42,7 +44,8 @@ def save_discharge_report(
         ...     results.time_series["time"],
         ...     sim.network,
         ...     "Arno_discharge.parquet",
-        ...     reach_selection="outlets"
+        ...     reach_selection="outlets",
+        ...     output_format="Parquet"
         ... )
     """
     output_path = Path(output_path)
@@ -84,15 +87,20 @@ def save_discharge_report(
     # Add reach metadata as separate columns (optional, can be joined later with network data)
     # For now, keep it simple and just save discharge values
 
-    # Save to Parquet with compression
-    df.to_parquet(
-        output_path,
-        engine="pyarrow",
-        compression="snappy",
-        index=True,
-    )
-
-    logger.success(f"Discharge report saved to {output_path}")
+    # Save to file based on output_format
+    if output_format.lower() == "csv":
+        df.to_csv(output_path, index=True)
+        logger.success(f"Discharge report saved to {output_path} (CSV format)")
+    elif output_format.lower() == "parquet":
+        df.to_parquet(
+            output_path,
+            engine="pyarrow",
+            compression="snappy",
+            index=True,
+        )
+        logger.success(f"Discharge report saved to {output_path} (Parquet format)")
+    else:
+        raise ValueError(f"Invalid output_format: {output_format}. Must be 'csv' or 'Parquet'")
     logger.debug(
         f"File size: {output_path.stat().st_size / 1024:.2f} KB, "
         f"Time steps: {len(time_stamps)}, "
@@ -160,9 +168,10 @@ def save_lateral_inflow_report(
     output_path: str | Path,
     reach_selection: str = "all",
     selected_reaches: list[int] | None = None,
+    output_format: str = "Parquet",
 ) -> None:
     """
-    Save lateral inflow time series to Parquet file.
+    Save lateral inflow time series to file (Parquet or CSV).
 
     Similar to save_discharge_report but for lateral inflows.
 
@@ -170,16 +179,18 @@ def save_lateral_inflow_report(
         lateral_inflow_timeseries: 2D array of lateral inflow [m³/s], shape (n_timesteps, n_reaches)
         time_stamps: List of datetime objects for each time step
         network: River network GeoDataFrame with reach metadata
-        output_path: Path to output Parquet file
+        output_path: Path to output file
         reach_selection: Reach selection mode: "all", "list", or "outlets"
         selected_reaches: List of reach IDs to include (used if reach_selection="list")
+        output_format: Output format: "Parquet" or "csv" (default: "Parquet")
 
     Examples:
         >>> save_lateral_inflow_report(
         ...     lateral_inflow_ts,
         ...     time_stamps,
         ...     network,
-        ...     "lateral_inflow.parquet"
+        ...     "lateral_inflow.parquet",
+        ...     output_format="Parquet"
         ... )
     """
     output_path = Path(output_path)
@@ -208,12 +219,17 @@ def save_lateral_inflow_report(
         columns=[f"reach_{rid:04d}" for rid in reach_indices],
     )
 
-    # Save to Parquet
-    df.to_parquet(
-        output_path,
-        engine="pyarrow",
-        compression="snappy",
-        index=True,
-    )
-
-    logger.success(f"Lateral inflow report saved to {output_path}")
+    # Save to file based on output_format
+    if output_format.lower() == "csv":
+        df.to_csv(output_path, index=True)
+        logger.success(f"Lateral inflow report saved to {output_path} (CSV format)")
+    elif output_format.lower() == "parquet":
+        df.to_parquet(
+            output_path,
+            engine="pyarrow",
+            compression="snappy",
+            index=True,
+        )
+        logger.success(f"Lateral inflow report saved to {output_path} (Parquet format)")
+    else:
+        raise ValueError(f"Invalid output_format: {output_format}. Must be 'csv' or 'Parquet'")
