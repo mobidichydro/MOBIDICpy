@@ -306,6 +306,68 @@ class TestSaveDischargeReport:
         assert file_size > 0
         assert file_size < 100000  # Should be much smaller than uncompressed
 
+    def test_save_csv_format(self, tmp_path, sample_network, sample_timeseries):
+        """Test saving discharge report in CSV format."""
+        discharge, time_stamps = sample_timeseries
+        output_path = tmp_path / "discharge.csv"
+
+        save_discharge_report(
+            discharge_timeseries=discharge,
+            time_stamps=time_stamps,
+            network=sample_network,
+            output_path=output_path,
+            reach_selection="all",
+            output_format="csv",
+        )
+
+        # Check file exists
+        assert output_path.exists()
+
+        # Load and verify structure
+        df = pd.read_csv(output_path, index_col=0, parse_dates=True)
+        assert len(df) == len(time_stamps)
+        assert len(df.columns) == len(sample_network)
+
+        # Check data values
+        np.testing.assert_array_almost_equal(df.values, discharge)
+
+    def test_save_parquet_format_explicit(self, tmp_path, sample_network, sample_timeseries):
+        """Test saving discharge report with explicit Parquet format."""
+        discharge, time_stamps = sample_timeseries
+        output_path = tmp_path / "discharge.parquet"
+
+        save_discharge_report(
+            discharge_timeseries=discharge,
+            time_stamps=time_stamps,
+            network=sample_network,
+            output_path=output_path,
+            reach_selection="all",
+            output_format="Parquet",
+        )
+
+        # Check file exists
+        assert output_path.exists()
+
+        # Load and verify
+        df = pd.read_parquet(output_path)
+        assert len(df) == len(time_stamps)
+        np.testing.assert_array_almost_equal(df.values, discharge)
+
+    def test_invalid_output_format(self, tmp_path, sample_network, sample_timeseries):
+        """Test error handling for invalid output format."""
+        discharge, time_stamps = sample_timeseries
+        output_path = tmp_path / "discharge.txt"
+
+        with pytest.raises(ValueError, match="Invalid output_format"):
+            save_discharge_report(
+                discharge_timeseries=discharge,
+                time_stamps=time_stamps,
+                network=sample_network,
+                output_path=output_path,
+                reach_selection="all",
+                output_format="txt",
+            )
+
 
 class TestLoadDischargeReport:
     """Tests for load_discharge_report function."""
@@ -571,6 +633,29 @@ class TestSaveLateralInflowReport:
         )
 
         assert Path(output_path).exists()
+
+    def test_save_lateral_inflow_csv_format(self, tmp_path, sample_network, sample_timeseries):
+        """Test saving lateral inflow report in CSV format."""
+        lateral_inflow, time_stamps = sample_timeseries
+        output_path = tmp_path / "lateral_inflow.csv"
+
+        save_lateral_inflow_report(
+            lateral_inflow_timeseries=lateral_inflow,
+            time_stamps=time_stamps,
+            network=sample_network,
+            output_path=output_path,
+            reach_selection="all",
+            output_format="csv",
+        )
+
+        # Check file exists
+        assert output_path.exists()
+
+        # Load and verify
+        df = pd.read_csv(output_path, index_col=0, parse_dates=True)
+        assert len(df) == len(time_stamps)
+        assert len(df.columns) == len(sample_network)
+        np.testing.assert_array_almost_equal(df.values, lateral_inflow)
 
 
 class TestEdgeCases:
