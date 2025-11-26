@@ -31,7 +31,8 @@ def load_state(
 
     If a state variable is missing from the file, it will be initialized using
     the initial conditions from the configuration file (if config and gisdata are
-    provided), otherwise it will be initialized with zeros.
+    provided), otherwise grid variables will be initialized with zeros and network
+    variables will be initialized with zeros.
 
     Args:
         input_path: Path to output NetCDF file (may be chunked as _001.nc, _002.nc, etc.)
@@ -100,7 +101,7 @@ def load_state(
     can_use_config = config is not None and gisdata is not None
 
     # Extract state variables (conditionally, since they may not be present)
-    # Grid variables: initialize from config if missing and config provided, otherwise use NaN
+    # Grid variables: initialize from config if missing and config provided, otherwise use zeros
     if "Wc" in ds:
         wc = ds["Wc"].values
     else:
@@ -129,8 +130,8 @@ def load_state(
             flow_acc = gisdata.grids["flow_acc"]
             wc[np.isnan(flow_acc)] = np.nan
         else:
-            logger.warning("Wc not found in state file, initializing with NaN")
-            wc = np.full((nrows, ncols), np.nan)
+            logger.warning("Wc not found in state file, initializing with zeros")
+            wc = np.zeros((nrows, ncols))
 
     if "Wg" in ds:
         wg = ds["Wg"].values
@@ -160,8 +161,8 @@ def load_state(
             flow_acc = gisdata.grids["flow_acc"]
             wg[np.isnan(flow_acc)] = np.nan
         else:
-            logger.warning("Wg not found in state file, initializing with NaN")
-            wg = np.full((nrows, ncols), np.nan)
+            logger.warning("Wg not found in state file, initializing with zeros")
+            wg = np.zeros((nrows, ncols))
 
     if "Ws" in ds:
         ws = ds["Ws"].values
@@ -176,10 +177,10 @@ def load_state(
             flow_acc = gisdata.grids["flow_acc"]
             ws[np.isnan(flow_acc)] = np.nan
         else:
-            logger.warning("Ws not found in state file, initializing with NaN")
-            ws = np.full((nrows, ncols), np.nan)
+            logger.warning("Ws not found in state file, initializing with zeros")
+            ws = np.zeros((nrows, ncols))
 
-    # Plant water: optional, None if missing
+    # Plant water: optional, initialize with zeros if missing
     if "Wp" in ds:
         wp = ds["Wp"].values
     else:
@@ -192,7 +193,8 @@ def load_state(
             flow_acc = gisdata.grids["flow_acc"]
             wp[np.isnan(flow_acc)] = np.nan
         else:
-            wp = None
+            logger.warning("Wp not found in state file, initializing with zeros")
+            wp = np.zeros((nrows, ncols))
 
     # Network variables: initialize with zeros if missing
     if "discharge" in ds:
