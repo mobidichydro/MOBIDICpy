@@ -152,7 +152,7 @@ class TestLoadState:
         assert loaded_time == time
 
     def test_load_missing_wc_variable(self, tmp_path, sample_grid_metadata):
-        """Test loading when Wc is missing (should initialize with NaN)."""
+        """Test loading when Wc is missing (should initialize with zeros)."""
         # Create a NetCDF file without Wc
         ds = xr.Dataset(
             {
@@ -173,14 +173,14 @@ class TestLoadState:
         # Load - should handle missing Wc gracefully
         loaded_state, _, _ = load_state(output_path, network_size=5)
 
-        # Wc should be all NaN
-        assert np.all(np.isnan(loaded_state.wc))
+        # Wc should be all zeros
+        np.testing.assert_array_equal(loaded_state.wc, np.zeros((10, 15)))
 
         # Wg should be loaded correctly
         assert not np.all(np.isnan(loaded_state.wg))
 
     def test_load_missing_wg_variable(self, tmp_path, sample_grid_metadata):
-        """Test loading when Wg is missing (should initialize with NaN)."""
+        """Test loading when Wg is missing (should initialize with zeros)."""
         # Create a NetCDF file without Wg
         ds = xr.Dataset(
             {
@@ -201,14 +201,14 @@ class TestLoadState:
         # Load - should handle missing Wg gracefully
         loaded_state, _, _ = load_state(output_path, network_size=5)
 
-        # Wg should be all NaN
-        assert np.all(np.isnan(loaded_state.wg))
+        # Wg should be all zeros
+        np.testing.assert_array_equal(loaded_state.wg, np.zeros((10, 15)))
 
         # Wc should be loaded correctly
         assert not np.all(np.isnan(loaded_state.wc))
 
     def test_load_missing_ws_variable(self, tmp_path, sample_grid_metadata):
-        """Test loading when Ws is missing (should initialize with NaN)."""
+        """Test loading when Ws is missing (should initialize with zeros)."""
         # Create a NetCDF file without Ws
         ds = xr.Dataset(
             {
@@ -230,8 +230,8 @@ class TestLoadState:
         # Load - should handle missing Ws gracefully
         loaded_state, _, _ = load_state(output_path, network_size=5)
 
-        # Ws should be all NaN
-        assert np.all(np.isnan(loaded_state.ws))
+        # Ws should be all zeros
+        np.testing.assert_array_equal(loaded_state.ws, np.zeros((10, 15)))
 
     def test_load_missing_discharge(self, tmp_path, sample_grid_metadata):
         """Test loading when discharge is missing (should initialize with zeros)."""
@@ -292,7 +292,7 @@ class TestLoadState:
         assert not np.all(loaded_state.discharge == 0.0)
 
     def test_load_missing_wp(self, tmp_path, sample_grid_metadata):
-        """Test loading when Wp is missing (should be None)."""
+        """Test loading when Wp is missing (should be zeros)."""
         # Create a NetCDF file without Wp
         ds = xr.Dataset(
             {
@@ -314,8 +314,8 @@ class TestLoadState:
         # Load
         loaded_state, _, _ = load_state(output_path, network_size=5)
 
-        # Wp should be None
-        assert loaded_state.wp is None
+        # Wp should be zeros
+        np.testing.assert_array_equal(loaded_state.wp, np.zeros((10, 15)))
 
     def test_load_network_size_mismatch(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
         """Test warning when network size doesn't match."""
@@ -394,9 +394,9 @@ class TestLoadState:
         assert not np.all(np.isnan(loaded_state.wc))
         assert not np.all(np.isnan(loaded_state.wg))
 
-        # Should initialize missing variables
-        assert loaded_state.wp is None
-        assert np.all(np.isnan(loaded_state.ws))
+        # Should initialize missing variables with zeros
+        np.testing.assert_array_equal(loaded_state.wp, np.zeros((10, 15)))
+        np.testing.assert_array_equal(loaded_state.ws, np.zeros((10, 15)))
         np.testing.assert_array_equal(loaded_state.discharge, np.zeros(5))
 
 
