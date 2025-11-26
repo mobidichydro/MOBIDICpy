@@ -82,7 +82,7 @@ for step in range(num_steps):
     writer.append_state(state, current_time)
     current_time += dt
 
-writer.close()  # Don't forget to close!
+writer.close()
 ```
 
 ### Saving only final state
@@ -110,7 +110,7 @@ writer.close()
 
 ```python
 from mobidic.io import load_state
-from mobidic import Simulation
+from mobidic import Simulation, load_config, load_gisdata
 
 # Load last timestep from multi-timestep file (default)
 state, time, metadata = load_state(
@@ -143,6 +143,20 @@ state_chunk, time_chunk, _ = load_state(
     network_size=1235
 )
 
+# Load with config and gisdata for proper missing variable initialization
+# If the state file is missing some variables, they will be initialized
+# using the initial conditions from the config file. If config/gisdata are not
+# provided, missing variables are set to zero.
+config = load_config("config.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+
+state_with_init, time, metadata = load_state(
+    input_path="output/states.nc",
+    network_size=1235,
+    config=config,      # Optional: for missing variable initialization
+    gisdata=gisdata     # Optional: for missing variable initialization
+)
+
 # Use state to initialize simulation
 sim = Simulation(gisdata, forcing, config)
 sim.state = state  # Override initial state
@@ -150,6 +164,70 @@ sim.state = state  # Override initial state
 # Resume simulation from this state
 results = sim.run("2020-06-15", "2020-12-31")
 ```
+
+### Handling missing variables
+
+When loading a state file, some variables may be missing (e.g., if the file was saved with selective output). The `load_state()` function handles this automatically:
+
+**Without config/gisdata (default behavior):**
+```python
+# Missing variables are initialized with zeros
+state, time, metadata = load_state("output/states.nc", network_size=1235)
+
+# Grid variables (Wc, Wg, Ws, Wp) → initialized with zeros
+# Network variables (discharge, lateral_inflow) → initialized with zeros
+```
+
+**With config/gisdata (recommended for warm start):**
+```python
+from mobidic import load_config, load_gisdata
+
+config = load_config("config.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+
+# Missing variables are initialized using config initial conditions
+state, time, metadata = load_state(
+    "output/states.nc",
+    network_size=1235,
+    config=config,
+    gisdata=gisdata
+)
+
+# Grid variables (Wc, Wg, Ws, Wp) → initialized from config.initial_conditions
+#   - Wc: Wc0 × Wcsat (with capacity factors and Wg_Wc_tr transition)
+#   - Wg: Wg0 × Wgsat (with capacity factors and Wg_Wc_tr transition)
+#   - Ws: config.initial_conditions.Ws
+#   - Wp: zeros (with NaN outside domain)
+#   - All grid variables: NaN outside domain (where flow_acc is NaN)
+# Network variables (discharge, lateral_inflow) → initialized with zeros
+```
+
+**Example: Loading a partial state file**
+```python
+# Suppose a state file was saved with only Wc and Wg enabled
+# (soil_surface=false in config), but you need Ws for the new simulation
+
+config = load_config("config.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+
+# Load state with config - Ws will be initialized from config.initial_conditions.Ws
+state, time, metadata = load_state(
+    "output/partial_state.nc",
+    network_size=1235,
+    config=config,
+    gisdata=gisdata
+)
+
+# Now state.ws is properly initialized (not zeros) and ready for simulation
+print(f"Ws initialized from config: {state.ws.mean():.6f} m")
+
+# The Simulation class automatically uses config-based initialization
+sim = Simulation(gisdata, forcing, config)
+sim.set_initial_state(state_file="output/partial_state.nc")
+# Missing variables are automatically initialized using config
+```
+
+This ensures that warm-start simulations always have properly initialized state variables, even when loading from files that don't contain all variables.
 
 ### Inspecting state files
 
@@ -384,7 +462,6 @@ When a simulation produces very large state files, `StateWriter` automatically c
 - **Compression**: zlib compression (level 4) for efficient storage
 - **Selective saving**: Only configured state variables are saved
 - **Context manager support**: Automatic resource cleanup with `with` statement
-- **Flexible loading**: Missing variables initialized with sensible defaults (NaN for grids, zeros for networks)
 - **Multi-timestep support**: Can load any timestep from multi-timestep files
 - **Chunk file detection**: `load_state()` automatically finds chunk files (e.g., `_001.nc`) when base path doesn't exist
 - **CRS preservation**: Coordinate Reference System stored as WKT
