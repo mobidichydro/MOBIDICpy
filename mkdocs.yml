@@ -30,7 +30,7 @@ nav:
 
 theme:
   name: "material"
-  favicon: assets/icon.png
+  favicon: assets/logo_mobidic_color_notext.png
   logo: assets/logo_mobidic_white.svg
   language: en
   # https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/#primary-color
