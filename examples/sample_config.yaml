@@ -296,43 +296,43 @@ simulation:
 ####### OUTPUT CONTROLS
 
 output_states:
-  # REQUIRED: Option to save states of river network for results analysis
+  # REQUIRED: Save states of river network
   # [boolean]
   discharge: true
 
-  # REQUIRED: Option to save states of reservoirs and lakes for results analysis
+  # REQUIRED: Save states of reservoirs and lakes
   # [boolean]
   reservoir_states: true
 
-  # REQUIRED: Option to save states of soil small pores for results analysis
+  # REQUIRED: Save states of soil small pores
   # [boolean]
   soil_capillary: true
 
-  # REQUIRED: Option to save states of soil large pores for results analysis
+  # REQUIRED: Save states of soil large pores
   # [boolean]
   soil_gravitational: true
 
-  # REQUIRED: Option to save states of plant/canopy water for results analysis
+  # REQUIRED: Save states of plant/canopy water
   # [boolean]
   soil_plant: true
 
-  # REQUIRED: Option to save states of surface water for results analysis
+  # REQUIRED: Save states of surface water
   # [boolean]
   soil_surface: true
 
-  # REQUIRED: Option to save states of land surface temperature for results analysis
+  # REQUIRED: Save states of land surface temperature
   # [boolean]
   surface_temperature: false
 
-  # REQUIRED: Option to save states of ground temperature for results analysis
+  # REQUIRED: Save states of ground temperature
   # [boolean]
   ground_temperature: false
 
-  # REQUIRED: Option to save states of aquifers for results analysis
+  # REQUIRED: Save states of aquifers
   # [boolean]
   aquifer_head: false
 
-  # REQUIRED: Option to save states of evapotranspiration and precipitation for results analysis
+  # REQUIRED: Save states of evapotranspiration and precipitation
   # [boolean]
   et_prec: false
 
@@ -362,11 +362,11 @@ output_states_settings:
   max_file_size: 500
 
 output_report:
-  # OPTIONAL: Option to save discharge hydrograph at selected reach IDs
+  # OPTIONAL: Save discharge hydrograph at selected reach IDs. Default: true
   # [boolean]
   discharge: true
 
-  # OPTIONAL: Option to save lateral inflow hydrograph at selected reach IDs
+  # OPTIONAL: Save lateral inflow hydrograph at selected reach IDs. Default: false
   # [boolean]
   lateral_inflow: false
   
