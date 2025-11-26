@@ -18,6 +18,8 @@ def load_state(
     input_path: str | Path,
     network_size: int,
     time_index: int = -1,
+    config: "MOBIDICConfig | None" = None,  # noqa: F821
+    gisdata: "GISData | None" = None,  # noqa: F821
 ) -> tuple["SimulationState", datetime, dict]:  # noqa: F821
     """
     Load simulation state from NetCDF file.
@@ -27,11 +29,17 @@ def load_state(
     Automatically detects chunk files (e.g., states_001.nc) when the base path
     doesn't exist.
 
+    If a state variable is missing from the file, it will be initialized using
+    the initial conditions from the configuration file (if config and gisdata are
+    provided), otherwise it will be initialized with zeros.
+
     Args:
         input_path: Path to output NetCDF file (may be chunked as _001.nc, _002.nc, etc.)
         network_size: Expected number of reaches in network. Validates consistency between
                         the saved state and current model setup.
         time_index: Index of timestep to load (default: -1 = last timestep)
+        config: Optional MOBIDIC configuration for initializing missing variables
+        gisdata: Optional GIS data for initializing missing variables
 
     Returns:
         Tuple of (state, time, metadata) where:
@@ -47,8 +55,9 @@ def load_state(
         >>> from mobidic.io import load_state
         >>> # Load last timestep
         >>> state, time, metadata = load_state("states.nc", 1235)
-        >>> # Load first timestep
-        >>> state, time, metadata = load_state("states.nc", 1235, time_index=0)
+        >>> # Load first timestep with config (for missing variables)
+        >>> state, time, metadata = load_state("states.nc", 1235, time_index=0,
+        ...                                      config=config, gisdata=gisdata)
         >>> # Works with chunked files too
         >>> state, time, metadata = load_state("states.nc", 1235)  # Auto-loads states_001.nc
     """
@@ -87,28 +96,103 @@ def load_state(
     nrows = len(ds.y)
     ncols = len(ds.x)
 
+    # Check if we can use config-based initialization for missing variables
+    can_use_config = config is not None and gisdata is not None
+
     # Extract state variables (conditionally, since they may not be present)
-    # Grid variables: initialize with NaN if missing
+    # Grid variables: initialize from config if missing and config provided, otherwise use NaN
     if "Wc" in ds:
         wc = ds["Wc"].values
     else:
-        logger.warning("Wc not found in state file, initializing with NaN")
-        wc = np.full((nrows, ncols), np.nan)
+        if can_use_config:
+            logger.warning("Wc not found in state file, initializing from config initial conditions")
+            from mobidic.core import constants as const
+
+            # Apply same preprocessing as in Simulation.__init__
+            wc0 = gisdata.grids["Wc0"] * config.parameters.multipliers.Wc_factor
+            wc0 = np.maximum(wc0, const.W_MIN)
+
+            # Apply Wg_Wc_tr transition if specified
+            Wg_Wc_tr = config.parameters.multipliers.Wg_Wc_tr
+            if Wg_Wc_tr >= 0:
+                wg0 = gisdata.grids["Wg0"] * config.parameters.multipliers.Wg_factor
+                wg0 = np.maximum(wg0, const.W_MIN)
+                wtot = wc0 + wg0
+                wg0 = np.minimum(Wg_Wc_tr * wg0, wtot)
+                wc0 = wtot - wg0
+
+            # Apply initial saturation from config
+            wcsat = config.initial_conditions.Wcsat
+            wc = wc0 * wcsat
+
+            # Set NaN outside domain
+            flow_acc = gisdata.grids["flow_acc"]
+            wc[np.isnan(flow_acc)] = np.nan
+        else:
+            logger.warning("Wc not found in state file, initializing with NaN")
+            wc = np.full((nrows, ncols), np.nan)
 
     if "Wg" in ds:
         wg = ds["Wg"].values
     else:
-        logger.warning("Wg not found in state file, initializing with NaN")
-        wg = np.full((nrows, ncols), np.nan)
+        if can_use_config:
+            logger.warning("Wg not found in state file, initializing from config initial conditions")
+            from mobidic.core import constants as const
+
+            # Apply same preprocessing as in Simulation.__init__
+            wc0 = gisdata.grids["Wc0"] * config.parameters.multipliers.Wc_factor
+            wg0 = gisdata.grids["Wg0"] * config.parameters.multipliers.Wg_factor
+            wc0 = np.maximum(wc0, const.W_MIN)
+            wg0 = np.maximum(wg0, const.W_MIN)
+
+            # Apply Wg_Wc_tr transition if specified
+            Wg_Wc_tr = config.parameters.multipliers.Wg_Wc_tr
+            if Wg_Wc_tr >= 0:
+                wtot = wc0 + wg0
+                wg0 = np.minimum(Wg_Wc_tr * wg0, wtot)
+                wc0 = wtot - wg0
+
+            # Apply initial saturation from config
+            wgsat = config.initial_conditions.Wgsat
+            wg = wg0 * wgsat
+
+            # Set NaN outside domain
+            flow_acc = gisdata.grids["flow_acc"]
+            wg[np.isnan(flow_acc)] = np.nan
+        else:
+            logger.warning("Wg not found in state file, initializing with NaN")
+            wg = np.full((nrows, ncols), np.nan)
 
     if "Ws" in ds:
         ws = ds["Ws"].values
     else:
-        logger.warning("Ws not found in state file, initializing with NaN")
-        ws = np.full((nrows, ncols), np.nan)
+        if can_use_config:
+            logger.warning("Ws not found in state file, initializing from config initial conditions")
+            # Initialize surface water from config
+            ws_init = config.initial_conditions.Ws
+            ws = np.full((nrows, ncols), ws_init)
+
+            # Set NaN outside domain
+            flow_acc = gisdata.grids["flow_acc"]
+            ws[np.isnan(flow_acc)] = np.nan
+        else:
+            logger.warning("Ws not found in state file, initializing with NaN")
+            ws = np.full((nrows, ncols), np.nan)
 
     # Plant water: optional, None if missing
-    wp = ds["Wp"].values if "Wp" in ds else None
+    if "Wp" in ds:
+        wp = ds["Wp"].values
+    else:
+        if can_use_config:
+            logger.warning("Wp not found in state file, initializing from config initial conditions")
+            # Initialize plant water (currently zeros)
+            wp = np.zeros((nrows, ncols))
+
+            # Set NaN outside domain
+            flow_acc = gisdata.grids["flow_acc"]
+            wp[np.isnan(flow_acc)] = np.nan
+        else:
+            wp = None
 
     # Network variables: initialize with zeros if missing
     if "discharge" in ds:
