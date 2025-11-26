@@ -379,6 +379,8 @@ class Simulation:
                 input_path=state_path,
                 network_size=len(self.network),
                 time_index=time_index,
+                config=self.config,
+                gisdata=self.gisdata,
             )
 
             self.state = loaded_state
