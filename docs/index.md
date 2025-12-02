@@ -1,7 +1,7 @@
 # MOBIDICpy Documentation
 
 <p align="left">
-  <img src="assets/logo_mobidic_color.svg" alt="MOBIDICpy Logo" width="200">
+  <img src="assets/logo_mobidic_color.svg" alt="MOBIDICpy Logo" width="200" class="theme-logo">
 </p>
 
 MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a raster-based distributed hydrological model that simulates the water and energy balance of the hydrological cycle at the cell level.
