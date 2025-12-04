@@ -30,6 +30,11 @@ from mobidic.preprocessing.meteo_preprocessing import (
     MeteoData,
     convert_mat_to_netcdf,
 )
+from mobidic.preprocessing.reservoirs import (
+    Reservoir,
+    Reservoirs,
+    process_reservoirs,
+)
 
 __all__ = [
     "read_shapefile",
@@ -48,4 +53,7 @@ __all__ = [
     "save_gisdata",
     "MeteoData",
     "convert_mat_to_netcdf",
+    "Reservoir",
+    "Reservoirs",
+    "process_reservoirs",
 ]

@@ -22,6 +22,9 @@ from mobidic.preprocessing import (
     save_gisdata,
     MeteoData,
     convert_mat_to_netcdf,
+    Reservoir,
+    Reservoirs,
+    process_reservoirs,
 )
 from mobidic.core import (
     constants,
@@ -61,6 +64,9 @@ __all__ = [
     "save_gisdata",
     "MeteoData",
     "convert_mat_to_netcdf",
+    "Reservoir",
+    "Reservoirs",
+    "process_reservoirs",
     "soil_mass_balance",
     "capillary_rise",
     "hillslope_routing",
