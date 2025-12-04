@@ -141,36 +141,30 @@ class Reservoirs:
 
         Args:
             output_path: Path to output file
-            format: Output format ('parquet' or 'shapefile')
+            format: Output format (only 'parquet' is supported)
         """
         gdf = self.to_geodataframe()
 
         if format.lower() == "parquet":
             gdf.to_parquet(output_path)
             logger.success(f"Saved {len(self)} reservoirs to {output_path}")
-        elif format.lower() in ["shapefile", "shp"]:
-            gdf.to_file(output_path)
-            logger.success(f"Saved {len(self)} reservoirs to {output_path}")
         else:
-            raise ValueError(f"Unsupported format: {format}")
+            raise ValueError(f"Unsupported format: {format}. Only 'parquet' is supported.")
 
     @classmethod
     def load(cls, input_path: str | Path) -> "Reservoirs":
         """Load reservoirs from file.
 
         Args:
-            input_path: Path to input file (GeoParquet or Shapefile)
+            input_path: Path to input Parquet file
 
         Returns:
             Reservoirs object with loaded data
         """
         input_path = Path(input_path)
 
-        # Read file
-        if input_path.suffix == ".parquet":
-            gdf = gpd.read_parquet(input_path)
-        else:
-            gdf = gpd.read_file(input_path)
+        # Read Parquet file
+        gdf = gpd.read_parquet(input_path)
 
         # Convert to Reservoir objects
         reservoirs = []
