@@ -30,6 +30,9 @@ class Paths(BaseModel):
     meteodata: PathField = Field(..., description="File where the meteo data files are stored")
     gisdata: PathField = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
     network: PathField = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
+    reservoirs: Optional[PathField] = Field(
+        None, description="Consolidated reservoirs dataset to be created by GIS preprocessing (geoparquet format)"
+    )
     states: PathField = Field(..., description="Directory where the model states will be stored")
     output: PathField = Field(..., description="Directory where output report files will be stored")
 
@@ -183,6 +186,15 @@ class GroundwaterParameters(BaseModel):
         return v if v is not None else 0.0
 
 
+class ReservoirParameters(BaseModel):
+    """Reservoir input data files."""
+
+    res_points: Optional[PathField] = Field(None, description="Shapefile of reservoirs and lakes (point features)")
+    stage_storage: Optional[PathField] = Field(None, description="Reservoir stage-storage curves (CSV format)")
+    regulation_curves: Optional[PathField] = Field(None, description="Reservoir regulation curves (CSV format)")
+    regulation_schedule: Optional[PathField] = Field(None, description="Reservoir regulation schedules (CSV format)")
+
+
 class Multipliers(BaseModel):
     """Parameter multipliers for calibration."""
 
@@ -214,6 +226,7 @@ class Parameters(BaseModel):
     energy: EnergyParameters
     routing: RoutingParameters
     groundwater: GroundwaterParameters
+    reservoirs: Optional[ReservoirParameters] = Field(default_factory=ReservoirParameters)
     multipliers: Optional[Multipliers] = Field(default_factory=Multipliers)
 
 
@@ -224,6 +237,9 @@ class InitialConditions(BaseModel):
     Wcsat: Optional[float] = Field(0.3, description="Initial relative saturation of capillary soil, non dimensional")
     Wgsat: Optional[float] = Field(
         0.01, description="Initial relative saturation of gravitational soil, non dimensional"
+    )
+    reservoir_volumes: Optional[PathField] = Field(
+        None, description="Path to CSV file with initial reservoir volumes (columns: 'reservoir_id', 'volume_m3')"
     )
 
     @field_validator("Ws")

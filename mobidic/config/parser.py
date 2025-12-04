@@ -1,7 +1,7 @@
 """YAML configuration parser for MOBIDIC."""
 
 from pathlib import Path
-from typing import Union, get_args, get_origin
+from typing import Annotated, Union, get_args, get_origin
 
 import yaml
 from loguru import logger
@@ -74,15 +74,43 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
         """Check if a field is a PathField type."""
         annotation = field_info.annotation
 
-        # Check for Union[str, Path] pattern (our PathField after Pydantic processing)
+        # Handle Optional[PathField] - strip Optional first
         origin = get_origin(annotation)
         if origin is Union:
             args = get_args(annotation)
             # Remove NoneType if present (for Optional fields)
             non_none_args = [arg for arg in args if arg is not type(None)]
-            # Check if it's exactly Union[str, Path]
+
+            # If we have a single non-None arg, check if it's Annotated
+            if len(non_none_args) == 1:
+                inner_annotation = non_none_args[0]
+                inner_origin = get_origin(inner_annotation)
+
+                # Check if it's Annotated[Union[str, Path], ...]
+                if inner_origin is Annotated:
+                    inner_args = get_args(inner_annotation)
+                    if len(inner_args) > 0:
+                        base_type = inner_args[0]
+                        base_origin = get_origin(base_type)
+                        if base_origin is Union:
+                            base_args = get_args(base_type)
+                            if len(base_args) == 2 and str in base_args and Path in base_args:
+                                return True
+
+            # Check if it's exactly Union[str, Path] (non-Optional case)
             if len(non_none_args) == 2 and str in non_none_args and Path in non_none_args:
                 return True
+
+        # Handle non-Optional Annotated[Union[str, Path], ...]
+        if origin is Annotated:
+            args = get_args(annotation)
+            if len(args) > 0:
+                base_type = args[0]
+                base_origin = get_origin(base_type)
+                if base_origin is Union:
+                    base_args = get_args(base_type)
+                    if len(base_args) == 2 and str in base_args and Path in base_args:
+                        return True
 
         return False
 
