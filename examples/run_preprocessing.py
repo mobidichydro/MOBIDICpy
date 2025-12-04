@@ -71,7 +71,7 @@ def main():
 
     print("Grid information:")
     print(f"  - Shape: {loaded_gisdata.metadata['shape']} (rows x cols)")
-    print(f"  - Resolution: {loaded_gisdata.metadata['resolution']} m")
+    print(f"  - Resolution: {list(int(x) for x in loaded_gisdata.metadata['resolution'])} m")
     print(f"  - CRS: {loaded_gisdata.metadata['crs']}")
     print()
 
@@ -88,14 +88,14 @@ def main():
         for res in loaded_gisdata.reservoirs:
             print(f"  - {res.name}:")
             print(f"      Maximum stage: {res.z_max:.2f} m")
-            print(f"      Initial volume: {res.initial_volume:.0f} m³")
-            print(f"      Regulation periods: {res.n_periods}")
+            print(f"      Initial volume: {res.initial_volume*1e-6:.0f} Mm³")
+            print(f"      Number of regulation schedules: {len(res.period_times) if res.period_times else 0}")
             if res.basin_pixels is not None:
                 print(f"      Basin cells: {len(res.basin_pixels)}")
             if res.outlet_reach is not None and res.outlet_reach >= 0:
                 print(f"      Outlet reach: {res.outlet_reach}")
             if res.inlet_reaches is not None and len(res.inlet_reaches) > 0:
-                print(f"      Inlet reaches: {list(res.inlet_reaches)}")
+                print(f"      Inlet reaches: {list(int(x) for x in res.inlet_reaches)}")
         print()
 
     print("Grid variables:")
