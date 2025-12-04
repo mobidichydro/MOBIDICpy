@@ -3,7 +3,7 @@
 This module handles reservoir data preprocessing including:
 1. Reading reservoir polygon features from shapefile
 2. Processing stage-storage curves
-3. Processing regulation curves (stage-discharge relationships)
+3. Processing regulation curves and schedules (stage-discharge relationships)
 4. Mapping reservoirs to river network and grid cells
 
 Translated from MATLAB: buildgis_mysql_include.m (lines 594-740)
@@ -24,12 +24,12 @@ from loguru import logger
 class Reservoir:
     """Single reservoir data structure.
 
-    This matches the MATLAB 'reserv' structure with fields:
-    idx, zmax, bacino, inlets, outlet, lawH, lawQ, nper, lawT, hv0
+    This is similar to the MATLAB 'reserv' structure
 
     Attributes:
         id: Reservoir ID (from shapefile)
         z_max: Maximum stage [m]
+        name: Reservoir name
         basin_pixels: Linear indices of cells in reservoir basin (from polygon)
         inlet_reaches: Reach IDs flowing into reservoir (upstream of outlet)
         outlet_reach: Reach ID where reservoir discharges
