@@ -230,3 +230,472 @@ class TestSaveConfig:
         assert reloaded_config.basin.paramset_id == original_config.basin.paramset_id
         assert reloaded_config.simulation.timestep == original_config.simulation.timestep
         assert reloaded_config.parameters.soil.gamma == original_config.parameters.soil.gamma
+
+
+class TestPathResolution:
+    """Tests for path resolution in configuration."""
+
+    def test_relative_path_resolution(self, tmp_path):
+        """Test that relative paths are resolved to absolute paths."""
+        # Create config YAML with relative paths
+        config_dir = tmp_path / "configs"
+        config_dir.mkdir()
+        config_path = config_dir / "test_config.yaml"
+
+        config_dict = {
+            "basin": {
+                "id": "TestBasin",
+                "paramset_id": "TestScenario",
+                "baricenter": {"lon": 10.0, "lat": 45.0},
+            },
+            "paths": {
+                "meteodata": "../data/meteodata.nc",  # Relative path
+                "gisdata": "gisdata.nc",  # Relative path
+                "network": "network.parquet",
+                "states": "states/",
+                "output": "outputs/",
+            },
+            "vector_files": {"river_network": {"shp": "network.shp"}},
+            "raster_files": {
+                "dtm": "dtm.tif",
+                "flow_dir": "flowdir.tif",
+                "flow_acc": "flowacc.tif",
+                "Wc0": "wc0.tif",
+                "Wg0": "wg0.tif",
+                "ks": "ks.tif",
+            },
+            "raster_settings": {"flow_dir_type": "Grass"},
+            "parameters": {
+                "soil": {
+                    "Wc0": 100.0,
+                    "Wg0": 50.0,
+                    "ks": 1.0,
+                    "kf": 1e-7,
+                    "gamma": 2.689e-7,
+                    "kappa": 1.096e-7,
+                    "beta": 7.62e-6,
+                    "alpha": 2.5e-5,
+                },
+                "energy": {
+                    "Tconst": 290.0,
+                    "kaps": 2.5,
+                    "nis": 0.8e-6,
+                    "CH": 1e-3,
+                    "Alb": 0.2,
+                },
+                "routing": {
+                    "method": "Linear",
+                    "wcel": 5.18,
+                    "Br0": 1.0,
+                    "NBr": 1.5,
+                    "n_Man": 0.03,
+                },
+                "groundwater": {"model": "None"},
+            },
+            "simulation": {
+                "realtime": 0,
+                "timestep": 900,
+                "decimation": 1,
+                "soil_scheme": "Bucket",
+                "energy_balance": "None",
+            },
+            "output_states": {
+                "discharge": True,
+                "reservoir_states": True,
+                "soil_capillary": True,
+                "soil_gravitational": True,
+                "soil_plant": True,
+                "soil_surface": True,
+                "surface_temperature": False,
+                "ground_temperature": False,
+                "aquifer_head": False,
+                "et_prec": False,
+            },
+        }
+
+        with open(config_path, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Load config
+        config = load_config(config_path)
+
+        # Check that paths are absolute
+        assert Path(config.paths.meteodata).is_absolute()
+        assert Path(config.paths.gisdata).is_absolute()
+        assert Path(config.vector_files.river_network.shp).is_absolute()
+
+        # Check that relative paths were resolved relative to config directory
+        expected_gisdata = (config_dir / "gisdata.nc").resolve()
+        assert Path(config.paths.gisdata) == expected_gisdata
+
+    def test_absolute_path_unchanged(self, tmp_path):
+        """Test that absolute paths remain unchanged."""
+        config_dir = tmp_path / "configs"
+        config_dir.mkdir()
+        config_path = config_dir / "test_config.yaml"
+
+        # Use absolute path in config
+        absolute_meteo_path = tmp_path / "absolute_meteodata.nc"
+
+        config_dict = {
+            "basin": {
+                "id": "TestBasin",
+                "paramset_id": "TestScenario",
+                "baricenter": {"lon": 10.0, "lat": 45.0},
+            },
+            "paths": {
+                "meteodata": str(absolute_meteo_path),  # Absolute path
+                "gisdata": "gisdata.nc",
+                "network": "network.parquet",
+                "states": "states/",
+                "output": "outputs/",
+            },
+            "vector_files": {"river_network": {"shp": "network.shp"}},
+            "raster_files": {
+                "dtm": "dtm.tif",
+                "flow_dir": "flowdir.tif",
+                "flow_acc": "flowacc.tif",
+                "Wc0": "wc0.tif",
+                "Wg0": "wg0.tif",
+                "ks": "ks.tif",
+            },
+            "raster_settings": {"flow_dir_type": "Grass"},
+            "parameters": {
+                "soil": {
+                    "Wc0": 100.0,
+                    "Wg0": 50.0,
+                    "ks": 1.0,
+                    "kf": 1e-7,
+                    "gamma": 2.689e-7,
+                    "kappa": 1.096e-7,
+                    "beta": 7.62e-6,
+                    "alpha": 2.5e-5,
+                },
+                "energy": {
+                    "Tconst": 290.0,
+                    "kaps": 2.5,
+                    "nis": 0.8e-6,
+                    "CH": 1e-3,
+                    "Alb": 0.2,
+                },
+                "routing": {
+                    "method": "Linear",
+                    "wcel": 5.18,
+                    "Br0": 1.0,
+                    "NBr": 1.5,
+                    "n_Man": 0.03,
+                },
+                "groundwater": {"model": "None"},
+            },
+            "simulation": {
+                "realtime": 0,
+                "timestep": 900,
+                "decimation": 1,
+                "soil_scheme": "Bucket",
+                "energy_balance": "None",
+            },
+            "output_states": {
+                "discharge": True,
+                "reservoir_states": True,
+                "soil_capillary": True,
+                "soil_gravitational": True,
+                "soil_plant": True,
+                "soil_surface": True,
+                "surface_temperature": False,
+                "ground_temperature": False,
+                "aquifer_head": False,
+                "et_prec": False,
+            },
+        }
+
+        with open(config_path, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Load config
+        config = load_config(config_path)
+
+        # Check that absolute path remained unchanged
+        assert Path(config.paths.meteodata) == absolute_meteo_path
+
+    def test_optional_path_fields_none(self, tmp_path):
+        """Test that optional path fields can be None."""
+        config_dir = tmp_path / "configs"
+        config_dir.mkdir()
+        config_path = config_dir / "test_config.yaml"
+
+        config_dict = {
+            "basin": {
+                "id": "TestBasin",
+                "paramset_id": "TestScenario",
+                "baricenter": {"lon": 10.0, "lat": 45.0},
+            },
+            "paths": {
+                "meteodata": "meteodata.nc",
+                "gisdata": "gisdata.nc",
+                "network": "network.parquet",
+                "reservoirs": None,  # Optional field
+                "states": "states/",
+                "output": "outputs/",
+            },
+            "vector_files": {"river_network": {"shp": "network.shp"}},
+            "raster_files": {
+                "dtm": "dtm.tif",
+                "flow_dir": "flowdir.tif",
+                "flow_acc": "flowacc.tif",
+                "Wc0": "wc0.tif",
+                "Wg0": "wg0.tif",
+                "ks": "ks.tif",
+                "kf": None,  # Optional field
+            },
+            "raster_settings": {"flow_dir_type": "Grass"},
+            "parameters": {
+                "soil": {
+                    "Wc0": 100.0,
+                    "Wg0": 50.0,
+                    "ks": 1.0,
+                    "kf": 1e-7,
+                    "gamma": 2.689e-7,
+                    "kappa": 1.096e-7,
+                    "beta": 7.62e-6,
+                    "alpha": 2.5e-5,
+                },
+                "energy": {
+                    "Tconst": 290.0,
+                    "kaps": 2.5,
+                    "nis": 0.8e-6,
+                    "CH": 1e-3,
+                    "Alb": 0.2,
+                },
+                "routing": {
+                    "method": "Linear",
+                    "wcel": 5.18,
+                    "Br0": 1.0,
+                    "NBr": 1.5,
+                    "n_Man": 0.03,
+                },
+                "groundwater": {"model": "None"},
+                "reservoirs": {
+                    "res_points": None,  # Optional field
+                    "stage_storage": None,
+                },
+            },
+            "simulation": {
+                "realtime": 0,
+                "timestep": 900,
+                "decimation": 1,
+                "soil_scheme": "Bucket",
+                "energy_balance": "None",
+            },
+            "output_states": {
+                "discharge": True,
+                "reservoir_states": True,
+                "soil_capillary": True,
+                "soil_gravitational": True,
+                "soil_plant": True,
+                "soil_surface": True,
+                "surface_temperature": False,
+                "ground_temperature": False,
+                "aquifer_head": False,
+                "et_prec": False,
+            },
+        }
+
+        with open(config_path, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Load config - should not raise error
+        config = load_config(config_path)
+
+        # Check that None values remain None
+        assert config.paths.reservoirs is None
+        assert config.raster_files.kf is None
+        assert config.parameters.reservoirs.res_points is None
+
+    def test_nested_path_resolution(self, tmp_path):
+        """Test that paths in nested models are resolved."""
+        config_dir = tmp_path / "configs"
+        config_dir.mkdir()
+        config_path = config_dir / "test_config.yaml"
+
+        config_dict = {
+            "basin": {
+                "id": "TestBasin",
+                "paramset_id": "TestScenario",
+                "baricenter": {"lon": 10.0, "lat": 45.0},
+            },
+            "paths": {
+                "meteodata": "meteodata.nc",
+                "gisdata": "gisdata.nc",
+                "network": "network.parquet",
+                "states": "states/",
+                "output": "outputs/",
+            },
+            "vector_files": {"river_network": {"shp": "network.shp"}},
+            "raster_files": {
+                "dtm": "dtm.tif",
+                "flow_dir": "flowdir.tif",
+                "flow_acc": "flowacc.tif",
+                "Wc0": "wc0.tif",
+                "Wg0": "wg0.tif",
+                "ks": "ks.tif",
+            },
+            "raster_settings": {"flow_dir_type": "Grass"},
+            "parameters": {
+                "soil": {
+                    "Wc0": 100.0,
+                    "Wg0": 50.0,
+                    "ks": 1.0,
+                    "kf": 1e-7,
+                    "gamma": 2.689e-7,
+                    "kappa": 1.096e-7,
+                    "beta": 7.62e-6,
+                    "alpha": 2.5e-5,
+                },
+                "energy": {
+                    "Tconst": 290.0,
+                    "kaps": 2.5,
+                    "nis": 0.8e-6,
+                    "CH": 1e-3,
+                    "Alb": 0.2,
+                },
+                "routing": {
+                    "method": "Linear",
+                    "wcel": 5.18,
+                    "Br0": 1.0,
+                    "NBr": 1.5,
+                    "n_Man": 0.03,
+                },
+                "groundwater": {"model": "None"},
+                "reservoirs": {
+                    "res_points": "reservoirs.shp",  # Nested path field
+                    "stage_storage": "stage_storage.csv",
+                },
+            },
+            "simulation": {
+                "realtime": 0,
+                "timestep": 900,
+                "decimation": 1,
+                "soil_scheme": "Bucket",
+                "energy_balance": "None",
+            },
+            "output_states": {
+                "discharge": True,
+                "reservoir_states": True,
+                "soil_capillary": True,
+                "soil_gravitational": True,
+                "soil_plant": True,
+                "soil_surface": True,
+                "surface_temperature": False,
+                "ground_temperature": False,
+                "aquifer_head": False,
+                "et_prec": False,
+            },
+            "initial_conditions": {
+                "reservoir_volumes": "initial_volumes.csv",  # Nested path field
+            },
+            "output_report_settings": {
+                "sel_file": "reaches.json",  # Nested path field
+            },
+        }
+
+        with open(config_path, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Load config
+        config = load_config(config_path)
+
+        # Check that nested paths are resolved to absolute
+        assert Path(config.parameters.reservoirs.res_points).is_absolute()
+        assert Path(config.parameters.reservoirs.stage_storage).is_absolute()
+        assert Path(config.initial_conditions.reservoir_volumes).is_absolute()
+        assert Path(config.output_report_settings.sel_file).is_absolute()
+
+        # Check that they're resolved relative to config directory
+        expected_res_points = (config_dir / "reservoirs.shp").resolve()
+        assert Path(config.parameters.reservoirs.res_points) == expected_res_points
+
+    def test_empty_string_path(self, tmp_path):
+        """Test that empty string paths are handled correctly."""
+        config_dir = tmp_path / "configs"
+        config_dir.mkdir()
+        config_path = config_dir / "test_config.yaml"
+
+        config_dict = {
+            "basin": {
+                "id": "TestBasin",
+                "paramset_id": "TestScenario",
+                "baricenter": {"lon": 10.0, "lat": 45.0},
+            },
+            "paths": {
+                "meteodata": "",  # Empty string
+                "gisdata": "gisdata.nc",
+                "network": "network.parquet",
+                "states": "states/",
+                "output": "outputs/",
+            },
+            "vector_files": {"river_network": {"shp": "network.shp"}},
+            "raster_files": {
+                "dtm": "dtm.tif",
+                "flow_dir": "flowdir.tif",
+                "flow_acc": "flowacc.tif",
+                "Wc0": "wc0.tif",
+                "Wg0": "wg0.tif",
+                "ks": "ks.tif",
+            },
+            "raster_settings": {"flow_dir_type": "Grass"},
+            "parameters": {
+                "soil": {
+                    "Wc0": 100.0,
+                    "Wg0": 50.0,
+                    "ks": 1.0,
+                    "kf": 1e-7,
+                    "gamma": 2.689e-7,
+                    "kappa": 1.096e-7,
+                    "beta": 7.62e-6,
+                    "alpha": 2.5e-5,
+                },
+                "energy": {
+                    "Tconst": 290.0,
+                    "kaps": 2.5,
+                    "nis": 0.8e-6,
+                    "CH": 1e-3,
+                    "Alb": 0.2,
+                },
+                "routing": {
+                    "method": "Linear",
+                    "wcel": 5.18,
+                    "Br0": 1.0,
+                    "NBr": 1.5,
+                    "n_Man": 0.03,
+                },
+                "groundwater": {"model": "None"},
+            },
+            "simulation": {
+                "realtime": 0,
+                "timestep": 900,
+                "decimation": 1,
+                "soil_scheme": "Bucket",
+                "energy_balance": "None",
+            },
+            "output_states": {
+                "discharge": True,
+                "reservoir_states": True,
+                "soil_capillary": True,
+                "soil_gravitational": True,
+                "soil_plant": True,
+                "soil_surface": True,
+                "surface_temperature": False,
+                "ground_temperature": False,
+                "aquifer_head": False,
+                "et_prec": False,
+            },
+        }
+
+        with open(config_path, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Load config - should handle empty string
+        config = load_config(config_path)
+
+        # Empty string should remain as empty Path
+        assert config.paths.meteodata == Path("")
