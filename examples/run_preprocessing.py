@@ -88,7 +88,7 @@ def main():
         for res in loaded_gisdata.reservoirs:
             print(f"  - {res.name}:")
             print(f"      Maximum stage: {res.z_max:.2f} m")
-            print(f"      Initial volume: {res.initial_volume*1e-6:.0f} Mm³")
+            print(f"      Initial volume: {res.initial_volume * 1e-6:.0f} Mm³")
             print(f"      Number of regulation schedules: {len(res.period_times) if res.period_times else 0}")
             if res.basin_pixels is not None:
                 print(f"      Basin cells: {len(res.basin_pixels)}")
