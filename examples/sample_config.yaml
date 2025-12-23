@@ -296,43 +296,43 @@ simulation:
 ####### OUTPUT CONTROLS
 
 output_states:
-  # REQUIRED: Save states of river network
+  # OPTIONAL: Save states of river network. Default: true
   # [boolean]
   discharge: true
 
-  # REQUIRED: Save states of reservoirs and lakes
+  # OPTIONAL: Save states of reservoirs and lakes. Default: false
   # [boolean]
   reservoir_states: true
 
-  # REQUIRED: Save states of soil small pores
+  # OPTIONAL: Save states of soil small pores. Default: true
   # [boolean]
   soil_capillary: true
 
-  # REQUIRED: Save states of soil large pores
+  # OPTIONAL: Save states of soil large pores. Default: true
   # [boolean]
   soil_gravitational: true
 
-  # REQUIRED: Save states of plant/canopy water
+  # OPTIONAL: Save states of plant/canopy water. Default: true
   # [boolean]
   soil_plant: true
 
-  # REQUIRED: Save states of surface water
+  # OPTIONAL: Save states of surface water. Default: true
   # [boolean]
   soil_surface: true
 
-  # REQUIRED: Save states of land surface temperature
+  # OPTIONAL: Save states of land surface temperature. Default: false
   # [boolean]
   surface_temperature: false
 
-  # REQUIRED: Save states of ground temperature
+  # OPTIONAL: Save states of ground temperature. Default: false
   # [boolean]
   ground_temperature: false
 
-  # REQUIRED: Save states of aquifers
+  # OPTIONAL: Save states of aquifers. Default: false
   # [boolean]
   aquifer_head: false
 
-  # REQUIRED: Save states of evapotranspiration and precipitation
+  # OPTIONAL: Save states of evapotranspiration and precipitation. Default: false
   # [boolean]
   et_prec: false
 
