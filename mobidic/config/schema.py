@@ -239,7 +239,11 @@ class InitialConditions(BaseModel):
         0.01, description="Initial relative saturation of gravitational soil, non dimensional"
     )
     reservoir_volumes: Optional[PathField] = Field(
-        None, description="Path to CSV file with initial reservoir volumes (columns: 'reservoir_id', 'volume_m3')"
+        None,
+        description=(
+            "Path to CSV file with initial reservoir volumes (columns: 'reservoir_id', 'volume_m3'). "
+            "If not provided, initial volumes are auto-calculated as 100% capacity (volume interpolated at z_max)"
+        ),
     )
 
     @field_validator("Ws")
