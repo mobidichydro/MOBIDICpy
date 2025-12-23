@@ -39,7 +39,7 @@ paths:
 
   # OPTIONAL: Consolidated reservoirs dataset to be created by GIS preprocessing (geoparquet format)
   # [full pathname to .parquet file, eg: /blue_nile/geodat/reservoirs.parquet]
-  reservoirs: 
+  reservoirs: gisdata/Arno_reservoirs.parquet
 
   # REQUIRED: Directory where the model states will be stored
   # [directory path including terminal /, eg: /blue_nile/states/]
@@ -229,19 +229,19 @@ parameters:
   reservoirs:
     # OPTIONAL: Shapefile of reservoirs and lakes (polygon features)
     # [path to .shp file]
-    res_points: 
+    res_points: reservoirs/reservoirs.shp
 
     # OPTIONAL: Reservoir stage-storage curves (CSV format)
     # [path to .csv file]
-    stage_storage: 
+    stage_storage: reservoirs/stage_storage.csv
 
     # OPTIONAL: Reservoir regulation curves (CSV format)
     # [path to .csv file]
-    regulation_curves: 
+    regulation_curves: reservoirs/regulation_curves.csv
 
     # OPTIONAL: Reservoir regulation schedules (CSV format)
     # [path to .csv file]
-    regulation_schedule:
+    regulation_schedule: reservoirs/regulation_schedule.csv
 
   multipliers:
     # OPTIONAL: Multiplying factor of soil hydraulic conductivity, non dimensional
@@ -290,7 +290,7 @@ initial_conditions:
 
   # OPTIONAL: Initial volume in reservoirs
   # [path to .csv file with columns 'reservoir_id' and 'volume_m3']
-  reservoir_volumes: 
+  reservoir_volumes: reservoirs/initial_conditions.csv
 
 
 ####### SIMULATION CONTROLS
@@ -329,7 +329,7 @@ output_states:
 
   # OPTIONAL: Save states of reservoirs and lakes. Default: false
   # [boolean]
-  reservoir_states: false
+  reservoir_states: true
 
   # OPTIONAL: Save states of soil small pores. Default: true
   # [boolean]
