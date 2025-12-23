@@ -11,6 +11,7 @@ from mobidic.preprocessing.reservoirs import (
     Reservoirs,
     _rasterize_reservoir_polygon,
     _find_reservoir_reaches,
+    _interpolate_volume_at_stage,
     process_reservoirs,
 )
 
@@ -567,7 +568,7 @@ def test_process_reservoirs_missing_initial_volume(
     simple_river_network,
     tmp_path,
 ):
-    """Test processing when initial volume is missing (should default to 0)."""
+    """Test processing when initial volume is missing (should auto-calculate from curve)."""
     # Save files
     shp_path = tmp_path / "reservoirs.shp"
     reservoir_shapefile_gdf.to_file(shp_path)
@@ -600,10 +601,10 @@ def test_process_reservoirs_missing_initial_volume(
         cellsize=50.0,
     )
 
-    # Reservoir 1 should have initial_volume = 0
+    # Reservoir 1 should have initial_volume auto-calculated from z_max=250 → 10000 m³
     res1 = reservoirs[0]
     assert res1.id == 1
-    assert res1.initial_volume == 0.0
+    assert res1.initial_volume == pytest.approx(10000.0)
 
 
 def test_process_reservoirs_missing_stage_storage(
@@ -764,3 +765,131 @@ def test_process_reservoirs_regulation_period_arrays(
     # Each period should have same-length arrays
     assert len(res1.stage_discharge_h["000"]) == len(res1.stage_discharge_q["000"])
     assert len(res1.stage_discharge_h["001"]) == len(res1.stage_discharge_q["001"])
+
+
+def test_interpolate_volume_clamping(stage_storage_csv_data):
+    """Test volume interpolation with z_max beyond curve bounds."""
+    # Get reservoir 1 curve: stages [240, 245, 250, 255], volumes [1000, 5000, 10000, 20000]
+    ss_curve = stage_storage_csv_data[stage_storage_csv_data["reservoir_id"] == 1].copy()
+    ss_curve = ss_curve.drop(columns=["reservoir_id"])
+
+    # Test exact match in range
+    vol_250 = _interpolate_volume_at_stage(ss_curve, 250.0)
+    assert vol_250 == 10000.0
+
+    # Test interpolation in range
+    vol_247_5 = _interpolate_volume_at_stage(ss_curve, 247.5)
+    assert vol_247_5 == pytest.approx(7500.0)  # Linear interpolation between 245 (5000) and 250 (10000)
+
+    # Test above max (should clamp to max volume)
+    vol_260 = _interpolate_volume_at_stage(ss_curve, 260.0)
+    assert vol_260 == 20000.0  # Clamped to max
+
+    # Test below min (should clamp to min volume)
+    vol_230 = _interpolate_volume_at_stage(ss_curve, 230.0)
+    assert vol_230 == 1000.0  # Clamped to min
+
+
+def test_process_reservoirs_auto_calculate_volumes(
+    reservoir_shapefile_gdf,
+    stage_storage_csv_data,
+    regulation_curves_csv_data,
+    regulation_schedule_csv_data,
+    simple_river_network,
+    tmp_path,
+):
+    """Test that initial volumes are auto-calculated when CSV path is None."""
+    # Setup files (without initial_volumes.csv)
+    shapefile_path = tmp_path / "reservoirs.shp"
+    reservoir_shapefile_gdf.to_file(shapefile_path)
+
+    stage_storage_path = tmp_path / "stage_storage.csv"
+    stage_storage_csv_data.to_csv(stage_storage_path, index=False)
+
+    regulation_curves_path = tmp_path / "regulation_curves.csv"
+    regulation_curves_csv_data.to_csv(regulation_curves_path, index=False)
+
+    regulation_schedule_path = tmp_path / "regulation_schedule.csv"
+    regulation_schedule_csv_data.to_csv(regulation_schedule_path, index=False)
+
+    # Process reservoirs with initial_volumes_path=None
+    reservoirs = process_reservoirs(
+        shapefile_path=shapefile_path,
+        stage_storage_path=stage_storage_path,
+        regulation_curves_path=regulation_curves_path,
+        regulation_schedule_path=regulation_schedule_path,
+        initial_volumes_path=None,  # <-- Test None path
+        network=simple_river_network,
+        grid_shape=(10, 10),
+        xllcorner=0.0,
+        yllcorner=0.0,
+        cellsize=10.0,
+    )
+
+    # Should process 2 reservoirs
+    assert len(reservoirs) == 2
+
+    # Reservoir 1: z_max=250, should interpolate to 10000 m³
+    res1 = reservoirs[0]
+    assert res1.id == 1
+    assert res1.initial_volume == pytest.approx(10000.0)
+
+    # Reservoir 2: z_max=260, should interpolate to 15000 m³
+    res2 = reservoirs[1]
+    assert res2.id == 2
+    assert res2.initial_volume == pytest.approx(15000.0)
+
+
+def test_process_reservoirs_partial_volumes_csv(
+    reservoir_shapefile_gdf,
+    stage_storage_csv_data,
+    regulation_curves_csv_data,
+    regulation_schedule_csv_data,
+    simple_river_network,
+    tmp_path,
+):
+    """Test that missing reservoirs in CSV are auto-calculated."""
+    # Setup files
+    shapefile_path = tmp_path / "reservoirs.shp"
+    reservoir_shapefile_gdf.to_file(shapefile_path)
+
+    stage_storage_path = tmp_path / "stage_storage.csv"
+    stage_storage_csv_data.to_csv(stage_storage_path, index=False)
+
+    regulation_curves_path = tmp_path / "regulation_curves.csv"
+    regulation_curves_csv_data.to_csv(regulation_curves_path, index=False)
+
+    regulation_schedule_path = tmp_path / "regulation_schedule.csv"
+    regulation_schedule_csv_data.to_csv(regulation_schedule_path, index=False)
+
+    # Create partial initial volumes CSV (only reservoir 1, missing reservoir 2)
+    partial_volumes = pd.DataFrame({"reservoir_id": [1], "volume_m3": [3333.0]})
+    initial_volumes_path = tmp_path / "initial_volumes.csv"
+    partial_volumes.to_csv(initial_volumes_path, index=False)
+
+    # Process reservoirs
+    reservoirs = process_reservoirs(
+        shapefile_path=shapefile_path,
+        stage_storage_path=stage_storage_path,
+        regulation_curves_path=regulation_curves_path,
+        regulation_schedule_path=regulation_schedule_path,
+        initial_volumes_path=initial_volumes_path,  # <-- Partial CSV
+        network=simple_river_network,
+        grid_shape=(10, 10),
+        xllcorner=0.0,
+        yllcorner=0.0,
+        cellsize=10.0,
+    )
+
+    # Should process 2 reservoirs
+    assert len(reservoirs) == 2
+
+    # Reservoir 1: should use CSV value
+    res1 = reservoirs[0]
+    assert res1.id == 1
+    assert res1.initial_volume == pytest.approx(3333.0)
+
+    # Reservoir 2: should auto-calculate (z_max=260 → 15000 m³)
+    res2 = reservoirs[1]
+    assert res2.id == 2
+    assert res2.initial_volume == pytest.approx(15000.0)
