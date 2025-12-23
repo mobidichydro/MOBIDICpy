@@ -277,12 +277,54 @@ def _find_reservoir_reaches(
     return np.array(inlet_reaches, dtype=int), outlet_reach
 
 
+def _interpolate_volume_at_stage(
+    stage_storage_curve: pd.DataFrame,
+    target_stage: float,
+) -> float:
+    """Interpolate volume from stage-storage curve at a target stage.
+
+    Uses numpy linear interpolation with clamping to curve bounds.
+
+    Args:
+        stage_storage_curve: DataFrame with 'stage_m' and 'volume_m3' columns
+        target_stage: Target stage elevation [m]
+
+    Returns:
+        Interpolated volume [m³], clamped to curve min/max if target is out of bounds
+    """
+    stages = stage_storage_curve["stage_m"].values
+    volumes = stage_storage_curve["volume_m3"].values
+
+    # Sort by stage if not already sorted
+    if not np.all(stages[:-1] <= stages[1:]):
+        sort_idx = np.argsort(stages)
+        stages = stages[sort_idx]
+        volumes = volumes[sort_idx]
+
+    # Interpolate with clamping (numpy.interp automatically clamps to bounds)
+    interpolated_volume = np.interp(target_stage, stages, volumes)
+
+    # Log if clamping occurred
+    if target_stage > stages[-1]:
+        logger.debug(
+            f"Target stage {target_stage:.2f}m exceeds max curve stage {stages[-1]:.2f}m, "
+            f"using max volume {volumes[-1]:.0f}m³"
+        )
+    elif target_stage < stages[0]:
+        logger.debug(
+            f"Target stage {target_stage:.2f}m below min curve stage {stages[0]:.2f}m, "
+            f"using min volume {volumes[0]:.0f}m³"
+        )
+
+    return float(interpolated_volume)
+
+
 def process_reservoirs(
     shapefile_path: str | Path,
     stage_storage_path: str | Path,
     regulation_curves_path: str | Path,
     regulation_schedule_path: str | Path,
-    initial_volumes_path: str | Path,
+    initial_volumes_path: Optional[str | Path],
     network: gpd.GeoDataFrame,
     grid_shape: tuple[int, int],
     xllcorner: float,
@@ -306,7 +348,8 @@ def process_reservoirs(
         stage_storage_path: Path to stage-storage CSV
         regulation_curves_path: Path to regulation curves CSV
         regulation_schedule_path: Path to regulation schedule CSV
-        initial_volumes_path: Path to CSV with initial volumes (columns: 'reservoir_id', 'volume_m3')
+        initial_volumes_path: Path to CSV with initial volumes (columns: 'reservoir_id', 'volume_m3').
+            If None, initial volumes are auto-calculated as 100% capacity (volume at z_max)
         network: Processed river network GeoDataFrame
         grid_shape: Shape of computational grid (nrows, ncols)
         xllcorner: X coordinate of lower-left corner [m]
@@ -342,11 +385,15 @@ def process_reservoirs(
     regulation_schedule["start_date"] = pd.to_datetime(regulation_schedule["start_date"])
     regulation_schedule["end_date"] = pd.to_datetime(regulation_schedule["end_date"])
 
-    # Read initial volumes
-    logger.debug(f"Reading initial volumes: {initial_volumes_path}")
-    initial_volumes = pd.read_csv(initial_volumes_path)
-    # Create dictionary for quick lookup
-    volumes_dict = dict(zip(initial_volumes["reservoir_id"], initial_volumes["volume_m3"]))
+    # Read initial volumes (optional)
+    if initial_volumes_path is not None:
+        logger.debug(f"Reading initial volumes: {initial_volumes_path}")
+        initial_volumes = pd.read_csv(initial_volumes_path)
+        volumes_dict = dict(zip(initial_volumes["reservoir_id"], initial_volumes["volume_m3"]))
+        logger.info(f"Loaded initial volumes for {len(volumes_dict)} reservoirs from CSV")
+    else:
+        volumes_dict = {}
+        logger.info("No initial volumes CSV provided, will auto-calculate from stage-storage curves")
 
     # Process each reservoir
     reservoirs = []
@@ -360,12 +407,6 @@ def process_reservoirs(
         # Get z_max from shapefile
         z_max = res_row["zmax"]
 
-        # Get initial volume from CSV
-        initial_volume = volumes_dict.get(res_id)
-        if initial_volume is None:
-            logger.warning(f"No initial volume found for reservoir {res_id}, using 0")
-            initial_volume = 0.0
-
         # Get stage-storage curve for this reservoir
         ss_curve = stage_storage[stage_storage["reservoir_id"] == res_id].copy()
         ss_curve = ss_curve.sort_values("stage_m")
@@ -376,6 +417,20 @@ def process_reservoirs(
 
         # Drop reservoir_id column as it's used only for mapping
         ss_curve = ss_curve.drop(columns=["reservoir_id"])
+
+        # Get initial volume: try CSV first, then auto-calculate from curve
+        initial_volume = volumes_dict.get(res_id)
+        if initial_volume is None:
+            # Auto-calculate from stage-storage curve
+            if len(ss_curve) > 0:
+                initial_volume = _interpolate_volume_at_stage(ss_curve, z_max)
+                logger.debug(
+                    f"Auto-calculated initial volume for reservoir {res_id}: "
+                    f"{initial_volume:.0f}m³ at z_max={z_max:.2f}m"
+                )
+            else:
+                logger.warning(f"No stage-storage curve available for reservoir {res_id}, using 0m³")
+                initial_volume = 0.0
 
         # Get regulation curves for this reservoir
         reg_curves_data = regulation_curves[regulation_curves["reservoir_id"] == res_id]
