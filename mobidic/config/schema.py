@@ -295,23 +295,31 @@ class Simulation(BaseModel):
 class OutputStates(BaseModel):
     """Output state options."""
 
-    discharge: bool = Field(..., description="Option to save states of river network for results analysis")
-    reservoir_states: bool = Field(
-        ..., description="Option to save states of reservoirs and lakes for results analysis"
+    discharge: Optional[bool] = Field(True, description="Option to save states of river network for results analysis")
+    reservoir_states: Optional[bool] = Field(
+        False, description="Option to save states of reservoirs and lakes for results analysis"
     )
-    soil_capillary: bool = Field(..., description="Option to save states of soil small pores for results analysis")
-    soil_gravitational: bool = Field(..., description="Option to save states of soil large pores for results analysis")
-    soil_plant: bool = Field(..., description="Option to save states of plant/canopy water for results analysis")
-    soil_surface: bool = Field(..., description="Option to save states of surface water for results analysis")
-    surface_temperature: bool = Field(
-        ..., description="Option to save states of land surface temperature for results analysis"
+    soil_capillary: Optional[bool] = Field(
+        True, description="Option to save states of soil small pores for results analysis"
     )
-    ground_temperature: bool = Field(
-        ..., description="Option to save states of ground temperature for results analysis"
+    soil_gravitational: Optional[bool] = Field(
+        True, description="Option to save states of soil large pores for results analysis"
     )
-    aquifer_head: bool = Field(..., description="Option to save states of aquifers for results analysis")
-    et_prec: bool = Field(
-        ..., description="Option to save states of evapotranspiration and precipitation for results analysis"
+    soil_plant: Optional[bool] = Field(
+        True, description="Option to save states of plant/canopy water for results analysis"
+    )
+    soil_surface: Optional[bool] = Field(
+        True, description="Option to save states of surface water for results analysis"
+    )
+    surface_temperature: Optional[bool] = Field(
+        False, description="Option to save states of land surface temperature for results analysis"
+    )
+    ground_temperature: Optional[bool] = Field(
+        False, description="Option to save states of ground temperature for results analysis"
+    )
+    aquifer_head: Optional[bool] = Field(False, description="Option to save states of aquifers for results analysis")
+    et_prec: Optional[bool] = Field(
+        False, description="Option to save states of evapotranspiration and precipitation for results analysis"
     )
 
 
@@ -456,7 +464,7 @@ class MOBIDICConfig(BaseModel):
     parameters: Parameters
     initial_conditions: Optional[InitialConditions] = Field(default_factory=InitialConditions)
     simulation: Simulation
-    output_states: OutputStates
+    output_states: Optional[OutputStates] = Field(default_factory=OutputStates)
     output_states_settings: Optional[OutputStatesSettings] = Field(default_factory=OutputStatesSettings)
     output_report: Optional[OutputReport] = Field(default_factory=OutputReport)
     output_report_settings: Optional[OutputReportSettings] = Field(default_factory=OutputReportSettings)
