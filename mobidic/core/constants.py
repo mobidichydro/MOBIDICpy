@@ -10,6 +10,7 @@ import numpy as np
 # Simulation control parameters
 # ============================================================================
 
+F0_CONSTANT = 0.85  # Constant in fraction of time step without rain f0 [-]
 WARMUP_HOURS = 0  # Length of warmup period [hours]
 FORECAST_LAG_SECONDS = 48 * 3600  # Forecast lag time [s]
 N_SUBSTEP_RESERVOIR = 24  # Number of substeps for reservoir routing [-]

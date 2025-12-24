@@ -592,7 +592,7 @@ class Simulation:
 
         # Rainfall fraction f0: fraction of time step without rain [-]
         # Time-dependent parameter from mobidic_sid.m line 213
-        f0_value = 0.85 * (1 - np.exp(-self.dt / (24 * 3600) * np.log(0.85 / 0.10)))
+        f0_value = const.F0_CONSTANT * (1 - np.exp(-self.dt / (24 * 3600) * np.log(const.F0_CONSTANT / 0.10)))
         param_grids["f0"] = np.full((self.nrows, self.ncols), f0_value)
         param_grids["f0"][np.isnan(self.dtm)] = np.nan
 
