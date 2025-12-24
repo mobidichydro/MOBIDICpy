@@ -297,6 +297,7 @@ class StateWriter:
         flushing: int = -1,
         max_file_size: float = 500.0,
         add_metadata: dict | None = None,
+        reservoir_size: int = 0,
     ):
         """Initialize the state writer and create the NetCDF file."""
         self.base_output_path = Path(output_path)
@@ -304,6 +305,7 @@ class StateWriter:
 
         self.grid_metadata = grid_metadata
         self.network_size = network_size
+        self.reservoir_size = reservoir_size
         self.output_states = output_states
         self.flushing = flushing
         self.max_file_size_bytes = max_file_size * 1024 * 1024  # Convert MB to bytes
@@ -327,6 +329,7 @@ class StateWriter:
         self.x = xllcorner + np.arange(self.ncols) * resolution[0]
         self.y = yllcorner + np.arange(self.nrows) * resolution[1]
         self.reaches = np.arange(network_size)
+        self.reservoirs = np.arange(reservoir_size) if reservoir_size > 0 else np.array([])
 
         # Initialize buffer for states
         self.buffer = []
@@ -409,6 +412,10 @@ class StateWriter:
         if self.output_states.discharge:
             coords["reach"] = (["reach"], self.reaches)
 
+        # Add reservoir coordinate if reservoir_states is enabled
+        if self.output_states.reservoir_states and self.reservoir_size > 0:
+            coords["reservoir"] = (["reservoir"], self.reservoirs)
+
         # Create empty dataset with coordinates only (no time yet)
         self.ds = xr.Dataset(coords=coords)
 
@@ -429,6 +436,12 @@ class StateWriter:
             self.ds["reach"].attrs = {
                 "long_name": "reach index",
                 "description": "MOBIDIC reach ID (mobidic_id)",
+                "units": "1",
+            }
+        if "reservoir" in self.ds.coords:
+            self.ds["reservoir"].attrs = {
+                "long_name": "reservoir index",
+                "description": "Reservoir index (0-based)",
                 "units": "1",
             }
 
@@ -461,6 +474,14 @@ class StateWriter:
 
         # Create a copy of the state to avoid storing references to mutable arrays
         # This is critical because the same state object is reused across timesteps
+        # Copy reservoir states if present
+        reservoir_states_copy = None
+        if state.reservoir_states is not None:
+            from mobidic.core.reservoir import ReservoirState
+            from copy import deepcopy
+
+            reservoir_states_copy = deepcopy(state.reservoir_states)
+
         state_copy = SimulationState(
             wc=state.wc.copy(),
             wg=state.wg.copy(),
@@ -468,6 +489,7 @@ class StateWriter:
             ws=state.ws.copy(),
             discharge=state.discharge.copy(),
             lateral_inflow=state.lateral_inflow.copy(),
+            reservoir_states=reservoir_states_copy,
         )
 
         # Add to buffer
@@ -530,6 +552,22 @@ class StateWriter:
             data_vars["discharge"] = (["time", "reach"], discharge_data)
             data_vars["lateral_inflow"] = (["time", "reach"], lateral_inflow_data)
 
+        # Reservoir variables
+        if self.output_states.reservoir_states and self.reservoir_size > 0:
+            # Check if any state has reservoir_states
+            has_reservoirs = any(s.reservoir_states is not None for s in self.buffer)
+            if has_reservoirs:
+                # Extract reservoir data (volume, stage, inflow, outflow)
+                res_volume_data = np.array([[r.volume for r in s.reservoir_states] for s in self.buffer])
+                res_stage_data = np.array([[r.stage for r in s.reservoir_states] for s in self.buffer])
+                res_inflow_data = np.array([[r.inflow for r in s.reservoir_states] for s in self.buffer])
+                res_outflow_data = np.array([[r.outflow for r in s.reservoir_states] for s in self.buffer])
+
+                data_vars["reservoir_volume"] = (["time", "reservoir"], res_volume_data)
+                data_vars["reservoir_stage"] = (["time", "reservoir"], res_stage_data)
+                data_vars["reservoir_inflow"] = (["time", "reservoir"], res_inflow_data)
+                data_vars["reservoir_outflow"] = (["time", "reservoir"], res_outflow_data)
+
         # Create dataset for this flush
         flush_ds = xr.Dataset(
             data_vars=data_vars,
@@ -543,6 +581,10 @@ class StateWriter:
         # Add reach coordinate if discharge is enabled
         if self.output_states.discharge:
             flush_ds.coords["reach"] = (["reach"], self.reaches)
+
+        # Add reservoir coordinate if reservoir_states is enabled
+        if self.output_states.reservoir_states and self.reservoir_size > 0:
+            flush_ds.coords["reservoir"] = (["reservoir"], self.reservoirs)
 
         # Add variable attributes
         if "Wc" in flush_ds:
@@ -589,6 +631,34 @@ class StateWriter:
                 "long_name": "Lateral Inflow",
                 "units": "m3 s-1",
                 "description": "Lateral inflow from hillslope to each reach",
+            }
+
+        if "reservoir_volume" in flush_ds:
+            flush_ds["reservoir_volume"].attrs = {
+                "long_name": "Reservoir Volume",
+                "units": "m3",
+                "description": "Water volume stored in reservoir",
+            }
+
+        if "reservoir_stage" in flush_ds:
+            flush_ds["reservoir_stage"].attrs = {
+                "long_name": "Reservoir Stage",
+                "units": "m",
+                "description": "Water level/stage in reservoir",
+            }
+
+        if "reservoir_inflow" in flush_ds:
+            flush_ds["reservoir_inflow"].attrs = {
+                "long_name": "Reservoir Inflow",
+                "units": "m3 s-1",
+                "description": "Total inflow to reservoir from upstream reaches",
+            }
+
+        if "reservoir_outflow" in flush_ds:
+            flush_ds["reservoir_outflow"].attrs = {
+                "long_name": "Reservoir Outflow",
+                "units": "m3 s-1",
+                "description": "Total outflow from reservoir (release + withdrawals)",
             }
 
         # Add time attributes
