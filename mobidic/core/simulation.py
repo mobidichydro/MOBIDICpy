@@ -68,6 +68,7 @@ class SimulationState:
         ws: np.ndarray,
         discharge: np.ndarray,
         lateral_inflow: np.ndarray,
+        reservoir_states: list | None = None,
     ):
         """Initialize simulation state.
 
@@ -78,6 +79,7 @@ class SimulationState:
             ws: Surface water content [m]
             discharge: River discharge for each reach [m³/s]
             lateral_inflow: Lateral inflow to each reach [m³/s]
+            reservoir_states: List of ReservoirState objects (None if no reservoirs)
         """
         self.wc = wc
         self.wg = wg
@@ -85,6 +87,7 @@ class SimulationState:
         self.ws = ws
         self.discharge = discharge
         self.lateral_inflow = lateral_inflow
+        self.reservoir_states = reservoir_states
 
 
 class SimulationResults:
@@ -261,6 +264,13 @@ class Simulation:
         # River network
         self.network = gisdata.network
 
+        # Reservoirs (optional)
+        self.reservoirs = getattr(gisdata, "reservoirs", None)
+        if self.reservoirs is not None:
+            logger.info(f"Reservoirs loaded: {len(self.reservoirs)} reservoirs")
+        else:
+            logger.debug("No reservoirs in gisdata")
+
         # Time step
         self.dt = config.simulation.timestep
 
@@ -314,6 +324,23 @@ class Simulation:
         discharge = np.zeros(len(self.network))
         lateral_inflow = np.zeros(len(self.network))
 
+        # Initialize reservoir states if reservoirs exist
+        reservoir_states = None
+        if self.reservoirs is not None:
+            from mobidic.core.reservoir import ReservoirState
+
+            reservoir_states = []
+            for reservoir in self.reservoirs.reservoirs:
+                # Initialize with configured initial volume
+                state = ReservoirState(
+                    volume=reservoir.initial_volume,
+                    stage=0.0,  # Will be calculated in first timestep
+                    inflow=0.0,
+                    outflow=0.0,
+                )
+                reservoir_states.append(state)
+            logger.info(f"Initialized {len(reservoir_states)} reservoir states")
+
         logger.success(
             f"State initialized. Initial conditions (average): "
             f"Wc={np.nanmean(wc) * 1000:.1f} mm, "
@@ -322,7 +349,7 @@ class Simulation:
             f"Wp={np.nanmean(wp) * 1000:.1f} mm"
         )
 
-        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
+        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states)
 
     def set_initial_state(
         self,
@@ -1091,6 +1118,7 @@ class Simulation:
             states_dir = Path(self.config.paths.states)
             states_dir.mkdir(parents=True, exist_ok=True)
 
+            reservoir_size = len(self.reservoirs) if self.reservoirs is not None else 0
             state_writer = StateWriter(
                 output_path=states_dir / "states.nc",
                 grid_metadata=self.gisdata.metadata,
@@ -1102,6 +1130,7 @@ class Simulation:
                     "basin_id": self.config.basin.id,
                     "paramset_id": self.config.basin.paramset_id,
                 },
+                reservoir_size=reservoir_size,
             )
             logger.info(f"State output enabled: {state_settings.output_states}")
         else:
@@ -1276,6 +1305,34 @@ class Simulation:
             # Store flr and fld for next timestep's routing (at step 3)
             flr_prev = flr.copy()
             fld_prev = fld.copy()
+
+            # 6. Reservoir routing (if reservoirs exist)
+            if self.reservoirs is not None and self.state.reservoir_states is not None:
+                logger.debug("Computing reservoir routing")
+
+                from mobidic.core.reservoir import reservoir_routing
+
+                # Call reservoir routing
+                (
+                    self.state.reservoir_states,
+                    self.state.discharge,
+                    flr,
+                    fld,
+                    self.state.wg,
+                ) = reservoir_routing(
+                    reservoirs_data=self.reservoirs.reservoirs,
+                    reservoir_states=self.state.reservoir_states,
+                    reach_discharge=self.state.discharge,
+                    surface_runoff=flr,
+                    lateral_flow=fld,
+                    soil_wg=self.state.wg,
+                    soil_wg0=self.wg0,
+                    current_time=current_time,
+                    dt=self.dt,
+                    cell_area=cell_area,
+                )
+
+                logger.debug("Reservoir routing completed")
 
             # 7. Channel routing
             logger.debug("Computing channel routing")
