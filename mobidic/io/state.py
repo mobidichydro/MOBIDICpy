@@ -477,7 +477,6 @@ class StateWriter:
         # Copy reservoir states if present
         reservoir_states_copy = None
         if state.reservoir_states is not None:
-            from mobidic.core.reservoir import ReservoirState
             from copy import deepcopy
 
             reservoir_states_copy = deepcopy(state.reservoir_states)
