@@ -14,6 +14,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from loguru import logger
+from scipy.interpolate import CubicSpline
 
 
 @dataclass
@@ -21,11 +22,11 @@ class ReservoirState:
     """State variables for a single reservoir.
 
     Attributes:
-        volume: Current reservoir volume [m³]
-        stage: Current water stage/level [m]
-        inflow: Current inflow from upstream reaches [m³/s]
-        outflow: Current outflow/release [m³/s]
-        withdrawal: Current withdrawal for water use [m³/s] (not implemented yet)
+        volume: Current reservoir volume (m3)
+        stage: Current water stage/level (m)
+        inflow: Current inflow from upstream reaches (m3/s)
+        outflow: Current outflow/release (m3/s)
+        withdrawal: Current withdrawal for water use (m3/s) (not implemented yet)
     """
 
     volume: float
@@ -41,14 +42,14 @@ def _interpolate_stage_from_volume(
 ) -> float:
     """Interpolate stage from volume using stage-storage curve.
 
-    Uses cubic spline interpolation with extrapolation.
+    Uses cubic spline interpolation with extrapolation (matching MATLAB 'spline').
 
     Args:
         stage_storage_curve: DataFrame with 'stage_m' and 'volume_m3' columns
-        volume: Target volume [m³]
+        volume: Target volume (m3)
 
     Returns:
-        Interpolated stage [m]
+        Interpolated stage (m)
     """
     stages = stage_storage_curve["stage_m"].values
     volumes = stage_storage_curve["volume_m3"].values
@@ -59,9 +60,9 @@ def _interpolate_stage_from_volume(
         volumes = volumes[sort_idx]
         stages = stages[sort_idx]
 
-    # Interpolate with extrapolation
-    # Use linear interpolation (matching MATLAB's 'linear' mode)
-    stage = np.interp(volume, volumes, stages)
+    # Interpolate using cubic spline with extrapolation (matching MATLAB 'spline')
+    cs = CubicSpline(volumes, stages, extrapolate=True)
+    stage = cs(volume)
 
     return float(stage)
 
@@ -73,15 +74,15 @@ def _interpolate_discharge_from_stage(
 ) -> float:
     """Interpolate discharge from stage using regulation curve.
 
-    Uses linear interpolation with extrapolation.
+    Uses cubic spline interpolation with extrapolation.
 
     Args:
-        stage_values: Array of stage values [m] (can contain NaN)
-        discharge_values: Array of discharge values [m³/s] (can contain NaN)
-        stage: Current stage [m]
+        stage_values: Array of stage values (m) (can contain NaN)
+        discharge_values: Array of discharge values (m3/s) (can contain NaN)
+        stage: Current stage (m)
 
     Returns:
-        Interpolated discharge [m³/s]
+        Interpolated discharge (m3/s)
     """
     # Filter out NaN values (matching MATLAB's isfinite filter)
     valid = np.isfinite(stage_values) & np.isfinite(discharge_values)
@@ -92,46 +93,24 @@ def _interpolate_discharge_from_stage(
         logger.warning("No valid stage-discharge points available, returning 0")
         return 0.0
 
+    # Need at least 2 points for CubicSpline
+    if len(stage_clean) == 1:
+        return float(discharge_clean[0])
+
     # Sort by stage if not already sorted
     if not np.all(stage_clean[:-1] <= stage_clean[1:]):
         sort_idx = np.argsort(stage_clean)
         stage_clean = stage_clean[sort_idx]
         discharge_clean = discharge_clean[sort_idx]
 
-    # Interpolate with extrapolation (matching MATLAB's 'linear','extrap')
-    # numpy.interp doesn't extrapolate by default, so we need to handle it
-    if stage < stage_clean[0]:
-        # Extrapolate linearly below
-        if len(stage_clean) >= 2:
-            dstage = stage_clean[1] - stage_clean[0]
-            if abs(dstage) > 1e-10:  # Avoid division by zero
-                slope = (discharge_clean[1] - discharge_clean[0]) / dstage
-                discharge = discharge_clean[0] + slope * (stage - stage_clean[0])
-            else:
-                # Stages are identical, use first discharge
-                discharge = discharge_clean[0]
-        else:
-            discharge = discharge_clean[0]
-    elif stage > stage_clean[-1]:
-        # Extrapolate linearly above
-        if len(stage_clean) >= 2:
-            dstage = stage_clean[-1] - stage_clean[-2]
-            if abs(dstage) > 1e-10:  # Avoid division by zero
-                slope = (discharge_clean[-1] - discharge_clean[-2]) / dstage
-                discharge = discharge_clean[-1] + slope * (stage - stage_clean[-1])
-            else:
-                # Stages are identical, use last discharge
-                discharge = discharge_clean[-1]
-        else:
-            discharge = discharge_clean[-1]
-    else:
-        # Interpolate within range
-        discharge = np.interp(stage, stage_clean, discharge_clean)
+    # Interpolate with cubic spline extrapolation
+    cs = CubicSpline(stage_clean, discharge_clean, extrapolate=True)
+    discharge = float(cs(stage))
 
     # Ensure discharge is non-negative
     discharge = max(0.0, discharge)
 
-    return float(discharge)
+    return discharge
 
 
 def _calculate_substeps(
@@ -150,10 +129,10 @@ def _calculate_substeps(
     Matching MATLAB lines 23-48.
 
     Args:
-        stage_discharge_h: Stage values for current period [m]
-        stage_discharge_q: Discharge values for current period [m³/s]
+        stage_discharge_h: Stage values for current period (m)
+        stage_discharge_q: Discharge values for current period (m3/s)
         stage_storage_curve: Stage-storage DataFrame (not used in current impl)
-        dt: Time step [s]
+        dt: Time step (s)
         base_substeps: Base number of sub-steps (default: 1)
 
     Returns:
@@ -179,9 +158,10 @@ def _calculate_substeps(
     volumes = stage_storage_curve["volume_m3"].values
     stages = stage_storage_curve["stage_m"].values
 
-    # Interpolate volumes at H1 and H2
-    V1 = np.interp(H1_valid, stages, volumes)
-    V2 = np.interp(H2_valid, stages, volumes)
+    # Interpolate volumes at H1 and H2 using cubic spline (matching MATLAB 'cubic')
+    cs = CubicSpline(stages, volumes, extrapolate=True)
+    V1 = cs(H1_valid)
+    V2 = cs(H2_valid)
     dV = V2 - V1
 
     # Calculate minimum time constant (matching MATLAB lines 44-45)
@@ -223,14 +203,14 @@ def reservoir_routing(
     Args:
         reservoirs_data: List of Reservoir objects from preprocessing
         reservoir_states: List of current ReservoirState objects
-        reach_discharge: Array of reach discharges [m³/s]
-        surface_runoff: 2D grid of surface runoff rates [m/s]
-        lateral_flow: 2D grid of lateral flow rates [m/s]
-        soil_wg: 2D grid of gravitational water content [m]
-        soil_wg0: 2D grid of gravitational water capacity [m]
+        reach_discharge: Array of reach discharges (m3/s)
+        surface_runoff: 2D grid of surface runoff rates (m/s)
+        lateral_flow: 2D grid of lateral flow rates (m/s)
+        soil_wg: 2D grid of gravitational water content (m)
+        soil_wg0: 2D grid of gravitational water capacity (m)
         current_time: Current simulation time
-        dt: Time step [s]
-        cell_area: Grid cell area [m²]
+        dt: Time step (s)
+        cell_area: Grid cell area (m2)
         base_substeps: Base number of sub-steps (default: 1)
 
     Returns:
@@ -386,9 +366,7 @@ def reservoir_routing(
 
         # Check for invalid outflow (matching MATLAB lines 175-177)
         if not np.isfinite(reservoir_states[i].outflow) or reservoir_states[i].outflow < 0:
-            logger.error(
-                f"Invalid outflow for reservoir {reservoir.id}: {reservoir_states[i].outflow}, setting to 0"
-            )
+            logger.error(f"Invalid outflow for reservoir {reservoir.id}: {reservoir_states[i].outflow}, setting to 0")
             reservoir_states[i].outflow = 0.0
 
         # Zero out surface runoff and lateral flow in reservoir basin (matching MATLAB lines 178-179)
