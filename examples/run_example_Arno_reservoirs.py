@@ -26,9 +26,7 @@ import matplotlib.pyplot as plt
 from mobidic import (
     load_config,
     run_preprocessing,
-    save_gisdata,
-    save_network,
-    load_gisdata,
+    GISData,
     MeteoData,
     Simulation,
     configure_logger_from_config,
@@ -78,18 +76,29 @@ if force_preprocessing or not config.paths.gisdata.exists() or not config.paths.
 
     # Save preprocessed data
     print("  Saving preprocessed GIS data...")
-    save_gisdata(gisdata, config.paths.gisdata)
-    save_network(gisdata.network, config.paths.network, format="parquet")
+    gisdata.save(
+        config.paths.gisdata,
+        config.paths.network,
+        config.paths.reservoirs if config.paths.reservoirs else None,
+    )
 
     print(f"  [OK] GIS data saved to: {config.paths.gisdata}")
     print(f"  [OK] Network saved to: {config.paths.network}")
+    if gisdata.reservoirs is not None and config.paths.reservoirs:
+        print(f"  [OK] Reservoirs saved to: {config.paths.reservoirs}")
     print(f"  [OK] Grid size: {gisdata.metadata['shape']}")
     print(f"  [OK] Number of reaches: {len(gisdata.network)}")
 else:
     print("  Loading preprocessed data (already exists)...")
-    gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+    gisdata = GISData.load(
+        config.paths.gisdata,
+        config.paths.network,
+        config.paths.reservoirs if config.paths.reservoirs else None,
+    )
     print(f"  [OK] Loaded GIS data: {gisdata.metadata['shape']}")
     print(f"  [OK] Loaded network: {len(gisdata.network)} reaches")
+    if gisdata.reservoirs is not None:
+        print(f"  [OK] Loaded reservoirs: {len(gisdata.reservoirs)} reservoirs")
 
 print()
 
