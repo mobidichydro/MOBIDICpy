@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 from scipy.interpolate import CubicSpline
+from mobidic.core.constants import N_SUBSTEP_RESERVOIR
 
 
 @dataclass
@@ -118,7 +119,7 @@ def _calculate_substeps(
     stage_discharge_q: np.ndarray,
     stage_storage_curve: pd.DataFrame,
     dt: float,
-    base_substeps: int = 1,
+    base_substeps: int = N_SUBSTEP_RESERVOIR,
 ) -> int:
     """Calculate number of sub-steps needed for numerical stability.
 
@@ -133,7 +134,7 @@ def _calculate_substeps(
         stage_discharge_q: Discharge values for current period (m3/s)
         stage_storage_curve: Stage-storage DataFrame (not used in current impl)
         dt: Time step (s)
-        base_substeps: Base number of sub-steps (default: 1)
+        base_substeps: Base number of sub-steps (default: N_SUBSTEP_RESERVOIR from constants)
 
     Returns:
         Number of sub-steps to use
@@ -187,7 +188,7 @@ def reservoir_routing(
     current_time: datetime,
     dt: float,
     cell_area: float,
-    base_substeps: int = 1,
+    base_substeps: int = N_SUBSTEP_RESERVOIR,
 ) -> tuple[list[ReservoirState], np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Route water through reservoirs.
 
@@ -211,7 +212,7 @@ def reservoir_routing(
         current_time: Current simulation time
         dt: Time step (s)
         cell_area: Grid cell area (m2)
-        base_substeps: Base number of sub-steps (default: 1)
+        base_substeps: Base number of sub-steps (default: N_SUBSTEP_RESERVOIR from constants)
 
     Returns:
         Tuple of:
