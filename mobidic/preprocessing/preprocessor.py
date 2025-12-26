@@ -148,13 +148,13 @@ class GISData:
             network_path: Path to save river network (GeoParquet format)
             reservoirs_path: Optional path to save reservoirs (GeoParquet format)
         """
-        from mobidic.preprocessing.io import save_gisdata, save_network
+        from mobidic.preprocessing.io import save_gisdata, save_network, save_reservoirs
 
         save_gisdata(self, gisdata_path)
         save_network(self.network, network_path, format="parquet")
 
         if self.reservoirs is not None and reservoirs_path is not None:
-            self.reservoirs.save(reservoirs_path, format="parquet")
+            save_reservoirs(self.reservoirs, reservoirs_path, format="parquet")
 
     @classmethod
     def load(
@@ -170,7 +170,7 @@ class GISData:
         Returns:
             GISData object with loaded data
         """
-        from mobidic.preprocessing.io import load_gisdata
+        from mobidic.preprocessing.io import load_gisdata, load_reservoirs
 
         gisdata = load_gisdata(gisdata_path, network_path)
 
@@ -178,7 +178,7 @@ class GISData:
         if reservoirs_path is not None:
             reservoirs_path = Path(reservoirs_path)
             if reservoirs_path.exists():
-                gisdata.reservoirs = Reservoirs.load(reservoirs_path)
+                gisdata.reservoirs = load_reservoirs(reservoirs_path)
             else:
                 logger.warning(f"Reservoirs file not found: {reservoirs_path}")
                 gisdata.reservoirs = None

@@ -15,6 +15,7 @@ from mobidic import __version__
 
 if TYPE_CHECKING:
     from mobidic.preprocessing.preprocessor import GISData
+    from mobidic.preprocessing.reservoirs import Reservoirs
 
 
 def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
@@ -416,3 +417,78 @@ def load_network(network_path: str | Path) -> gpd.GeoDataFrame:
     logger.success(f"River network loaded: {len(network)} reaches")
 
     return network
+
+
+def save_reservoirs(reservoirs: "Reservoirs", output_path: str | Path, format: str = "parquet") -> None:
+    """Save reservoirs data to file.
+
+    Saves reservoir data to GeoParquet format, including all reservoir metadata,
+    stage-storage curves, regulation curves, and spatial information.
+
+    Args:
+        reservoirs: Reservoirs object containing reservoir data
+        output_path: Path to output file
+        format: Output format (only 'parquet' is supported)
+
+    Raises:
+        ValueError: If format is not supported
+
+    Examples:
+        >>> from mobidic import process_reservoirs
+        >>> reservoirs = process_reservoirs(...)
+        >>> from mobidic.preprocessing.io import save_reservoirs
+        >>> save_reservoirs(reservoirs, "reservoirs.parquet")
+    """
+    from mobidic.preprocessing.reservoirs import Reservoirs
+
+    if not isinstance(reservoirs, Reservoirs):
+        raise TypeError(f"Expected Reservoirs object, got {type(reservoirs)}")
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if format.lower() != "parquet":
+        raise ValueError(f"Unsupported format: {format}. Only 'parquet' is supported.")
+
+    logger.info(f"Saving reservoirs to GeoParquet: {output_path}")
+    reservoirs.save(output_path, format=format)
+    logger.debug(f"File size: {output_path.stat().st_size / 1024:.2f} KB")
+
+
+def load_reservoirs(input_path: str | Path) -> "Reservoirs":
+    """Load reservoirs data from file.
+
+    Loads reservoir data from GeoParquet format, including all reservoir metadata,
+    stage-storage curves, regulation curves, and spatial information.
+
+    Args:
+        input_path: Path to reservoirs Parquet file
+
+    Returns:
+        Reservoirs object with loaded data
+
+    Raises:
+        FileNotFoundError: If reservoir file does not exist
+        ValueError: If file is not a .parquet file
+
+    Examples:
+        >>> from mobidic.preprocessing.io import load_reservoirs
+        >>> reservoirs = load_reservoirs("reservoirs.parquet")
+    """
+    from mobidic.preprocessing.reservoirs import Reservoirs
+
+    input_path = Path(input_path)
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Reservoirs file not found: {input_path}")
+
+    if input_path.suffix != ".parquet":
+        raise ValueError(
+            f"Only .parquet files supported. Got: {input_path.suffix}. "
+            "Use geopandas.read_parquet() to load other formats."
+        )
+
+    logger.info(f"Loading reservoirs from GeoParquet: {input_path}")
+    reservoirs = Reservoirs.load(input_path)
+
+    return reservoirs

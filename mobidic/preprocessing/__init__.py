@@ -25,6 +25,8 @@ from mobidic.preprocessing.io import (
     save_network,
     load_gisdata,
     save_gisdata,
+    load_reservoirs,
+    save_reservoirs,
 )
 from mobidic.preprocessing.meteo_preprocessing import (
     MeteoData,
@@ -51,6 +53,8 @@ __all__ = [
     "save_network",
     "load_gisdata",
     "save_gisdata",
+    "load_reservoirs",
+    "save_reservoirs",
     "MeteoData",
     "convert_mat_to_netcdf",
     "Reservoir",
