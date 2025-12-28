@@ -24,6 +24,7 @@ from mobidic.config import MOBIDICConfig
 from mobidic.core import constants as const
 from mobidic.preprocessing.meteo_preprocessing import MeteoData
 from mobidic.core.soil_water_balance import soil_mass_balance
+from mobidic.core.reservoir import reservoir_routing
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
@@ -1309,8 +1310,6 @@ class Simulation:
             # 6. Reservoir routing (if reservoirs exist)
             if self.reservoirs is not None and self.state.reservoir_states is not None:
                 logger.debug("Computing reservoir routing")
-
-                from mobidic.core.reservoir import reservoir_routing
 
                 # Call reservoir routing
                 (
