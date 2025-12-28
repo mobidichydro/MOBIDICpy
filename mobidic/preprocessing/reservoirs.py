@@ -232,9 +232,8 @@ def _rasterize_reservoir_polygon(
         dtype=np.uint8,
     )
 
-    # Get linear indices of cells inside polygon
-    rows, cols = np.where(mask == 1)
-    basin_pixels = rows * ncols + cols
+    # Get linear indices of cells inside polygon. (Fortran order to match MATLAB)
+    basin_pixels = np.where(mask.flatten(order="F") == 1)[0]
 
     return basin_pixels.astype(int)
 
