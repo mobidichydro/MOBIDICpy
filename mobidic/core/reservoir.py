@@ -75,7 +75,7 @@ def _interpolate_discharge_from_stage(
 ) -> float:
     """Interpolate discharge from stage using regulation curve.
 
-    Uses cubic spline interpolation with extrapolation.
+    Uses linear interpolation with extrapolation.
 
     Args:
         stage_values: Array of stage values (m) (can contain NaN)
@@ -94,7 +94,7 @@ def _interpolate_discharge_from_stage(
         logger.warning("No valid stage-discharge points available, returning 0")
         return 0.0
 
-    # Need at least 2 points for CubicSpline
+    # Need at least 2 points for interpolation
     if len(stage_clean) == 1:
         return float(discharge_clean[0])
 
@@ -104,9 +104,8 @@ def _interpolate_discharge_from_stage(
         stage_clean = stage_clean[sort_idx]
         discharge_clean = discharge_clean[sort_idx]
 
-    # Interpolate with cubic spline extrapolation
-    cs = CubicSpline(stage_clean, discharge_clean, extrapolate=True)
-    discharge = float(cs(stage))
+    # Interpolate with linear interpolation (extrapolates at endpoints)
+    discharge = float(np.interp(stage, stage_clean, discharge_clean))
 
     # Ensure discharge is non-negative
     discharge = max(0.0, discharge)
@@ -292,10 +291,8 @@ def reservoir_routing(
             logger.warning(f"Reservoir {reservoir.id} has no basin pixels, skipping")
             continue
 
-        # Convert linear indices to 2D indices (Fortran order)
-        nrows, ncols = surface_runoff.shape
-        ibac_row = ibac // ncols
-        ibac_col = ibac % ncols
+        # Convert linear indices to 2D indices (Fortran order, matching MATLAB)
+        ibac_row, ibac_col = np.unravel_index(ibac, surface_runoff.shape, order="F")
 
         # Initialize accumulated outflow (will be averaged over sub-steps)
         total_outflow = 0.0
@@ -323,16 +320,16 @@ def reservoir_routing(
             reservoir_states[i].inflow = inflow
 
             # Calculate lateral inflows from basin cells (matching MATLAB line 134)
-            # Sum of (pir + pid) over basin cells, converted to discharge [m³/s]
+            # Sum of (pir + pid) over basin cells, converted to discharge (m3/s)
             pir_basin = surface_runoff[ibac_row, ibac_col]
             pid_basin = lateral_flow[ibac_row, ibac_col]
-            lateral_inflow = np.sum(pir_basin + pid_basin) * cell_area
+            lateral_inflow = np.nansum(pir_basin + pid_basin) * cell_area
 
             # Calculate soil water change in basin (matching MATLAB line 135)
             # DV1 = -sum(Wg0(ibac) - Wg(ibac)) * cellsize^2
             wg_basin = soil_wg[ibac_row, ibac_col]
             wg0_basin = soil_wg0[ibac_row, ibac_col]
-            soil_water_change = -np.sum(wg0_basin - wg_basin) * cell_area
+            soil_water_change = -np.nansum(wg0_basin - wg_basin) * cell_area
 
             # Update volume (matching MATLAB lines 134-136)
             # DV = (Qin - Qout + lateral_inflow) * dt/nsbgo
