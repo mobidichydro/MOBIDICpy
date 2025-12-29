@@ -327,10 +327,10 @@ def reservoir_routing(
 
             # Calculate soil water change in basin (matching MATLAB line 135)
             # DV1 = -sum(Wg0(ibac) - Wg(ibac)) * cellsize^2
-            wg_basin = soil_wg[ibac_row, ibac_col]
-            wg0_basin = soil_wg0[ibac_row, ibac_col]
-            #soil_water_change = -np.nansum(wg0_basin - wg_basin) * cell_area
-            soil_water_change = 0.0 # Disable soil water interaction for now
+            # wg_basin = soil_wg[ibac_row, ibac_col]
+            # wg0_basin = soil_wg0[ibac_row, ibac_col]
+            # soil_water_change = -np.nansum(wg0_basin - wg_basin) * cell_area
+            soil_water_change = 0.0  # Disable soil water interaction for now
 
             # Update volume (matching MATLAB lines 134-136)
             # DV = (Qin - Qout + lateral_inflow) * dt/nsbgo
@@ -345,7 +345,7 @@ def reservoir_routing(
                     discharge = discharge + new_volume / (dt / nsbgo)
                     new_volume = 0.0
                     # Refill soil to capacity (matching MATLAB line 141)
-                    #soil_wg[ibac_row, ibac_col] = wg0_basin
+                    # soil_wg[ibac_row, ibac_col] = wg0_basin
                 else:
                     # Not enough water even with zero discharge
                     # Adjust volume without changing discharge (matching MATLAB line 143)
@@ -353,7 +353,7 @@ def reservoir_routing(
                     discharge = 0.0
             else:
                 # Volume is positive, refill soil to capacity (matching MATLAB line 147)
-                #soil_wg[ibac_row, ibac_col] = wg0_basin
+                # soil_wg[ibac_row, ibac_col] = wg0_basin
                 pass
 
             reservoir_states[i].volume = new_volume
