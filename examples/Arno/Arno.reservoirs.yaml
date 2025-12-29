@@ -229,7 +229,7 @@ parameters:
   reservoirs:
     # OPTIONAL: Shapefile of reservoirs and lakes (polygon features)
     # [path to .shp file]
-    res_points: reservoirs/reservoirs.shp
+    res_shape: reservoirs/reservoirs.shp
 
     # OPTIONAL: Reservoir stage-storage curves (CSV format)
     # [path to .csv file]
