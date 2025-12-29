@@ -344,6 +344,153 @@ results_continuous = sim_continuous.run(start_date=start_date, end_date=end_date
 
 ---
 
+## Reservoir Routing: Arno Basin with Reservoirs
+
+The reservoir example demonstrates how to configure and simulate reservoirs with time-varying regulation curves and stage-discharge relationships.
+
+**Script**: `examples/run_example_Arno_reservoirs.py`
+
+```python
+from pathlib import Path
+from mobidic import (
+    load_config,
+    run_preprocessing,
+    MeteoData,
+    Simulation,
+    GISData,
+    configure_logger,
+)
+
+# Configure logging
+configure_logger(level="INFO")
+
+# Load reservoir-enabled configuration
+config = load_config("examples/Arno/Arno.reservoirs.yaml")
+
+# Run preprocessing with reservoirs
+gisdata = run_preprocessing(config)
+
+# The preprocessing automatically:
+# - Reads reservoir polygon shapefile
+# - Rasterizes polygons to identify basin pixels
+# - Loads stage-storage curves from CSV
+# - Loads regulation curves and schedules from CSV
+# - Identifies inlet/outlet reaches by topology
+# - Auto-calculates initial volumes from z_max
+
+# Display reservoir summary
+if gisdata.reservoirs:
+    print(f"\nProcessed {len(gisdata.reservoirs)} reservoirs:")
+    for reservoir in gisdata.reservoirs:
+        print(f"  Reservoir {reservoir.id}: {reservoir.name}")
+        print(f"    Basin pixels: {len(reservoir.basin_pixels)}")
+        print(f"    Inlet reaches: {reservoir.inlet_reaches}")
+        print(f"    Outlet reach: {reservoir.outlet_reach}")
+        print(f"    Initial volume: {reservoir.initial_volume:.0f} m³")
+        print(f"    Stage-storage points: {len(reservoir.stage_storage_curve)}")
+        print(f"    Regulation periods: {len(reservoir.period_times)}")
+
+# Save preprocessed data including reservoirs
+gisdata.save(
+    gisdata_path=config.paths.gisdata,
+    network_path=config.paths.network,
+    reservoirs_path=config.paths.reservoirs,
+)
+
+# Load meteorological data
+forcing = MeteoData.from_netcdf(config.paths.meteodata)
+
+# Run simulation with reservoirs
+sim = Simulation(gisdata, forcing, config)
+results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
+```
+
+**Configuration example** (`Arno.reservoirs.yaml`):
+
+```yaml
+parameters:
+  reservoirs:
+    res_shape: reservoirs/reservoirs.shp
+    stage_storage: reservoirs/stage_storage.csv
+    regulation_curves: reservoirs/regulation_curves.csv
+    regulation_schedule: reservoirs/regulation_schedule.csv
+
+initial_conditions:
+  reservoir_volumes: reservoirs/initial_volumes.csv  # Optional, otherwise set to 100% volume
+
+paths:
+  reservoirs: gisdata/reservoirs.parquet
+
+output_states:
+  reservoir_states: true  # Save reservoir states (volume, stage, discharge)
+```
+
+**Required CSV files:**
+
+1. **stage_storage.csv**: Stage-volume relationship
+   ```csv
+   reservoir_id,stage_m,volume_m3
+   1,219.9,0.0
+   1,230.0,5000000.0
+   1,240.0,15000000.0
+   1,250.0,30000000.0
+   1,254.9,45000000.0
+   ```
+
+2. **regulation_curves.csv**: Stage-discharge relationships by period
+   ```csv
+   reservoir_id,regulation_name,stage_m,discharge_m3s
+   1,winter,219.9,0.0
+   1,winter,240.0,20.0
+   1,winter,250.0,50.0
+   1,summer,219.9,0.0
+   1,summer,240.0,10.0
+   1,summer,250.0,30.0
+   ```
+
+3. **regulation_schedule.csv**: Seasonal regulation switching
+   ```csv
+   reservoir_id,start_date,end_date,regulation_name
+   1,2000-01-01,2000-05-31,winter
+   1,2000-06-01,2000-09-30,summer
+   1,2000-10-01,2000-12-31,winter
+   ```
+
+4. **initial_volumes.csv** (optional): Initial reservoir volumes
+   ```csv
+   reservoir_id,volume_m3
+   1,20000000.0
+   ```
+
+**What it demonstrates:**
+
+- Configuring reservoirs with shapefiles and CSV data files
+- Processing reservoir data during preprocessing
+- Stage-storage relationships (cubic spline interpolation)
+- Time-varying regulation curves (seasonal winter/summer operations)
+- Automatic initial volume calculation from z_max (if CSV not provided)
+- Basin pixel identification via polygon rasterization
+- Inlet/outlet reach detection by network topology
+- Reservoir state output (volume, stage, discharge) to NetCDF
+- Integration with hillslope and channel routing
+
+**Output files:**
+
+- Preprocessed reservoirs: `Arno/gisdata/reservoirs.parquet`
+- Reservoir states: `Arno/output/states/states_*.nc` (includes reservoir volume, stage, discharge)
+- Discharge time series: `Arno/output/discharge.parquet` (includes reservoir effects)
+
+**Visualization script**: `examples/run_example_Arno_reservoirs_plots.py`
+
+Generates plots showing:
+- Reservoir volume over time
+- Reservoir stage over time
+- Reservoir inflow vs outflow
+- Regulation curve switching (winter/summer)
+- Outlet discharge comparison (with/without reservoirs)
+
+---
+
 ## Sample Configuration
 
 A complete annotated configuration file is provided at `examples/sample_config.yaml`. This file includes:
@@ -370,6 +517,15 @@ All example scripts can be run from the repository root:
 # Complete Arno basin simulation
 python examples/run_example_Arno.py
 
+# Visualization of results
+python examples/run_example_Arno_plots.py
+
+# Complete Arno basin with reservoir routing
+python examples/run_example_Arno_reservoirs.py
+
+# Visualization of results
+python examples/run_example_Arno_reservoirs_plots.py
+
 # Restart capability demonstration
 python examples/run_example_Arno_restart.py
 
@@ -393,10 +549,11 @@ python examples/demo_meteo_mat_to_nc.py
 
 Example data for the Arno basin is provided in `examples/Arno/`:
 
-- Configuration file: `Arno.yaml`
+- Configuration files: `Arno.yaml`, `Arno.reservoirs.yaml`
 - River network shapefile
 - Raster files (DTM, flow direction, soil parameters)
 - Meteorological data
+- Reservoir data (shapefiles, stage-storage curves, regulation curves/schedules)
 
 ### More Information
 

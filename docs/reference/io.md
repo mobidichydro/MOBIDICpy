@@ -4,7 +4,7 @@ This module provides consolidated I/O for preprocessed MOBIDIC data and a contai
 
 ## Overview
 
-After preprocessing GIS data and processing the river network, MOBIDICpy consolidates all data into a single `GISData` object that can be saved to and loaded from disk. This approach:
+After preprocessing GIS data, processing the river network, and optionally processing reservoirs, MOBIDICpy consolidates all data into a single `GISData` object that can be saved to and loaded from disk. This approach:
 
 - **Simplifies data management**: Single object contains all preprocessed data
 - **Ensures consistency**: Grids, network, and metadata stay synchronized
@@ -29,6 +29,10 @@ After preprocessing GIS data and processing the river network, MOBIDICpy consoli
 
 ::: mobidic.preprocessing.io.load_network
 
+::: mobidic.preprocessing.io.save_reservoirs
+
+::: mobidic.preprocessing.io.load_reservoirs
+
 ## Usage Examples
 
 ### Example 1: Complete Preprocessing Workflow
@@ -42,22 +46,26 @@ config = load_config("config.yaml")
 # Run preprocessing
 gisdata = run_preprocessing(config)
 
-# Save preprocessed data
+# Save preprocessed data (including reservoirs if configured)
 gisdata.save(
     gisdata_path="output/gisdata.nc",
-    network_path="output/network.parquet"
+    network_path="output/network.parquet",
+    reservoirs_path="output/reservoirs.parquet"  # Optional
 )
 
 # Later, load preprocessed data
 loaded_gisdata = GISData.load(
     gisdata_path="output/gisdata.nc",
-    network_path="output/network.parquet"
+    network_path="output/network.parquet",
+    reservoirs_path="output/reservoirs.parquet"  # Optional
 )
 
 # Access components
 print(f"Grid variables: {list(loaded_gisdata.grids.keys())}")
 print(f"Network reaches: {len(loaded_gisdata.network)}")
 print(f"Grid shape: {loaded_gisdata.metadata['shape']}")
+if loaded_gisdata.reservoirs:
+    print(f"Reservoirs: {len(loaded_gisdata.reservoirs)}")
 ```
 
 ### Example 2: Working with GISData
@@ -110,6 +118,47 @@ save_network(network, "output/network.shp", format="shapefile")
 loaded_network = load_network("output/network.parquet")
 ```
 
+### Example 4: Working with Reservoirs
+
+```python
+from mobidic import process_reservoirs, save_reservoirs, load_reservoirs, GISData
+
+# Process reservoir data from shapefiles and CSVs
+reservoirs = process_reservoirs(
+    res_shape_path="reservoirs/reservoirs.shp",
+    stage_storage_path="reservoirs/stage_storage.csv",
+    regulation_curves_path="reservoirs/regulation_curves.csv",
+    regulation_schedule_path="reservoirs/regulation_schedule.csv",
+    initial_volumes_path="reservoirs/initial_volumes.csv",  # Optional
+    grid_transform=gisdata.metadata['transform'],
+    grid_shape=gisdata.metadata['shape'],
+    network=gisdata.network,
+)
+
+# Save reservoirs to GeoParquet
+save_reservoirs(reservoirs, "output/reservoirs.parquet")
+
+# Load reservoirs later
+loaded_reservoirs = load_reservoirs("output/reservoirs.parquet")
+
+# Access reservoir data
+for reservoir in loaded_reservoirs:
+    print(f"Reservoir {reservoir.id}: {reservoir.name}")
+    print(f"  Basin pixels: {len(reservoir.basin_pixels)}")
+    print(f"  Inlet reaches: {reservoir.inlet_reaches}")
+    print(f"  Outlet reach: {reservoir.outlet_reach}")
+    print(f"  Initial volume: {reservoir.initial_volume} m³")
+    print(f"  Stage-storage curve: {len(reservoir.stage_storage_curve)} points")
+
+# Include in GISData
+gisdata.reservoirs = reservoirs
+gisdata.save(
+    gisdata_path="output/gisdata.nc",
+    network_path="output/network.parquet",
+    reservoirs_path="output/reservoirs.parquet"
+)
+```
+
 ## File Formats
 
 ### NetCDF for Grid Data
@@ -148,6 +197,28 @@ River network data is saved in GeoParquet format with:
 **Fallback:**
 - If pyarrow not available, can use Shapefile format
 - Shapefile has limitations (attribute names, data types)
+
+### GeoParquet for Reservoir Data
+
+Reservoir data is saved in GeoParquet format with:
+
+**Structure:**
+- One row per reservoir with all associated data
+- Polygon geometry for reservoir basin
+- Stage-storage curve as nested DataFrame
+- Regulation curves and schedules as dictionaries
+- Basin pixels as list of linear indices
+- Inlet/outlet reach references
+
+**Advantages:**
+- Efficient storage of nested data structures
+- Preserves Python data types (lists, dicts, DataFrames)
+- Fast read/write performance
+- Column-oriented storage for selective loading
+
+**Special handling:**
+- Dictionary keys are zero-padded strings ("000", "001", etc.) for Parquet compatibility
+- DataFrames are serialized to Parquet bytes and stored as binary columns
 
 ## Data Consistency
 
@@ -191,6 +262,7 @@ Typical file sizes for a medium-sized basin (1000×1000 grid, 1000 reaches):
 | Grid data (5 variables) | NetCDF | ~5-10 MB | ~20-40 MB |
 | River network | GeoParquet | ~1-2 MB | ~5-10 MB |
 | River network | Shapefile | ~3-5 MB | ~3-5 MB |
+| Reservoirs (10 reservoirs) | GeoParquet | ~50-200 KB | ~200-500 KB |
 
 ### Read/Write Speed
 
@@ -250,7 +322,8 @@ config = load_config("config.yaml")
 # 2. Reads all raster files specified in config
 # 3. Processes river network
 # 4. Computes hillslope-reach mapping
-# 5. Populates grids, network, and metadata
+# 5. Processes reservoirs (if configured)
+# 6. Populates grids, network, reservoirs, and metadata
 gisdata = run_preprocessing(config)
 
 # Save for later use

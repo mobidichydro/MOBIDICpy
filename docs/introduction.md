@@ -58,10 +58,20 @@ Water routing occurs at two levels:
 1. **Hillslope routing**: Lateral flow accumulates from upslope cells following D8 flow directions. Surface runoff ($W_s$) and subsurface lateral flow (from $W_g$) are routed separately through the hillslope network until reaching river channels.
 
 2. **Channel routing**: The river network is represented as a **vector map** (polylines) with channels treated as cylindrical. Rivers are fed by surface runoff and baseflow from groundwater. Available routing methods include:
-   - **Linear reservoir cascade**: Each reach is modeled as a simple reservoir with exponential recession (storage coefficient $K$). This method represents an optimal compromise between complexity and physical representativeness.
-   - **Lag method**: Simple translation with no attenuation
-   - **Muskingum method**: Hydraulic routing with wedge storage
-   - **Muskingum-Cunge method**: Physically-based hydraulic routing
+    - **Linear reservoir cascade**: Each reach is modeled as a simple reservoir with exponential recession (storage coefficient $K$). This method represents an optimal compromise between complexity and physical representativeness.
+    - **Lag method**: Simple translation with no attenuation
+    - **Muskingum method**: Hydraulic routing with wedge storage
+    - **Muskingum-Cunge method**: Physically-based hydraulic routing
+
+### Reservoir routing
+
+When reservoirs are present in the river network, a dedicated **reservoir routing** module simulates their storage dynamics and regulation effects. Large reservoirs can be explicitly represented as regulation structures that store and release water according to operation rules. The reservoir module includes:
+
+- **Volume-stage-discharge relationships**: Stage-storage curves define the relationship  between water level and storage volume (cubic spline interpolation). Stage-discharge curves  define regulated outflow as a function of water level (linear interpolation).
+- **Time-varying regulation**: Multiple regulation periods allow for seasonal operation rules  (e.g., winter flood control vs summer water supply). The model automatically switches between  regulation curves based on a user-defined schedule.
+- **Basin interactions**: Reservoir polygons are rasterized to identify contributing  hillslope cells. Surface runoff and lateral flow from reservoir basins are collected as  direct inflow. The model automatically identifies inlet reaches (upstream) and outlet reach  (downstream) from network topology.
+- **Adaptive sub-stepping**: For numerical stability, the model can automatically subdivide  the simulation timestep when discharge variability is high.
+- **Network integration**: Reservoir outflow is added to the lateral inflow of the outlet  reach. Inlet reach discharge is zeroed to prevent double-counting of water that enters the  reservoir.
 
 
 ### Groundwater
@@ -80,9 +90,10 @@ Several groundwater models are available:
 MOBIDIC has been successfully applied to:
 
 - **Operational flood forecasting**: Real-time predictions with data assimilation (Arno basin, Tuscany)
-- **Water resource management**: Long-term simulations for reservoir siting (Masi et al., 2024) 
+- **Water resource management**: Long-term simulations for reservoir siting and operation (Masi et al., 2024)
+- **Reservoir regulation**: Simulating reservoir effects on downstream flows with seasonal operation rules
 - **Land use change evaluation**: Urbanization effects on hydrologic response (Yang et al., 2014)
-- **Data assimilation**: Data assimilation for improved flood forecasting (Ercolani and Castelli, 2017)
+- **Data assimilation**: Variational data assimilation for improved flood forecasting (Ercolani and Castelli, 2017)
 - **Model intercomparison**: Benchmarking with other hydrological models (Castillo et al., 2015)
 - **Research applications**: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025)
 
@@ -101,7 +112,7 @@ The original MATLAB implementation is being systematically translated with numer
 
 ## Current Status
 
-**Version 0.0.1 (Pre-Alpha)** - Configuration, preprocessing and core simulation engine are functional. Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing) are implemented. Energy balance, groundwater models, and advanced features are under development.
+**Version 0.0.1 (Pre-Alpha)** - Configuration, preprocessing and core simulation engine are functional. Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.
 
 See the [home page](index.md) for implementation status.
 

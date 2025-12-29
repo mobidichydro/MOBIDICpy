@@ -57,6 +57,7 @@ Consolidated I/O for preprocessed MOBIDIC data.
 High-level workflow orchestrating the complete preprocessing pipeline.
 
 - [`run_preprocessing()`](preprocessing.md#mobidic.preprocessing.preprocessor.run_preprocessing) - Complete preprocessing pipeline
+- [`process_reservoirs()`](preprocessing.md#mobidic.preprocessing.reservoirs.process_reservoirs) - Process reservoir data (polygons, curves, schedules)
 
 ### [Soil Water Balance](soil_water_balance.md)
 Hillslope water balance with four reservoir model (capillary, gravitational, plants, surface).
@@ -65,10 +66,12 @@ Hillslope water balance with four reservoir model (capillary, gravitational, pla
 - [`capillary_rise()`](soil_water_balance.md#mobidic.core.soil_water_balance.capillary_rise) - Calculate capillary rise from groundwater
 
 ### [Routing](routing.md)
-Hillslope and channel routing algorithms for water propagation.
+Hillslope, channel, and reservoir routing algorithms for water propagation.
 
 - [`hillslope_routing()`](routing.md#mobidic.core.routing.hillslope_routing) - Accumulate lateral flow following flow directions
 - [`linear_channel_routing()`](routing.md#mobidic.core.routing.linear_channel_routing) - Linear reservoir channel routing
+- [`reservoir_routing()`](routing.md#mobidic.core.reservoir.reservoir_routing) - Reservoir storage routing with time-varying regulation
+- [`ReservoirState`](routing.md#mobidic.core.reservoir.ReservoirState) - Container for reservoir state variables
 
 ### [Simulation](simulation.md)
 Main simulation engine and time-stepping loop.
@@ -130,6 +133,13 @@ from mobidic import (
     # Routing
     hillslope_routing,
     linear_channel_routing,
+    reservoir_routing,
+    ReservoirState,
+    process_reservoirs,
+    Reservoir,
+    Reservoirs,
+    load_reservoirs,
+    save_reservoirs,
     # Simulation
     Simulation,
     SimulationState,
@@ -160,6 +170,7 @@ MOBIDICpy is in **pre-alpha** (v0.0.1). Currently implemented:
 - ✅ Complete preprocessing workflow
 - ✅ Soil water balance (4 reservoirs: capillary, gravitational, plants, surface)
 - ✅ Linear routing (hillslope + channel)
+- ✅ Reservoir module (preprocessing, routing, time-varying regulation)
 - ✅ Simulation engine (basic)
 - ✅ State I/O (NetCDF)
 - ✅ Report I/O (CSV/Parquet discharge time series)
@@ -169,5 +180,3 @@ Coming soon:
 - ⏳ Energy balance module (1L, 5L schemes, Snow)
 - ⏳ Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
 - ⏳ Advanced routing (Muskingum-Cunge)
-- ⏳ Reservoir module
-- ⏳ Real-time capability

@@ -10,7 +10,8 @@ The preprocessing workflow handles:
 2. Reading all raster data (DTM, flow direction, soil parameters, etc.)
 3. Processing the river network (topology, ordering, routing parameters)
 4. Computing hillslope-reach mapping
-5. Organizing all data into a consolidated `GISData` object
+5. Processing reservoirs (optional: polygons, stage-storage curves, regulation curves/schedules)
+6. Organizing all data into a consolidated `GISData` object
 
 This is the recommended entry point for most users, as it handles all preprocessing steps automatically based on the configuration file.
 
@@ -20,9 +21,13 @@ This is the recommended entry point for most users, as it handles all preprocess
 
 ::: mobidic.preprocessing.preprocessor.run_preprocessing
 
+### Reservoir Preprocessing Function
+
+::: mobidic.preprocessing.reservoirs.process_reservoirs
+
 ## Workflow Stages
 
-The preprocessing pipeline consists of five stages:
+The preprocessing pipeline consists of up to seven stages (stages 6-7 are optional if reservoirs are configured):
 
 ### Stage 1: Configuration Loading
 
@@ -95,6 +100,53 @@ gisdata.metadata = spatial_reference_info
 ```
 
 The `GISData` object can then be saved for reuse or passed directly to the simulation.
+
+### Stage 6: Reservoir Preprocessing (Optional)
+
+If reservoirs are configured (`config.parameters.reservoirs.res_shape` is set), process reservoir data:
+
+```python
+reservoirs = process_reservoirs(
+    res_shape_path=config.parameters.reservoirs.res_shape,
+    stage_storage_path=config.parameters.reservoirs.stage_storage,
+    regulation_curves_path=config.parameters.reservoirs.regulation_curves,
+    regulation_schedule_path=config.parameters.reservoirs.regulation_schedule,
+    initial_volumes_path=config.initial_conditions.reservoir_volumes,
+    grid_transform=gisdata.metadata['transform'],
+    grid_shape=gisdata.metadata['shape'],
+    network=gisdata.network,
+)
+gisdata.reservoirs = reservoirs
+```
+
+This step:
+- Reads reservoir polygon shapefile
+- Rasterizes polygons to identify basin pixels
+- Loads stage-storage curves from CSV
+- Loads regulation curves and schedules from CSV
+- Identifies inlet/outlet reaches by network topology
+- Auto-calculates initial volumes from z_max if not provided
+- Consolidates all reservoir data into Reservoirs container
+
+### Stage 7: Reservoir I/O (Optional)
+
+Save/load processed reservoir data:
+
+```python
+# Save reservoirs to GeoParquet
+gisdata.save(
+    gisdata_path=config.paths.gisdata,
+    network_path=config.paths.network,
+    reservoirs_path=config.paths.reservoirs,
+)
+
+# Load reservoirs from GeoParquet
+gisdata = GISData.load(
+    gisdata_path=config.paths.gisdata,
+    network_path=config.paths.network,
+    reservoirs_path=config.paths.reservoirs,
+)
+```
 
 ## Complete Example
 
@@ -177,6 +229,33 @@ parameters:
     NBr: 1.5       # Channel width exponent
     n_Man: 0.03    # Manning's n (s/m^(1/3))
 ```
+
+### Optional Reservoir Parameters
+
+```yaml
+parameters:
+  reservoirs:
+    res_shape: path/to/reservoirs.shp                    # Reservoir polygon shapefile
+    stage_storage: path/to/stage_storage.csv             # Stage-storage curves
+    regulation_curves: path/to/regulation_curves.csv     # Stage-discharge curves
+    regulation_schedule: path/to/regulation_schedule.csv # Regulation period schedule
+
+initial_conditions:
+  reservoir_volumes: path/to/initial_volumes.csv  # Optional (auto-calculated if omitted)
+
+paths:
+  reservoirs: path/to/reservoirs.parquet  # Output path for consolidated reservoir data
+
+output_states:
+  reservoir_states: true  # Enable reservoir state output
+```
+
+**CSV file formats:**
+
+- **stage_storage.csv**: Columns: `reservoir_id`, `stage_m`, `volume_m3`
+- **regulation_curves.csv**: Columns: `reservoir_id`, `regulation_name`, `stage_m`, `discharge_m3s`
+- **regulation_schedule.csv**: Columns: `reservoir_id`, `start_date`, `end_date`, `regulation_name`
+- **initial_volumes.csv**: Columns: `reservoir_id`, `volume_m3` (optional, defaults to auto-calculation from z_max)
 
 See the [sample configuration](https://github.com/mobidichydro/mobidicpy/blob/main/examples/sample_config.yaml) for a complete example.
 
@@ -349,17 +428,4 @@ The simulation will access:
 - `gisdata.network`: River network topology and parameters
 - `gisdata.metadata`: Spatial reference information
 
-## MATLAB Translation
 
-This module replaces several MATLAB scripts:
-
-- `buildgis_mysql_include.m` → Configuration-driven preprocessing
-- `main_preprocessing.m` → Complete workflow orchestration
-- Various helper scripts → Unified Python functions
-
-The Python implementation provides:
-- Cleaner separation of concerns
-- Better error handling
-- Structured logging
-- Type safety and validation
-- Modular and testable code

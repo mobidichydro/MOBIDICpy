@@ -9,12 +9,13 @@ Configuration files define all aspects of a MOBIDIC simulation, including:
 - **Basin metadata**: ID, parameter set, baricenter coordinates
 - **Input/output paths**: Meteodata, GIS data, network, states, output directories
 - **Raster and vector data sources**: DTM, flow direction/accumulation, soil/energy parameters, river network
-- **Model parameters**: Organized into four subsections:
+- **Model parameters**: Organized into subsections:
     - `soil`: Hydraulic conductivity, water holding capacity, flow coefficients
     - `energy`: Thermal properties, turbulent exchange, albedo
     - `routing`: Channel routing method, wave celerity, Manning coefficient
     - `groundwater`: Model type, global loss
-    - `multipliers`: Calibration factors
+    - `reservoirs`: Reservoir shapefiles, stage-storage curves, regulation curves/schedules (optional)
+    - `multipliers`: Multiplying factors for calibration
 - **Initial conditions**: Initial state (hillslope runoff, soil saturation)
 - **Simulation settings**: Time step, resampling, soil/energy balance schemes
 - **Output options**: State outputs (NetCDF), report outputs (CSV/Parquet)
@@ -71,6 +72,8 @@ The configuration is organized hierarchically using nested Pydantic models:
 ::: mobidic.config.schema.RoutingParameters
 
 ::: mobidic.config.schema.GroundwaterParameters
+
+::: mobidic.config.schema.ReservoirParameters
 
 ::: mobidic.config.schema.Multipliers
 
@@ -131,4 +134,79 @@ output_report_settings:
   output_format: Parquet
   reach_selection: file
   sel_file: data/reach_ids.json  # Path to JSON file
+```
+
+### Reservoir CSV files
+
+When using reservoirs (`parameters.reservoirs.res_shape` is set), you need to provide CSV files for stage-storage curves, regulation curves, and regulation schedules.
+
+**Stage-storage CSV (`stage_storage.csv`):**
+
+Defines the relationship between water stage (elevation) and reservoir volume.
+
+```csv
+reservoir_id,stage_m,volume_m3
+1,219.9,0.0
+1,230.0,5000000.0
+1,240.0,15000000.0
+1,250.0,30000000.0
+1,254.9,45000000.0
+```
+
+**Regulation curves CSV (`regulation_curves.csv`):**
+
+Defines stage-discharge relationships for different regulation periods (e.g., winter vs summer operations).
+
+```csv
+reservoir_id,regulation_name,stage_m,discharge_m3s
+1,winter,219.9,0.0
+1,winter,230.0,5.0
+1,winter,240.0,20.0
+1,winter,250.0,50.0
+1,summer,219.9,0.0
+1,summer,230.0,2.0
+1,summer,240.0,10.0
+1,summer,250.0,30.0
+```
+
+**Regulation schedule CSV (`regulation_schedule.csv`):**
+
+Defines which regulation curve to use during different time periods.
+
+```csv
+reservoir_id,start_date,end_date,regulation_name
+1,2000-01-01,2000-05-31,winter
+1,2000-06-01,2000-09-30,summer
+1,2000-10-01,2000-12-31,winter
+1,2001-01-01,2001-05-31,winter
+1,2001-06-01,2001-09-30,summer
+```
+
+**Initial volumes CSV (`initial_conditions.csv`)** (optional):
+
+Defines initial reservoir volumes. If not provided, volumes are auto-calculated from `z_max` field in the shapefile.
+
+```csv
+reservoir_id,volume_m3
+1,20000000.0
+```
+
+**Configuration example:**
+
+```yaml
+parameters:
+  reservoirs:
+    res_shape: reservoirs/reservoirs.shp
+    stage_storage: reservoirs/stage_storage.csv
+    regulation_curves: reservoirs/regulation_curves.csv
+    regulation_schedule: reservoirs/regulation_schedule.csv
+
+initial_conditions:
+  reservoir_volumes: reservoirs/initial_volumes.csv  # Optional
+
+paths:
+  reservoirs: output/reservoirs.parquet  # Consolidated output
+
+output_states:
+  reservoir_states: true  # Enable reservoir state output
 ```

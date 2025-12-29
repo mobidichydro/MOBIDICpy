@@ -59,17 +59,16 @@ See [examples/run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blo
 - Consolidated I/O for preprocessed data
 - Soil water balance module (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope and channel)
+- Reservoir module (preprocessing, routing, time-varying regulation)
 - Basic I/O (NetCDF states, Parquet time series)
 
 **To be implemented**
 
 - Meteorological gap filling and quality control
-- Reservoir module
 - Energy balance schemes (1L, 5L, Snow)
 - Groundwater models (Linear, Dupuit, MODFLOW)
 - Advanced routing (Muskingum-Cunge)
 - CLI interface
-- Real-time simulation capability
 
 ## Documentation Structure
 

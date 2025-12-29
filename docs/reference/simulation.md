@@ -15,7 +15,7 @@ The simulation engine coordinates:
 - **Output generation**: NetCDF states (with chunking) and Parquet/CSV reports
 - **Restart capability**: Load and resume from previously saved states
 
-**Current implementation**: Simplified version without energy balance, groundwater models, or reservoirs.
+**Current implementation**: Includes soil water balance, routing (hillslope, channel, reservoir), and state/report I/O. Energy balance and groundwater models not yet implemented.
 
 ## Classes
 
@@ -33,11 +33,12 @@ The main simulation loop performs the following operations for each time step:
 2. **Calculate PET**: Simple 1 mm/day method (constant rate)
 3. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep
 4. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows
-5. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
-6. **Channel routing**: Linear reservoir routing through river network
-7. **Store results**: Save discharge and lateral inflow time series
-8. **Output states**: Optionally save states (with automatic chunking if needed)
-9. **Update and advance**: Store flow fields for next timestep and advance simulation time
+5. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge, zero basin fluxes
+6. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
+7. **Channel routing**: Linear reservoir routing through river network
+8. **Store results**: Save discharge and lateral inflow time series
+9. **Output states**: Optionally save states (with automatic chunking if needed)
+10. **Update and advance**: Store flow fields for next timestep and advance simulation time
 
 **Key feature**: The simulation uses a feedback loop where flows from timestep `t` are routed through the hillslope at timestep `t+1` before entering the soil water balance. This ensures proper spatial connectivity of overland flow.
 
@@ -190,6 +191,7 @@ output_states:
   Ws: true              # Save surface water
   discharge: true       # Save channel discharge
   lateral_inflow: true  # Save lateral inflow to reaches
+  reservoir_states: true  # Save reservoir states (if reservoirs configured)
 
 output_states_settings:
   output_format: "netCDF"
@@ -221,6 +223,33 @@ output_report_settings:
   sel_file: "reaches.json"     # Path to file with reach IDs (for "file" mode)
 ```
 
+### Reservoir configuration (optional)
+
+```yaml
+parameters:
+  reservoirs:
+    res_shape: reservoirs/reservoirs.shp
+    stage_storage: reservoirs/stage_storage.csv
+    regulation_curves: reservoirs/regulation_curves.csv
+    regulation_schedule: reservoirs/regulation_schedule.csv
+
+initial_conditions:
+  reservoir_volumes: reservoirs/initial_volumes.csv  # Optional
+
+paths:
+  reservoirs: output/reservoirs.parquet  # Consolidated reservoir data
+```
+
+When reservoirs are configured:
+- Reservoir polygons are rasterized to identify basin pixels
+- Surface runoff and lateral flow are zeroed in reservoir basins
+- Total inflow is computed from upstream discharge and basin contributions
+- Reservoir volume is updated based on mass balance
+- Stage is calculated from volume using cubic spline interpolation
+- Regulated discharge is determined from time-varying stage-discharge curves
+- Reservoir outflow is added to outlet reach lateral inflow
+- Inlet reach discharge is zeroed to prevent double-counting
+
 ### Simulation configuration
 
 ```yaml
@@ -231,7 +260,9 @@ simulation:
 
 ## Implemented modules
 
+- [Preprocessing](preprocessing.md) - GIS data and reservoir preprocessing
 - [Soil Water Balance](soil_water_balance.md) - Hillslope water balance
-- [Routing](routing.md) - Hillslope and channel routing
+- [Routing](routing.md) - Hillslope, channel, and reservoir routing
 - [State I/O](state.md) - NetCDF state export/import
 - [Report I/O](report.md) - Time series export/import
+
