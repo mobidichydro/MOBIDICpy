@@ -30,6 +30,9 @@ class Paths(BaseModel):
     meteodata: PathField = Field(..., description="File where the meteo data files are stored")
     gisdata: PathField = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
     network: PathField = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
+    reservoirs: Optional[PathField] = Field(
+        None, description="Consolidated reservoirs dataset to be created by GIS preprocessing (geoparquet format)"
+    )
     states: PathField = Field(..., description="Directory where the model states will be stored")
     output: PathField = Field(..., description="Directory where output report files will be stored")
 
@@ -183,6 +186,15 @@ class GroundwaterParameters(BaseModel):
         return v if v is not None else 0.0
 
 
+class ReservoirParameters(BaseModel):
+    """Reservoir input data files."""
+
+    res_points: Optional[PathField] = Field(None, description="Shapefile of reservoirs and lakes (point features)")
+    stage_storage: Optional[PathField] = Field(None, description="Reservoir stage-storage curves (CSV format)")
+    regulation_curves: Optional[PathField] = Field(None, description="Reservoir regulation curves (CSV format)")
+    regulation_schedule: Optional[PathField] = Field(None, description="Reservoir regulation schedules (CSV format)")
+
+
 class Multipliers(BaseModel):
     """Parameter multipliers for calibration."""
 
@@ -214,6 +226,7 @@ class Parameters(BaseModel):
     energy: EnergyParameters
     routing: RoutingParameters
     groundwater: GroundwaterParameters
+    reservoirs: Optional[ReservoirParameters] = Field(default_factory=ReservoirParameters)
     multipliers: Optional[Multipliers] = Field(default_factory=Multipliers)
 
 
@@ -224,6 +237,13 @@ class InitialConditions(BaseModel):
     Wcsat: Optional[float] = Field(0.3, description="Initial relative saturation of capillary soil, non dimensional")
     Wgsat: Optional[float] = Field(
         0.01, description="Initial relative saturation of gravitational soil, non dimensional"
+    )
+    reservoir_volumes: Optional[PathField] = Field(
+        None,
+        description=(
+            "Path to CSV file with initial reservoir volumes (columns: 'reservoir_id', 'volume_m3'). "
+            "If not provided, initial volumes are auto-calculated as 100% capacity (volume interpolated at z_max)"
+        ),
     )
 
     @field_validator("Ws")
@@ -279,23 +299,31 @@ class Simulation(BaseModel):
 class OutputStates(BaseModel):
     """Output state options."""
 
-    discharge: bool = Field(..., description="Option to save states of river network for results analysis")
-    reservoir_states: bool = Field(
-        ..., description="Option to save states of reservoirs and lakes for results analysis"
+    discharge: Optional[bool] = Field(True, description="Option to save states of river network for results analysis")
+    reservoir_states: Optional[bool] = Field(
+        False, description="Option to save states of reservoirs and lakes for results analysis"
     )
-    soil_capillary: bool = Field(..., description="Option to save states of soil small pores for results analysis")
-    soil_gravitational: bool = Field(..., description="Option to save states of soil large pores for results analysis")
-    soil_plant: bool = Field(..., description="Option to save states of plant/canopy water for results analysis")
-    soil_surface: bool = Field(..., description="Option to save states of surface water for results analysis")
-    surface_temperature: bool = Field(
-        ..., description="Option to save states of land surface temperature for results analysis"
+    soil_capillary: Optional[bool] = Field(
+        True, description="Option to save states of soil small pores for results analysis"
     )
-    ground_temperature: bool = Field(
-        ..., description="Option to save states of ground temperature for results analysis"
+    soil_gravitational: Optional[bool] = Field(
+        True, description="Option to save states of soil large pores for results analysis"
     )
-    aquifer_head: bool = Field(..., description="Option to save states of aquifers for results analysis")
-    et_prec: bool = Field(
-        ..., description="Option to save states of evapotranspiration and precipitation for results analysis"
+    soil_plant: Optional[bool] = Field(
+        True, description="Option to save states of plant/canopy water for results analysis"
+    )
+    soil_surface: Optional[bool] = Field(
+        True, description="Option to save states of surface water for results analysis"
+    )
+    surface_temperature: Optional[bool] = Field(
+        False, description="Option to save states of land surface temperature for results analysis"
+    )
+    ground_temperature: Optional[bool] = Field(
+        False, description="Option to save states of ground temperature for results analysis"
+    )
+    aquifer_head: Optional[bool] = Field(False, description="Option to save states of aquifers for results analysis")
+    et_prec: Optional[bool] = Field(
+        False, description="Option to save states of evapotranspiration and precipitation for results analysis"
     )
 
 
@@ -440,7 +468,7 @@ class MOBIDICConfig(BaseModel):
     parameters: Parameters
     initial_conditions: Optional[InitialConditions] = Field(default_factory=InitialConditions)
     simulation: Simulation
-    output_states: OutputStates
+    output_states: Optional[OutputStates] = Field(default_factory=OutputStates)
     output_states_settings: Optional[OutputStatesSettings] = Field(default_factory=OutputStatesSettings)
     output_report: Optional[OutputReport] = Field(default_factory=OutputReport)
     output_report_settings: Optional[OutputReportSettings] = Field(default_factory=OutputReportSettings)

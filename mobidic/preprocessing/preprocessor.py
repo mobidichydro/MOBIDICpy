@@ -9,7 +9,7 @@ This module coordinates the complete preprocessing workflow:
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 import numpy as np
 import geopandas as gpd
 from loguru import logger
@@ -27,6 +27,7 @@ from mobidic.preprocessing.hillslope_reach_mapping import (
     compute_hillslope_cells,
     map_hillslope_to_reach,
 )
+from mobidic.preprocessing.reservoirs import Reservoirs, process_reservoirs
 
 
 def _calculate_slopes(dtm: np.ndarray, grid_size: float, pmin: float = 1e-5) -> np.ndarray:
@@ -99,13 +100,14 @@ class GISData:
     """Container for preprocessed GIS data.
 
     This class holds all preprocessed spatial data including grids, river network,
-    and hillslope-reach mapping. It provides methods to save/load consolidated
-    preprocessed data.
+    reservoirs, and hillslope-reach mapping. It provides methods to save/load
+    consolidated preprocessed data.
 
     Attributes:
         grids: Dictionary of 2D numpy arrays containing raster data
         metadata: Dictionary containing grid metadata (transform, CRS, resolution, etc.)
         network: GeoDataFrame with processed river network
+        reservoirs: Reservoirs object with reservoir data (optional)
         hillslope_reach_map: 2D array mapping each cell to its downstream reach
         config: MOBIDIC configuration used for preprocessing
     """
@@ -117,6 +119,7 @@ class GISData:
         network: gpd.GeoDataFrame,
         hillslope_reach_map: np.ndarray,
         config: MOBIDICConfig,
+        reservoirs: Optional[Reservoirs] = None,
     ):
         """Initialize GISData container.
 
@@ -126,39 +129,61 @@ class GISData:
             network: Processed river network GeoDataFrame
             hillslope_reach_map: 2D array with reach assignments
             config: MOBIDIC configuration
+            reservoirs: Optional Reservoirs object
         """
         self.grids = grids
         self.metadata = metadata
         self.network = network
+        self.reservoirs = reservoirs
         self.hillslope_reach_map = hillslope_reach_map
         self.config = config
 
-    def save(self, gisdata_path: str | Path, network_path: str | Path) -> None:
+    def save(
+        self, gisdata_path: str | Path, network_path: str | Path, reservoirs_path: Optional[str | Path] = None
+    ) -> None:
         """Save preprocessed data to files.
 
         Args:
             gisdata_path: Path to save gridded data (NetCDF format)
             network_path: Path to save river network (GeoParquet format)
+            reservoirs_path: Optional path to save reservoirs (GeoParquet format)
         """
-        from mobidic.preprocessing.io import save_gisdata, save_network
+        from mobidic.preprocessing.io import save_gisdata, save_network, save_reservoirs
 
         save_gisdata(self, gisdata_path)
         save_network(self.network, network_path, format="parquet")
 
+        if self.reservoirs is not None and reservoirs_path is not None:
+            save_reservoirs(self.reservoirs, reservoirs_path, format="parquet")
+
     @classmethod
-    def load(cls, gisdata_path: str | Path, network_path: str | Path) -> "GISData":
+    def load(
+        cls, gisdata_path: str | Path, network_path: str | Path, reservoirs_path: Optional[str | Path] = None
+    ) -> "GISData":
         """Load preprocessed data from files.
 
         Args:
             gisdata_path: Path to gridded data file (NetCDF)
             network_path: Path to river network file (GeoParquet)
+            reservoirs_path: Optional path to reservoirs file (GeoParquet)
 
         Returns:
             GISData object with loaded data
         """
-        from mobidic.preprocessing.io import load_gisdata
+        from mobidic.preprocessing.io import load_gisdata, load_reservoirs
 
-        return load_gisdata(gisdata_path, network_path)
+        gisdata = load_gisdata(gisdata_path, network_path)
+
+        # Load reservoirs if path provided
+        if reservoirs_path is not None:
+            reservoirs_path = Path(reservoirs_path)
+            if reservoirs_path.exists():
+                gisdata.reservoirs = load_reservoirs(reservoirs_path)
+            else:
+                logger.warning(f"Reservoirs file not found: {reservoirs_path}")
+                gisdata.reservoirs = None
+
+        return gisdata
 
 
 def run_preprocessing(config: MOBIDICConfig) -> GISData:
@@ -192,7 +217,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     # Step 1: Load required raster grids
-    logger.info("Step 1/6: Loading raster grids")
+    logger.info("Step 1/7: Loading raster grids")
     logger.info("-" * 80)
 
     grids = {}
@@ -301,7 +326,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     # Step 2: Apply grid decimation if needed
-    logger.info("Step 2/6: Applying grid decimation")
+    logger.info("Step 2/7: Applying grid decimation")
     logger.info("-" * 80)
 
     decimation_factor = config.simulation.decimation
@@ -335,7 +360,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     # Step 3: Convert flow direction to MOBIDIC notation
-    logger.info("Step 3/6: Converting flow direction to MOBIDIC notation")
+    logger.info("Step 3/7: Converting flow direction to MOBIDIC notation")
     logger.info("-" * 80)
 
     flow_dir_type = config.raster_settings.flow_dir_type
@@ -346,7 +371,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     # Step 4: Process river network
-    logger.info("Step 4/6: Processing river network")
+    logger.info("Step 4/7: Processing river network")
     logger.info("-" * 80)
 
     shapefile_path = config.vector_files.river_network.shp
@@ -367,7 +392,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     # Step 5: Compute hillslope cells for each reach
-    logger.info("Step 5/6: Computing hillslope cells")
+    logger.info("Step 5/7: Computing hillslope cells")
     logger.info("-" * 80)
 
     network = compute_hillslope_cells(
@@ -382,7 +407,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     # Step 6: Map hillslope cells to reaches
-    logger.info("Step 6/6: Mapping hillslope to reaches")
+    logger.info("Step 6/7: Mapping hillslope to reaches")
     logger.info("-" * 80)
 
     hillslope_reach_map = map_hillslope_to_reach(
@@ -390,12 +415,41 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         flowdir_array=grids["flow_dir"],
     )
 
+    logger.info("")
+
+    # Step 7: Process reservoirs (optional)
+    logger.info("Step 7/7: Processing reservoirs")
+    logger.info("-" * 80)
+
+    reservoirs = None
+    if config.parameters.reservoirs.res_points is not None:
+        try:
+            reservoirs = process_reservoirs(
+                shapefile_path=config.parameters.reservoirs.res_points,
+                stage_storage_path=config.parameters.reservoirs.stage_storage,
+                regulation_curves_path=config.parameters.reservoirs.regulation_curves,
+                regulation_schedule_path=config.parameters.reservoirs.regulation_schedule,
+                initial_volumes_path=config.initial_conditions.reservoir_volumes,
+                network=network,
+                grid_shape=grids["dtm"].shape,
+                xllcorner=xllcorner,
+                yllcorner=yllcorner,
+                cellsize=metadata["resolution"][0],
+            )
+        except Exception as e:
+            logger.error(f"Failed to process reservoirs: {e}")
+            logger.warning("Continuing without reservoirs")
+            reservoirs = None
+    else:
+        logger.info("No reservoirs configured, skipping")
+
     gisdata = GISData(
         grids=grids,
         metadata=metadata,
         network=network,
         hillslope_reach_map=hillslope_reach_map,
         config=config,
+        reservoirs=reservoirs,
     )
 
     logger.info("")

@@ -37,6 +37,10 @@ paths:
   # [full pathname to .parquet file, eg: /blue_nile/geodat/net.parquet]
   network: gisdata/Arno_net.parquet
 
+  # OPTIONAL: Consolidated reservoirs dataset to be created by GIS preprocessing (geoparquet format)
+  # [full pathname to .parquet file, eg: /blue_nile/geodat/reservoirs.parquet]
+  reservoirs: 
+
   # REQUIRED: Directory where the model states will be stored
   # [directory path including terminal /, eg: /blue_nile/states/]
   states: states/
@@ -222,6 +226,23 @@ parameters:
     # [positive value in float or exp notation]
     global_loss: 0.000e+000
 
+  reservoirs:
+    # OPTIONAL: Shapefile of reservoirs and lakes (polygon features)
+    # [path to .shp file]
+    res_points: 
+
+    # OPTIONAL: Reservoir stage-storage curves (CSV format)
+    # [path to .csv file]
+    stage_storage: 
+
+    # OPTIONAL: Reservoir regulation curves (CSV format)
+    # [path to .csv file]
+    regulation_curves: 
+
+    # OPTIONAL: Reservoir regulation schedules (CSV format)
+    # [path to .csv file]
+    regulation_schedule:
+
   multipliers:
     # OPTIONAL: Multiplying factor of soil hydraulic conductivity, non dimensional
     # [positive value in float or exp notation]
@@ -267,6 +288,10 @@ initial_conditions:
   # [positive value in float or exp notation in the range 0-1]
   Wgsat: 0.01
 
+  # OPTIONAL: Initial volume in reservoirs
+  # [path to .csv file with columns 'reservoir_id' and 'volume_m3']
+  reservoir_volumes: 
+
 
 ####### SIMULATION CONTROLS
 
@@ -298,43 +323,43 @@ simulation:
 ####### OUTPUT CONTROLS
 
 output_states:
-  # REQUIRED: Save states of river network (discharge, lateral inflow)
+  # OPTIONAL: Save states of river network (discharge, lateral inflow). Default: true
   # [boolean]
   discharge: true
 
-  # REQUIRED: Save states of reservoirs and lakes
+  # OPTIONAL: Save states of reservoirs and lakes. Default: false
   # [boolean]
   reservoir_states: false
 
-  # REQUIRED: Save states of soil small pores
+  # OPTIONAL: Save states of soil small pores. Default: true
   # [boolean]
   soil_capillary: true
 
-  # REQUIRED: Save states of soil large pores
+  # OPTIONAL: Save states of soil large pores. Default: true
   # [boolean]
   soil_gravitational: true
 
-  # REQUIRED: Save states of plant/canopy water
+  # OPTIONAL: Save states of plant/canopy water. Default: true
   # [boolean]
   soil_plant: true
 
-  # REQUIRED: Save states of surface water
+  # OPTIONAL: Save states of surface water. Default: true
   # [boolean]
   soil_surface: true
 
-  # REQUIRED: Save states of land surface temperature
+  # OPTIONAL: Save states of land surface temperature. Default: false
   # [boolean]
   surface_temperature: false
 
-  # REQUIRED: Save states of ground temperature
+  # OPTIONAL: Save states of ground temperature. Default: false
   # [boolean]
   ground_temperature: false
 
-  # REQUIRED: Save states of aquifers
+  # OPTIONAL: Save states of aquifers. Default: false
   # [boolean]
   aquifer_head: false
 
-  # REQUIRED: Save states of evapotranspiration and precipitation
+  # OPTIONAL: Save states of evapotranspiration and precipitation. Default: false
   # [boolean]
   et_prec: false
 

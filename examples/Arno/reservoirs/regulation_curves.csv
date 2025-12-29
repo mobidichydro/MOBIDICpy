@@ -1,0 +1,11 @@
+reservoir_id,regulation_name,stage_m,discharge_m3s
+1,winter,234.5,0.6
+1,winter,252.0,0.6
+1,winter,253.0,500.0
+1,winter,254.0,1000.0
+1,winter,254.5,1200.0
+1,summer,234.5,4.0
+1,summer,252.0,4.0
+1,summer,253.0,500.0
+1,summer,254.0,1000.0
+1,summer,254.5,1200.0

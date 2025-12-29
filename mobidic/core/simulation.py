@@ -6,7 +6,6 @@ It orchestrates the water balance calculations, routing, and I/O operations.
 Currently, this implements a simplified version without:
 - Energy balance (uses simple PET instead)
 - Groundwater models
-- Reservoir routing
 
 Translated from MATLAB: mobidic_sid.m (main simulation loop)
 """
@@ -24,6 +23,7 @@ from mobidic.config import MOBIDICConfig
 from mobidic.core import constants as const
 from mobidic.preprocessing.meteo_preprocessing import MeteoData
 from mobidic.core.soil_water_balance import soil_mass_balance
+from mobidic.core.reservoir import reservoir_routing
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
@@ -68,6 +68,7 @@ class SimulationState:
         ws: np.ndarray,
         discharge: np.ndarray,
         lateral_inflow: np.ndarray,
+        reservoir_states: list | None = None,
     ):
         """Initialize simulation state.
 
@@ -78,6 +79,7 @@ class SimulationState:
             ws: Surface water content [m]
             discharge: River discharge for each reach [m³/s]
             lateral_inflow: Lateral inflow to each reach [m³/s]
+            reservoir_states: List of ReservoirState objects (None if no reservoirs)
         """
         self.wc = wc
         self.wg = wg
@@ -85,6 +87,7 @@ class SimulationState:
         self.ws = ws
         self.discharge = discharge
         self.lateral_inflow = lateral_inflow
+        self.reservoir_states = reservoir_states
 
 
 class SimulationResults:
@@ -261,6 +264,13 @@ class Simulation:
         # River network
         self.network = gisdata.network
 
+        # Reservoirs (optional)
+        self.reservoirs = getattr(gisdata, "reservoirs", None)
+        if self.reservoirs is not None:
+            logger.info(f"Reservoirs loaded: {len(self.reservoirs)} reservoirs")
+        else:
+            logger.debug("No reservoirs in gisdata")
+
         # Time step
         self.dt = config.simulation.timestep
 
@@ -314,6 +324,23 @@ class Simulation:
         discharge = np.zeros(len(self.network))
         lateral_inflow = np.zeros(len(self.network))
 
+        # Initialize reservoir states if reservoirs exist
+        reservoir_states = None
+        if self.reservoirs is not None:
+            from mobidic.core.reservoir import ReservoirState
+
+            reservoir_states = []
+            for reservoir in self.reservoirs.reservoirs:
+                # Initialize with configured initial volume
+                state = ReservoirState(
+                    volume=reservoir.initial_volume,
+                    stage=0.0,  # Will be calculated in first timestep
+                    inflow=0.0,
+                    outflow=0.0,
+                )
+                reservoir_states.append(state)
+            logger.info(f"Initialized {len(reservoir_states)} reservoir states")
+
         logger.success(
             f"State initialized. Initial conditions (average): "
             f"Wc={np.nanmean(wc) * 1000:.1f} mm, "
@@ -322,7 +349,7 @@ class Simulation:
             f"Wp={np.nanmean(wp) * 1000:.1f} mm"
         )
 
-        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
+        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states)
 
     def set_initial_state(
         self,
@@ -592,7 +619,7 @@ class Simulation:
 
         # Rainfall fraction f0: fraction of time step without rain [-]
         # Time-dependent parameter from mobidic_sid.m line 213
-        f0_value = 0.85 * (1 - np.exp(-self.dt / (24 * 3600) * np.log(0.85 / 0.10)))
+        f0_value = const.F0_CONSTANT * (1 - np.exp(-self.dt / (24 * 3600) * np.log(const.F0_CONSTANT / 0.10)))
         param_grids["f0"] = np.full((self.nrows, self.ncols), f0_value)
         param_grids["f0"][np.isnan(self.dtm)] = np.nan
 
@@ -1091,6 +1118,7 @@ class Simulation:
             states_dir = Path(self.config.paths.states)
             states_dir.mkdir(parents=True, exist_ok=True)
 
+            reservoir_size = len(self.reservoirs) if self.reservoirs is not None else 0
             state_writer = StateWriter(
                 output_path=states_dir / "states.nc",
                 grid_metadata=self.gisdata.metadata,
@@ -1102,6 +1130,7 @@ class Simulation:
                     "basin_id": self.config.basin.id,
                     "paramset_id": self.config.basin.paramset_id,
                 },
+                reservoir_size=reservoir_size,
             )
             logger.info(f"State output enabled: {state_settings.output_states}")
         else:
@@ -1277,11 +1306,60 @@ class Simulation:
             flr_prev = flr.copy()
             fld_prev = fld.copy()
 
+            # 6. Reservoir routing (if reservoirs exist)
+            # Prepare network topology for routing (may be modified if reservoirs exist)
+            routing_network = self._network_topology
+
+            if self.reservoirs is not None and self.state.reservoir_states is not None:
+                logger.debug("Computing reservoir routing")
+
+                # Call reservoir routing
+                (
+                    self.state.reservoir_states,
+                    self.state.discharge,
+                    flr,
+                    fld,
+                    self.state.wg,
+                ) = reservoir_routing(
+                    reservoirs_data=self.reservoirs.reservoirs,
+                    reservoir_states=self.state.reservoir_states,
+                    reach_discharge=self.state.discharge,
+                    surface_runoff=flr,
+                    lateral_flow=fld,
+                    soil_wg=self.state.wg,
+                    soil_wg0=self.wg0,
+                    current_time=current_time,
+                    dt=self.dt,
+                    cell_area=cell_area,
+                )
+
+                # Add reservoir outflows to lateral inflow of outlet reaches (matching MATLAB glob_route_day.m:46-53)
+                for i, reservoir in enumerate(self.reservoirs.reservoirs):
+                    outlet_reach = reservoir.outlet_reach
+                    if outlet_reach is not None:
+                        lateral_inflow[outlet_reach] += self.state.reservoir_states[i].outflow
+
+                # Clear upstream connections for outlet reaches (matching MATLAB glob_route_day.m:48-50)
+                # This prevents double-counting: the reservoir has already collected upstream volumes
+                # Create modified topology with cleared upstream connections for outlet reaches
+                routing_network = self._network_topology.copy()
+                routing_network["upstream_1_idx"] = self._network_topology["upstream_1_idx"].copy()
+                routing_network["upstream_2_idx"] = self._network_topology["upstream_2_idx"].copy()
+                routing_network["n_upstream"] = self._network_topology["n_upstream"].copy()
+
+                for reservoir in self.reservoirs.reservoirs:
+                    outlet_reach = reservoir.outlet_reach
+                    if outlet_reach is not None:
+                        # Clear upstream connections (MATLAB: ret(j).ramimonte=[nan nan])
+                        routing_network["upstream_1_idx"][outlet_reach] = -1
+                        routing_network["upstream_2_idx"][outlet_reach] = -1
+                        # Set upstream count to 0 (MATLAB: ram_fin(j) = 0)
+                        routing_network["n_upstream"][outlet_reach] = 0
+
             # 7. Channel routing
             logger.debug("Computing channel routing")
-
             self.state.discharge, routing_state = linear_channel_routing(
-                network=self._network_topology,
+                network=routing_network,
                 discharge_initial=self.state.discharge,
                 lateral_inflow=lateral_inflow,
                 dt=self.dt,
