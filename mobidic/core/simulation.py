@@ -6,7 +6,6 @@ It orchestrates the water balance calculations, routing, and I/O operations.
 Currently, this implements a simplified version without:
 - Energy balance (uses simple PET instead)
 - Groundwater models
-- Reservoir routing
 
 Translated from MATLAB: mobidic_sid.m (main simulation loop)
 """
@@ -1308,6 +1307,9 @@ class Simulation:
             fld_prev = fld.copy()
 
             # 6. Reservoir routing (if reservoirs exist)
+            # Prepare network topology for routing (may be modified if reservoirs exist)
+            routing_network = self._network_topology
+
             if self.reservoirs is not None and self.state.reservoir_states is not None:
                 logger.debug("Computing reservoir routing")
 
@@ -1331,13 +1333,33 @@ class Simulation:
                     cell_area=cell_area,
                 )
 
-                logger.debug("Reservoir routing completed")
+                # Add reservoir outflows to lateral inflow of outlet reaches (matching MATLAB glob_route_day.m:46-53)
+                for i, reservoir in enumerate(self.reservoirs.reservoirs):
+                    outlet_reach = reservoir.outlet_reach
+                    if outlet_reach is not None:
+                        lateral_inflow[outlet_reach] += self.state.reservoir_states[i].outflow
+
+                # Clear upstream connections for outlet reaches (matching MATLAB glob_route_day.m:48-50)
+                # This prevents double-counting: the reservoir has already collected upstream volumes
+                # Create modified topology with cleared upstream connections for outlet reaches
+                routing_network = self._network_topology.copy()
+                routing_network["upstream_1_idx"] = self._network_topology["upstream_1_idx"].copy()
+                routing_network["upstream_2_idx"] = self._network_topology["upstream_2_idx"].copy()
+                routing_network["n_upstream"] = self._network_topology["n_upstream"].copy()
+
+                for reservoir in self.reservoirs.reservoirs:
+                    outlet_reach = reservoir.outlet_reach
+                    if outlet_reach is not None:
+                        # Clear upstream connections (MATLAB: ret(j).ramimonte=[nan nan])
+                        routing_network["upstream_1_idx"][outlet_reach] = -1
+                        routing_network["upstream_2_idx"][outlet_reach] = -1
+                        # Set upstream count to 0 (MATLAB: ram_fin(j) = 0)
+                        routing_network["n_upstream"][outlet_reach] = 0
 
             # 7. Channel routing
             logger.debug("Computing channel routing")
-
             self.state.discharge, routing_state = linear_channel_routing(
-                network=self._network_topology,
+                network=routing_network,
                 discharge_initial=self.state.discharge,
                 lateral_inflow=lateral_inflow,
                 dt=self.dt,
