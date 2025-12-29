@@ -422,10 +422,10 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("-" * 80)
 
     reservoirs = None
-    if config.parameters.reservoirs.res_points is not None:
+    if config.parameters.reservoirs.res_shape is not None:
         try:
             reservoirs = process_reservoirs(
-                shapefile_path=config.parameters.reservoirs.res_points,
+                shapefile_path=config.parameters.reservoirs.res_shape,
                 stage_storage_path=config.parameters.reservoirs.stage_storage,
                 regulation_curves_path=config.parameters.reservoirs.regulation_curves,
                 regulation_schedule_path=config.parameters.reservoirs.regulation_schedule,

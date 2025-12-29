@@ -475,7 +475,7 @@ class TestPathResolution:
                 },
                 "groundwater": {"model": "None"},
                 "reservoirs": {
-                    "res_points": None,  # Optional field
+                    "res_shape": None,  # Optional field
                     "stage_storage": None,
                 },
             },
@@ -509,7 +509,7 @@ class TestPathResolution:
         # Check that None values remain None
         assert config.paths.reservoirs is None
         assert config.raster_files.kf is None
-        assert config.parameters.reservoirs.res_points is None
+        assert config.parameters.reservoirs.res_shape is None
 
     def test_nested_path_resolution(self, tmp_path):
         """Test that paths in nested models are resolved."""
@@ -567,7 +567,7 @@ class TestPathResolution:
                 },
                 "groundwater": {"model": "None"},
                 "reservoirs": {
-                    "res_points": "reservoirs.shp",  # Nested path field
+                    "res_shape": "reservoirs.shp",  # Nested path field
                     "stage_storage": "stage_storage.csv",
                 },
             },
@@ -605,14 +605,14 @@ class TestPathResolution:
         config = load_config(config_path)
 
         # Check that nested paths are resolved to absolute
-        assert Path(config.parameters.reservoirs.res_points).is_absolute()
+        assert Path(config.parameters.reservoirs.res_shape).is_absolute()
         assert Path(config.parameters.reservoirs.stage_storage).is_absolute()
         assert Path(config.initial_conditions.reservoir_volumes).is_absolute()
         assert Path(config.output_report_settings.sel_file).is_absolute()
 
         # Check that they're resolved relative to config directory
-        expected_res_points = (config_dir / "reservoirs.shp").resolve()
-        assert Path(config.parameters.reservoirs.res_points) == expected_res_points
+        expected_res_shape = (config_dir / "reservoirs.shp").resolve()
+        assert Path(config.parameters.reservoirs.res_shape) == expected_res_shape
 
     def test_empty_string_path(self, tmp_path):
         """Test that empty string paths are handled correctly."""

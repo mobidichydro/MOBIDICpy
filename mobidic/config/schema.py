@@ -189,7 +189,7 @@ class GroundwaterParameters(BaseModel):
 class ReservoirParameters(BaseModel):
     """Reservoir input data files."""
 
-    res_points: Optional[PathField] = Field(None, description="Shapefile of reservoirs and lakes (point features)")
+    res_shape: Optional[PathField] = Field(None, description="Shapefile of reservoirs and lakes (polygon features)")
     stage_storage: Optional[PathField] = Field(None, description="Reservoir stage-storage curves (CSV format)")
     regulation_curves: Optional[PathField] = Field(None, description="Reservoir regulation curves (CSV format)")
     regulation_schedule: Optional[PathField] = Field(None, description="Reservoir regulation schedules (CSV format)")
