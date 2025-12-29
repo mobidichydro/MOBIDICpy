@@ -232,6 +232,10 @@ def _rasterize_reservoir_polygon(
         dtype=np.uint8,
     )
 
+    # Flip mask vertically to convert from rasterio's top-left origin to MATLAB's bottom-left origin
+    # This ensures index 0 corresponds to bottom-left cell when flattened in Fortran order
+    mask = np.flipud(mask)
+
     # Get linear indices of cells inside polygon. (Fortran order to match MATLAB)
     basin_pixels = np.where(mask.flatten(order="F") == 1)[0]
 
