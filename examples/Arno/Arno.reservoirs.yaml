@@ -5,11 +5,11 @@
 ######## PROJECT DATA
 
 basin:
-  # REQUIRED: Descriptive name of basin
+  # OPTIONAL: Descriptive name of basin
   # [Any string with no blank characters, eg: Blue_Nile]
   id: Arno
 
-  # REQUIRED: Descriptive name of parameter set / scenario
+  # OPTIONAL: Descriptive name of parameter set / scenario
   # [Any string with no blank characters, eg: Blue_Nile_Scenario_24]
   paramset_id: Event_November_2023
 

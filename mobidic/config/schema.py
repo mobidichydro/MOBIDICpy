@@ -19,8 +19,8 @@ class BasinBaricenter(BaseModel):
 class Basin(BaseModel):
     """Basin identification and metadata."""
 
-    id: str = Field(..., description="Descriptive name of basin")
-    paramset_id: str = Field(..., description="Descriptive name of parameter set / scenario")
+    id: Optional[str] = Field(None, description="Descriptive name of basin")
+    paramset_id: Optional[str] = Field(None, description="Descriptive name of parameter set / scenario")
     baricenter: BasinBaricenter
 
 

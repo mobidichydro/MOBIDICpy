@@ -150,6 +150,14 @@ class TestMOBIDICConfig:
         assert config.parameters.multipliers.ks_factor == 1.0
         assert config.advanced.log_level == "INFO"
 
+    def test_optional_basin_fields(self, minimal_config_dict):
+        """Test that basin id and paramset_id can be omitted."""
+        minimal_config_dict["basin"]["id"] = None
+        minimal_config_dict["basin"]["paramset_id"] = None
+        config = MOBIDICConfig(**minimal_config_dict)
+        assert config.basin.id is None
+        assert config.basin.paramset_id is None
+
 
 class TestLoadConfig:
     """Tests for load_config function."""

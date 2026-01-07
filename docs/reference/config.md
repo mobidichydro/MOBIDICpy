@@ -6,7 +6,7 @@ The configuration module provides a schema-driven approach to loading and valida
 
 Configuration files define all aspects of a MOBIDIC simulation, including:
 
-- **Basin metadata**: ID, parameter set, baricenter coordinates
+- **Basin metadata**: Optional basin ID, optional parameter set ID, baricenter coordinates
 - **Input/output paths**: Meteodata, GIS data, network, states, output directories
 - **Raster and vector data sources**: DTM, flow direction/accumulation, soil/energy parameters, river network
 - **Model parameters**: Organized into subsections:
