@@ -297,11 +297,15 @@ class InitialConditions(BaseModel):
 
 
 class Simulation(BaseModel):
-    """Simulation control parameters."""
+    """Simulation control parameters.
+
+    Optional fields with defaults:
+        - decimation: Decimation factor from grid data space resolution to model space resolution (default: 1)
+    """
 
     timestep: float = Field(..., description="Data and model time step, in seconds")
     decimation: int = Field(
-        ..., description="Decimation factor from grid data space resolution to model space resolution"
+        1, description="Decimation factor from grid data space resolution to model space resolution"
     )
     soil_scheme: Literal["Bucket", "CN"] = Field(..., description="Type of soil hydrology scheme")
     energy_balance: Literal["None", "1L", "5L", "Snow"] = Field(

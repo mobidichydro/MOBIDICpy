@@ -367,6 +367,15 @@ class TestSimulation:
                 energy_balance="None",
             )
 
+    def test_optional_decimation_default(self):
+        """Test that decimation has correct default value."""
+        sim = Simulation(
+            timestep=900.0,
+            soil_scheme="Bucket",
+            energy_balance="None",
+        )
+        assert sim.decimation == 1
+
 
 class TestOutputStatesSettings:
     """Tests for OutputStatesSettings validation."""

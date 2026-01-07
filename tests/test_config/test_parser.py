@@ -300,7 +300,7 @@ class TestPathResolution:
                 "groundwater": {"model": "None"},
             },
             "simulation": {
-                    "timestep": 900,
+                "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -394,7 +394,7 @@ class TestPathResolution:
                 "groundwater": {"model": "None"},
             },
             "simulation": {
-                    "timestep": 900,
+                "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -485,7 +485,7 @@ class TestPathResolution:
                 },
             },
             "simulation": {
-                    "timestep": 900,
+                "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -576,7 +576,7 @@ class TestPathResolution:
                 },
             },
             "simulation": {
-                    "timestep": 900,
+                "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -674,7 +674,7 @@ class TestPathResolution:
                 "groundwater": {"model": "None"},
             },
             "simulation": {
-                    "timestep": 900,
+                "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
