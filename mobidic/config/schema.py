@@ -17,7 +17,12 @@ class BasinBaricenter(BaseModel):
 
 
 class Basin(BaseModel):
-    """Basin identification and metadata."""
+    """Basin identification and metadata.
+
+    Optional fields:
+        - id: Descriptive name of basin (default: None)
+        - paramset_id: Descriptive name of parameter set / scenario (default: None)
+    """
 
     id: Optional[str] = Field(None, description="Descriptive name of basin")
     paramset_id: Optional[str] = Field(None, description="Descriptive name of parameter set / scenario")
@@ -89,18 +94,25 @@ class RasterSettings(BaseModel):
 
 
 class SoilParameters(BaseModel):
-    """Soil-related parameters."""
+    """Soil-related parameters.
+
+    Optional fields with defaults:
+        - Wc0: Maximum water holding capacity in soil small pores (default: 0.0 mm)
+        - Wg0: Maximum water holding capacity in soil large pores (default: 0.0 mm)
+        - ks: Soil hydraulic conductivity (default: 1.0 mm/h)
+        - kf: Aquifer conductivity (default: 1.0e-7 m/s)
+    """
 
     Wc0: float = Field(
-        ..., description="Default value of maximum water holding capacity in soil small pores, in millimiters"
+        0.0, description="Default value of maximum water holding capacity in soil small pores, in millimiters"
     )
     Wg0: float = Field(
-        ..., description="Default value of maximum water holding capacity in soil large pores, in millimiters"
+        0.0, description="Default value of maximum water holding capacity in soil large pores, in millimiters"
     )
-    ks: float = Field(..., description="Default value of soil hydraulic conductivity, in mm/h")
+    ks: float = Field(1.0, description="Default value of soil hydraulic conductivity, in mm/h")
     ks_min: Optional[float] = Field(None, description="Default value of minimum soil hydraulic conductivity, in mm/h")
     ks_max: Optional[float] = Field(None, description="Default value of maximum soil hydraulic conductivity, in mm/h")
-    kf: float = Field(..., description="Default value of (real or ideal) aquifer conductivity, in m/s")
+    kf: float = Field(1.0e-7, description="Default value of (real or ideal) aquifer conductivity, in m/s")
     gamma: float = Field(..., description="Percolation coefficient, in 1/s")
     kappa: float = Field(..., description="Adsorption coefficient, in 1/s")
     beta: float = Field(..., description="Hypodermic flow coefficient, in 1/s")
@@ -116,13 +128,21 @@ class SoilParameters(BaseModel):
 
 
 class EnergyParameters(BaseModel):
-    """Energy balance parameters."""
+    """Energy balance parameters.
 
-    Tconst: float = Field(..., description="Deep ground temperature, in deg. Kelvin")
-    kaps: float = Field(..., description="Soil thermal conductivity, in W/m/K")
-    nis: float = Field(..., description="Soil thermal diffusivity, in m²/s")
-    CH: float = Field(..., description="Default value of turbulent exchange coeff. for heat, non dimensional")
-    Alb: float = Field(..., description="Default value of surface albedo, non dimensional")
+    All fields are optional with defaults:
+        - Tconst: Deep ground temperature (default: 290.0 K)
+        - kaps: Soil thermal conductivity (default: 2.5 W/m/K)
+        - nis: Soil thermal diffusivity (default: 0.8e-6 m²/s)
+        - CH: Turbulent exchange coefficient for heat (default: 1e-3)
+        - Alb: Surface albedo (default: 0.2)
+    """
+
+    Tconst: float = Field(290.0, description="Deep ground temperature, in deg. Kelvin")
+    kaps: float = Field(2.5, description="Soil thermal conductivity, in W/m/K")
+    nis: float = Field(0.8e-6, description="Soil thermal diffusivity, in m²/s")
+    CH: float = Field(1e-3, description="Default value of turbulent exchange coeff. for heat, non dimensional")
+    Alb: float = Field(0.2, description="Default value of surface albedo, non dimensional")
 
     @field_validator("Tconst", "kaps", "nis", "CH")
     @classmethod
@@ -142,15 +162,21 @@ class EnergyParameters(BaseModel):
 
 
 class RoutingParameters(BaseModel):
-    """Channel routing parameters."""
+    """Channel routing parameters.
+
+    Optional fields with defaults:
+        - Br0: Width of channels with first Strahler order (default: 1.0 m)
+        - NBr: Exponent of equation W = Br0*O^NBr (default: 1.5)
+        - n_Man: Manning roughness coefficient for channels (default: 0.03 s/m^(1/3))
+    """
 
     method: Literal["Musk", "MuskCun", "Lag", "Linear"] = Field(..., description="Type of channel routing scheme")
     wcel: float = Field(..., description="Flood wave celerity in channels, in m/s")
-    Br0: float = Field(..., description="Width of channels with first Strahler order, in meters")
+    Br0: float = Field(1.0, description="Width of channels with first Strahler order, in meters")
     NBr: float = Field(
-        ..., description="Exponent of equation W = Br0*O^NBr, where W=Width of channels and O=Strahler order"
+        1.5, description="Exponent of equation W = Br0*O^NBr, where W=Width of channels and O=Strahler order"
     )
-    n_Man: float = Field(..., description="Manning roughness coefficient for channels, in s/m^(1/3)")
+    n_Man: float = Field(0.03, description="Manning roughness coefficient for channels, in s/m^(1/3)")
 
     @field_validator("wcel", "Br0", "n_Man")
     @classmethod
@@ -231,7 +257,14 @@ class Parameters(BaseModel):
 
 
 class InitialConditions(BaseModel):
-    """Initial state conditions."""
+    """Initial state conditions.
+
+    All fields are optional with defaults:
+        - Ws: Initial depth of hillslope runoff (default: 0.0 m)
+        - Wcsat: Initial relative saturation of capillary soil (default: 0.3)
+        - Wgsat: Initial relative saturation of gravitational soil (default: 0.01)
+        - reservoir_volumes: Path to CSV file with initial reservoir volumes (default: None)
+    """
 
     Ws: Optional[float] = Field(0.0, description="Initial depth of hillslope runoff, in meters")
     Wcsat: Optional[float] = Field(0.3, description="Initial relative saturation of capillary soil, non dimensional")
@@ -266,7 +299,6 @@ class InitialConditions(BaseModel):
 class Simulation(BaseModel):
     """Simulation control parameters."""
 
-    realtime: Literal[0, 1, -1] = Field(..., description="Option to wait for new data at end of computation")
     timestep: float = Field(..., description="Data and model time step, in seconds")
     decimation: int = Field(
         ..., description="Decimation factor from grid data space resolution to model space resolution"

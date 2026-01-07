@@ -131,6 +131,19 @@ class TestSoilParameters:
                 alpha=-2.5e-5,
             )
 
+    def test_optional_soil_parameters_defaults(self):
+        """Test that Wc0, Wg0, ks, and kf have correct defaults."""
+        params = SoilParameters(
+            gamma=2.689e-7,
+            kappa=1.096e-7,
+            beta=7.62e-6,
+            alpha=2.5e-5,
+        )
+        assert params.Wc0 == 0.0
+        assert params.Wg0 == 0.0
+        assert params.ks == 1.0
+        assert params.kf == 1.0e-7
+
 
 class TestEnergyParameters:
     """Tests for EnergyParameters validation."""
@@ -170,6 +183,15 @@ class TestEnergyParameters:
         with pytest.raises(ValidationError, match="between 0 and 1"):
             EnergyParameters(Tconst=290.0, kaps=2.5, nis=0.8e-6, CH=1e-3, Alb=1.5)
 
+    def test_optional_energy_parameters_defaults(self):
+        """Test that all energy parameters have correct defaults."""
+        params = EnergyParameters()
+        assert params.Tconst == 290.0
+        assert params.kaps == 2.5
+        assert params.nis == 0.8e-6
+        assert params.CH == 1e-3
+        assert params.Alb == 0.2
+
 
 class TestRoutingParameters:
     """Tests for RoutingParameters validation."""
@@ -198,6 +220,13 @@ class TestRoutingParameters:
         """Test that NBr < 1 is rejected."""
         with pytest.raises(ValidationError, match="greater than 1"):
             RoutingParameters(method="Linear", wcel=5.18, Br0=1.0, NBr=0.5, n_Man=0.03)
+
+    def test_optional_routing_parameters_defaults(self):
+        """Test that Br0, NBr, and n_Man have correct defaults."""
+        params = RoutingParameters(method="Linear", wcel=5.18)
+        assert params.Br0 == 1.0
+        assert params.NBr == 1.5
+        assert params.n_Man == 0.03
 
 
 class TestGroundwaterParameters:
@@ -302,7 +331,6 @@ class TestSimulation:
         """Test that zero timestep is rejected."""
         with pytest.raises(ValidationError, match="positive"):
             Simulation(
-                realtime=0,
                 timestep=0.0,
                 decimation=1,
                 soil_scheme="Bucket",
@@ -313,7 +341,6 @@ class TestSimulation:
         """Test that negative timestep is rejected."""
         with pytest.raises(ValidationError, match="positive"):
             Simulation(
-                realtime=0,
                 timestep=-900.0,
                 decimation=1,
                 soil_scheme="Bucket",
@@ -324,7 +351,6 @@ class TestSimulation:
         """Test that zero decimation is rejected."""
         with pytest.raises(ValidationError, match="positive integer"):
             Simulation(
-                realtime=0,
                 timestep=900.0,
                 decimation=0,
                 soil_scheme="Bucket",
@@ -335,7 +361,6 @@ class TestSimulation:
         """Test that negative decimation is rejected."""
         with pytest.raises(ValidationError, match="positive integer"):
             Simulation(
-                realtime=0,
                 timestep=900.0,
                 decimation=-1,
                 soil_scheme="Bucket",

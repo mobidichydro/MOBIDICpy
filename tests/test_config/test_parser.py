@@ -70,7 +70,6 @@ def minimal_config_dict():
             "groundwater": {"model": "None"},
         },
         "simulation": {
-            "realtime": 0,
             "timestep": 900,
             "decimation": 1,
             "soil_scheme": "Bucket",
@@ -301,8 +300,7 @@ class TestPathResolution:
                 "groundwater": {"model": "None"},
             },
             "simulation": {
-                "realtime": 0,
-                "timestep": 900,
+                    "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -396,8 +394,7 @@ class TestPathResolution:
                 "groundwater": {"model": "None"},
             },
             "simulation": {
-                "realtime": 0,
-                "timestep": 900,
+                    "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -488,8 +485,7 @@ class TestPathResolution:
                 },
             },
             "simulation": {
-                "realtime": 0,
-                "timestep": 900,
+                    "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -580,8 +576,7 @@ class TestPathResolution:
                 },
             },
             "simulation": {
-                "realtime": 0,
-                "timestep": 900,
+                    "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",
@@ -679,8 +674,7 @@ class TestPathResolution:
                 "groundwater": {"model": "None"},
             },
             "simulation": {
-                "realtime": 0,
-                "timestep": 900,
+                    "timestep": 900,
                 "decimation": 1,
                 "soil_scheme": "Bucket",
                 "energy_balance": "None",

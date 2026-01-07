@@ -171,7 +171,6 @@ logger.info("")
 logger.info("=" * 60)
 logger.info("Simulation Settings:")
 logger.info("=" * 60)
-logger.info(f"Realtime Mode: {config.simulation.realtime}")
 logger.info(f"Timestep: {config.simulation.timestep} seconds")
 logger.info(f"Decimation Factor: {config.simulation.decimation}")
 logger.info(f"Soil Scheme: {config.simulation.soil_scheme}")
@@ -269,7 +268,6 @@ parameters:
   routing: {method: Linear, wcel: 5.0, Br0: 1.0, NBr: 1.5, n_Man: 0.03}
   groundwater: {model: None}
 simulation:
-  realtime: 0
   timestep: -100
   decimation: 1
   soil_scheme: Bucket

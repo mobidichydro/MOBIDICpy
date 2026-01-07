@@ -72,7 +72,6 @@ def simple_config():
             "groundwater": {"model": "None"},
         },
         "simulation": {
-            "realtime": 0,
             "timestep": 900,
             "decimation": 1,
             "soil_scheme": "Bucket",
