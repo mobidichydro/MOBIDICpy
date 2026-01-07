@@ -20,12 +20,12 @@ class Basin(BaseModel):
     """Basin identification and metadata.
 
     Optional fields:
-        - id: Descriptive name of basin (default: None)
-        - paramset_id: Descriptive name of parameter set / scenario (default: None)
+        - id: Descriptive name of basin (default: empty string)
+        - paramset_id: Descriptive name of parameter set / scenario (default: empty string)
     """
 
-    id: Optional[str] = Field(None, description="Descriptive name of basin")
-    paramset_id: Optional[str] = Field(None, description="Descriptive name of parameter set / scenario")
+    id: Optional[str] = Field('', description="Descriptive name of basin")
+    paramset_id: Optional[str] = Field('', description="Descriptive name of parameter set / scenario")
     baricenter: BasinBaricenter
 
 
@@ -129,6 +129,8 @@ class SoilParameters(BaseModel):
 
 class EnergyParameters(BaseModel):
     """Energy balance parameters.
+
+    This entire section is optional. If omitted from configuration, all defaults will be used.
 
     All fields are optional with defaults:
         - Tconst: Deep ground temperature (default: 290.0 K)
@@ -249,7 +251,7 @@ class Parameters(BaseModel):
     """Global land and model parameters."""
 
     soil: SoilParameters
-    energy: EnergyParameters
+    energy: Optional[EnergyParameters] = Field(default_factory=EnergyParameters)
     routing: RoutingParameters
     groundwater: GroundwaterParameters
     reservoirs: Optional[ReservoirParameters] = Field(default_factory=ReservoirParameters)
