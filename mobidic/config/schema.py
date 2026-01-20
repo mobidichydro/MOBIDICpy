@@ -24,15 +24,18 @@ class Basin(BaseModel):
         - paramset_id: Descriptive name of parameter set / scenario (default: empty string)
     """
 
-    id: Optional[str] = Field('', description="Descriptive name of basin")
-    paramset_id: Optional[str] = Field('', description="Descriptive name of parameter set / scenario")
+    id: Optional[str] = Field("", description="Descriptive name of basin")
+    paramset_id: Optional[str] = Field("", description="Descriptive name of parameter set / scenario")
     baricenter: BasinBaricenter
 
 
 class Paths(BaseModel):
     """File paths for input and output data."""
 
-    meteodata: PathField = Field(..., description="File where the meteo data files are stored")
+    meteodata: Optional[PathField] = Field(
+        None, description="File where the meteo data files are stored (time-series format)"
+    )
+    meteoraster: Optional[PathField] = Field(None, description="File where the meteo data are stored (raster format)")
     gisdata: PathField = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
     network: PathField = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
     reservoirs: Optional[PathField] = Field(
@@ -40,6 +43,13 @@ class Paths(BaseModel):
     )
     states: PathField = Field(..., description="Directory where the model states will be stored")
     output: PathField = Field(..., description="Directory where output report files will be stored")
+
+    @model_validator(mode="after")
+    def check_meteo_paths(self) -> "Paths":
+        """Validate that at least one meteo path is provided."""
+        if self.meteodata is None and self.meteoraster is None:
+            raise ValueError("At least one of 'meteodata' or 'meteoraster' must be provided")
+        return self
 
 
 class RiverNetworkVector(BaseModel):
@@ -360,8 +370,8 @@ class OutputStates(BaseModel):
         False, description="Option to save states of ground temperature for results analysis"
     )
     aquifer_head: Optional[bool] = Field(False, description="Option to save states of aquifers for results analysis")
-    et_prec: Optional[bool] = Field(
-        False, description="Option to save states of evapotranspiration and precipitation for results analysis"
+    evapotranspiration: Optional[bool] = Field(
+        False, description="Option to save states of evapotranspiration for results analysis"
     )
 
 
@@ -482,6 +492,14 @@ class OutputReportSettings(BaseModel):
         return self
 
 
+class OutputInterpolatedData(BaseModel):
+    """Output interpolated data options."""
+
+    meteo_data: Optional[bool] = Field(
+        False, description="Option to save interpolated meteorological data from stations"
+    )
+
+
 class Advanced(BaseModel):
     """Advanced settings."""
 
@@ -510,4 +528,5 @@ class MOBIDICConfig(BaseModel):
     output_states_settings: Optional[OutputStatesSettings] = Field(default_factory=OutputStatesSettings)
     output_report: Optional[OutputReport] = Field(default_factory=OutputReport)
     output_report_settings: Optional[OutputReportSettings] = Field(default_factory=OutputReportSettings)
+    output_interpolated_data: Optional[OutputInterpolatedData] = Field(default_factory=OutputInterpolatedData)
     advanced: Optional[Advanced] = Field(default_factory=Advanced)

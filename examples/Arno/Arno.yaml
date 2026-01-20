@@ -25,20 +25,24 @@ basin:
 # Paths can be absolute or relative to the position of this file
 
 paths:
-  # REQUIRED: File where the meteo data files are stored
-  # [directory path including terminal /, eg: /blue_nile/meteodata/meteodata.nc]
+  # OPTIONAL: File where the meteo data file (time-series format) is stored
+  # [path to .nc file, eg: /blue_nile/meteodata/meteodata.nc]
   meteodata: meteodata/Arno_meteodata.nc
 
+  # OPTIONAL: NetCDF file where the meteo data (raster format) are stored (alternative to above)
+  # [path to .nc file, eg: /blue_nile/meteodata/meteoraster.nc]
+  meteoraster:
+
   # REQUIRED: Consolidated raster dataset to be created by GIS preprocessing
-  # [full pathname to .nc file, eg: /blue_nile/geodat/gisdata.nc]
+  # [path to .nc file, eg: /blue_nile/geodat/gisdata.nc]
   gisdata: gisdata/Arno_gisdata.nc
 
   # REQUIRED: Consolidated hydrographic network to be created by GIS preprocessing (geoparquet format)
-  # [full pathname to .parquet file, eg: /blue_nile/geodat/net.parquet]
+  # [path to .parquet file, eg: /blue_nile/geodat/net.parquet]
   network: gisdata/Arno_net.parquet
 
   # OPTIONAL: Consolidated reservoirs dataset to be created by GIS preprocessing (geoparquet format)
-  # [full pathname to .parquet file, eg: /blue_nile/geodat/reservoirs.parquet]
+  # [path to .parquet file, eg: /blue_nile/geodat/reservoirs.parquet]
   reservoirs: 
 
   # REQUIRED: Directory where the model states will be stored
@@ -355,9 +359,9 @@ output_states:
   # [boolean]
   aquifer_head: false
 
-  # OPTIONAL: Save states of evapotranspiration and precipitation. Default: false
+  # OPTIONAL: Save states of evapotranspiration. Default: false
   # [boolean]
-  et_prec: false
+  evapotranspiration: false
 
 output_states_settings:
   # OPTIONAL: Format for state output files
@@ -366,7 +370,7 @@ output_states_settings:
 
   # OPTIONAL: Which time steps to save
   # [one among the following options: 'all', 'final', 'list', 'None' (default)]
-  output_states: final
+  output_states: all
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]
@@ -415,6 +419,10 @@ output_report_settings:
   # [list of integers, e.g. [1234, 5678]. Used if reach_selection=list]
   sel_list: [292, 313, 329, 514]
 
+output_interpolated_data:
+  # OPTIONAL: Save interpolated meteorological data from stations. Default: false
+  # [boolean]
+  meteo_data: false
 
 ####### ADVANCED SETTINGS
 
