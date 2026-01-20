@@ -422,7 +422,7 @@ output_report_settings:
 output_interpolated_data:
   # OPTIONAL: Save interpolated meteorological data from stations. Is ignored if using raster meteorological data. Default: false
   # [boolean]
-  meteo_data: true
+  meteo_data: false
 
 ####### ADVANCED SETTINGS
 
