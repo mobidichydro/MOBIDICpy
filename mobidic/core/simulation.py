@@ -1136,6 +1136,32 @@ class Simulation:
         else:
             logger.info("State output disabled (output_states=None)")
 
+        # Initialize meteo writer (if enabled)
+        meteo_writer = None
+        if self.config.output_interpolated_data.meteo_data:
+            output_dir = Path(self.config.paths.output)
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            from mobidic.io import MeteoWriter
+
+            # Define which variables to save
+            meteo_variables = ["precipitation", "pet"]
+
+            meteo_writer = MeteoWriter(
+                output_path=output_dir / "meteo_interpolated.nc",
+                grid_metadata=self.gisdata.metadata,
+                variables=meteo_variables,
+                add_metadata={
+                    "basin_id": self.config.basin.id,
+                    "paramset_id": self.config.basin.paramset_id,
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                },
+            )
+            logger.info(f"Meteo data output enabled: {meteo_variables}")
+        else:
+            logger.info("Interpolated meteo data output disabled")
+
         # Main time loop
         logger.info("Starting simulation main loop")
         current_time = start_date
@@ -1159,7 +1185,11 @@ class Simulation:
             # 2. Calculate PET
             pet = self._calculate_pet(current_time)
 
-            # 3. Hillslope routing of previous timestep's flows (matching MATLAB mobidic_sid.m:1621-1625)
+            # 3. Save interpolated meteorological data (if enabled)
+            if meteo_writer is not None:
+                meteo_writer.append(current_time, precipitation=precip, pet=pet)
+
+            # 4. Hillslope routing of previous timestep's flows (matching MATLAB mobidic_sid.m:1621-1625)
             # This must happen BEFORE soil mass balance to provide upstream contributions
             logger.debug("Routing previous timestep's flows through hillslope")
 
@@ -1176,7 +1206,7 @@ class Simulation:
             pir = pir_discharge / cell_area
             pid = pid_discharge / cell_area
 
-            # 4. Soil water balance (cell-by-cell)
+            # 5. Soil water balance (cell-by-cell)
             logger.debug("Computing soil water balance")
 
             # Convert precipitation to depth over time step [m]
@@ -1473,5 +1503,9 @@ class Simulation:
 
             # Close the state writer (flushes any remaining buffered states)
             state_writer.close()
+
+        # Close the meteo writer (writes all buffered data to NetCDF)
+        if meteo_writer is not None:
+            meteo_writer.close()
 
         return results
