@@ -422,7 +422,7 @@ output_report_settings:
   sel_list: [1000]
 
 output_interpolated_data:
-  # OPTIONAL: Save interpolated meteorological data from stations. Default: false
+  # OPTIONAL: Save interpolated meteorological data from stations. Is ignored if using raster meteorological data. Default: false
   # [boolean]
   meteo_data: false
 
