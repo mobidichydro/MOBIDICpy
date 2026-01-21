@@ -618,20 +618,19 @@ class Simulation:
 
         Args:
             time: Current simulation time
-            variable: Variable name ('precipitation', 'pet', 'temperature', etc.)
+            variable: Variable name ('precipitation', 'temperature', etc.)
             weights_cache: Unused (for signature compatibility with _interpolate_forcing)
             time_step_index: Unused (for signature compatibility with _interpolate_forcing)
 
         Returns:
-            2D grid in simulation units (m/s for precip/pet, degC for temperature)
+            2D grid in simulation units (m/s for precip, degC for temperature)
         """
-        # Get grid from raster (returns values in file units: mm/h for precip/pet, degC for temp)
+        # Get grid from raster (returns values in file units: mm/h for precip, degC for temp)
         grid = self.forcing.get_timestep(time, variable)
 
         # Convert units to match _interpolate_forcing output
-        if variable in ["precipitation", "pet"]:
+        if variable == "precipitation":
             # Convert mm/h to m/s: divide by 1000 * 3600
-            # This matches MeteoWriter's inverse conversion (line 128 in meteo.py)
             grid = grid / 1000.0 / 3600.0
 
         # Temperature and other variables are already in correct units (degC)
