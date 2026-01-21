@@ -26,18 +26,18 @@ class MeteoWriter:
     Args:
         output_path: Path to output NetCDF file (will be created/overwritten)
         grid_metadata: Dictionary with grid metadata (shape, resolution, crs, etc.)
-        variables: List of meteorological variable names to save (e.g., ['precipitation', 'pet'])
+        variables: List of meteorological variable names to save (e.g., ['precipitation', 'temperature'])
         add_metadata: Additional global attributes (optional)
 
     Examples:
-        >>> # Create writer for precipitation and PET
+        >>> # Create writer for precipitation and temperature
         >>> writer = MeteoWriter(
         ...     "meteo_interpolated.nc",
         ...     metadata,
-        ...     variables=['precipitation', 'pet']
+        ...     variables=['precipitation', 'temperature']
         ... )
         >>> for step in range(num_steps):
-        ...     writer.append(current_time, precipitation=precip_grid, pet=pet_grid)
+        ...     writer.append(current_time, precipitation=precip_grid, temperature=temp_grid)
         >>> writer.close()  # Writes all data to file
     """
 
@@ -84,7 +84,7 @@ class MeteoWriter:
             ValueError: If a required variable is missing or has wrong shape
 
         Examples:
-            >>> writer.append(current_time, precipitation=precip_grid, pet=pet_grid)
+            >>> writer.append(current_time, precipitation=precip_grid, temperature=temp_grid)
         """
         # Validate that all required variables are provided
         for var in self.variables:
