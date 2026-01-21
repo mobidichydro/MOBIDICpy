@@ -22,6 +22,7 @@ from mobidic import __version__
 from mobidic.config import MOBIDICConfig
 from mobidic.core import constants as const
 from mobidic.preprocessing.meteo_preprocessing import MeteoData
+from mobidic.preprocessing.meteo_raster import MeteoRaster
 from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.reservoir import reservoir_routing
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
@@ -203,19 +204,36 @@ class Simulation:
     def __init__(
         self,
         gisdata: Any,  # GISData object
-        forcing: MeteoData,
+        forcing: MeteoData | MeteoRaster,
         config: MOBIDICConfig,
     ):
         """Initialize simulation.
 
         Args:
             gisdata: Preprocessed GIS data (from load_gisdata or run_preprocessing)
-            forcing: Meteorological forcing data as MeteoData container
+            forcing: Meteorological forcing data as MeteoData (stations) or MeteoRaster (gridded)
             config: MOBIDIC configuration
         """
         self.gisdata = gisdata
         self.forcing = forcing
         self.config = config
+
+        # Detect forcing type and set up method
+        if isinstance(forcing, MeteoRaster):
+            self.forcing_mode = "raster"
+            logger.info("Using raster meteorological forcing (no interpolation)")
+            # Validate grid alignment
+            forcing.validate_grid_alignment(gisdata.metadata)
+            # Set forcing extraction method
+            self._get_forcing_fn = self._get_raster_forcing
+            # No interpolation weights needed
+            self._interpolation_weights = None
+        else:  # MeteoData
+            self.forcing_mode = "station"
+            logger.info("Using station meteorological forcing (with spatial interpolation)")
+            # Set forcing extraction method
+            self._get_forcing_fn = self._interpolate_forcing
+            # Interpolation weights will be precomputed later
 
         # Extract grid metadata
         self.nrows, self.ncols = gisdata.metadata["shape"]
@@ -280,9 +298,11 @@ class Simulation:
         # Preprocess and cache network topology for fast routing
         self._network_topology = self._preprocess_network_topology()
 
-        # Pre-compute interpolation weights for meteorological forcing
+        # Pre-compute interpolation weights for meteorological forcing (station mode only)
         # Currently, only precipitation is used in the main loop
-        self._interpolation_weights = self._precompute_interpolation_weights(["precipitation"])
+        if self.forcing_mode == "station":
+            self._interpolation_weights = self._precompute_interpolation_weights(["precipitation"])
+        # else: self._interpolation_weights already set to None above
 
         # Time indices cache (will be populated in run() when simulation period is known)
         self._time_indices_cache = None
@@ -586,6 +606,36 @@ class Simulation:
             )
 
         return grid_values
+
+    def _get_raster_forcing(
+        self,
+        time: datetime,
+        variable: str,
+        weights_cache: dict[str, np.ndarray | None] | None = None,
+        time_step_index: int | None = None,
+    ) -> np.ndarray:
+        """Extract meteorological forcing from raster data.
+
+        Args:
+            time: Current simulation time
+            variable: Variable name ('precipitation', 'pet', 'temperature', etc.)
+            weights_cache: Unused (for signature compatibility with _interpolate_forcing)
+            time_step_index: Unused (for signature compatibility with _interpolate_forcing)
+
+        Returns:
+            2D grid in simulation units (m/s for precip/pet, degC for temperature)
+        """
+        # Get grid from raster (returns values in file units: mm/h for precip/pet, degC for temp)
+        grid = self.forcing.get_timestep(time, variable)
+
+        # Convert units to match _interpolate_forcing output
+        if variable in ["precipitation", "pet"]:
+            # Convert mm/h to m/s: divide by 1000 * 3600
+            # This matches MeteoWriter's inverse conversion (line 128 in meteo.py)
+            grid = grid / 1000.0 / 3600.0
+
+        # Temperature and other variables are already in correct units (degC)
+        return grid
 
     def _calculate_pet(self, time: datetime) -> np.ndarray:
         """Calculate potential evapotranspiration.
@@ -1054,10 +1104,13 @@ class Simulation:
         n_steps = int((end_date - start_date).total_seconds() / self.dt) + 1
         logger.info(f"Number of time steps: {n_steps}")
 
-        # Pre-compute time indices for all simulation timesteps
+        # Pre-compute time indices for all simulation timesteps (station mode only)
         # Currently, only precipitation is used in the main loop
         simulation_times = pd.date_range(start=start_date, periods=n_steps, freq=f"{self.dt}s")
-        self._time_indices_cache = self._precompute_time_indices(simulation_times, variables=["precipitation"])
+        if self.forcing_mode == "station":
+            self._time_indices_cache = self._precompute_time_indices(simulation_times, variables=["precipitation"])
+        else:
+            self._time_indices_cache = None
 
         # Validate output_list if using list-based state output
         state_settings = self.config.output_states_settings
@@ -1145,7 +1198,7 @@ class Simulation:
             from mobidic.io import MeteoWriter
 
             # Define which variables to save
-            meteo_variables = ["precipitation", "pet"]
+            meteo_variables = ["precipitation"]
 
             meteo_writer = MeteoWriter(
                 output_path=output_dir / "meteo_interpolated.nc",
@@ -1170,9 +1223,9 @@ class Simulation:
         for step in range(n_steps):
             logger.debug(f"Time step {step + 1}/{n_steps}: {current_time}")
 
-            # 1. Interpolate meteorological forcing (using cached weights and time indices for performance)
+            # 1. Get meteorological forcing (interpolation for stations, direct sampling for rasters)
             try:
-                precip = self._interpolate_forcing(
+                precip = self._get_forcing_fn(
                     current_time,
                     "precipitation",
                     weights_cache=self._interpolation_weights,
@@ -1187,7 +1240,7 @@ class Simulation:
 
             # 3. Save interpolated meteorological data (if enabled)
             if meteo_writer is not None:
-                meteo_writer.append(current_time, precipitation=precip, pet=pet)
+                meteo_writer.append(current_time, precipitation=precip)
 
             # 4. Hillslope routing of previous timestep's flows (matching MATLAB mobidic_sid.m:1621-1625)
             # This must happen BEFORE soil mass balance to provide upstream contributions
