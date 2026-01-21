@@ -7,9 +7,11 @@ This script demonstrates the comparison between:
 
 The workflow is as follows:
 1. Load configuration from Arno.yaml
-2. Run simulation with station data (outputs interpolated meteo data)
-3. Run second simulation using the interpolated raster data as forcing
-4. Compare discharge results from both simulations
+2. GIS preprocessing (or load preprocessed data)
+3. Convert meteorological data to NetCDF format
+4. Run simulation with station data (outputs interpolated meteo data)
+5. Run second simulation using the interpolated raster data as forcing
+6. Compare discharge results from both simulations
 
 The forcing raster input data has the same format as the exported interpolated meteorological data.
 
@@ -39,6 +41,8 @@ force_preprocessing = False  # Set to True to force re-running preprocessing
 
 example_dir = Path(__file__).parent / "Arno"
 config_file = example_dir / "Arno.yaml"
+
+meteodata_mat_path = example_dir / "meteodata/meteodata.mat"
 
 print("=" * 80)
 print("MOBIDIC - Arno Basin: station vs raster forcing comparison")
@@ -79,9 +83,38 @@ else:
 print()
 
 # =========================================================================
-# Step 3: Simulation 1 - Station-based forcing with interpolation output
+# Step 3: Meteorological Data Preparation
 # =========================================================================
-print("Step 3: First simulation with station-based forcing...")
+print("Step 3: Meteorological data preparation...")
+
+if force_preprocessing or not config.paths.meteodata.exists():
+    print("  Converting MATLAB .mat format to NetCDF...")
+
+    # Load and convert meteorological data
+    meteo_data = MeteoData.from_mat(meteodata_mat_path)
+
+    # Save to NetCDF format
+    meteo_data.to_netcdf(
+        config.paths.meteodata,
+        add_metadata={
+            "basin": config.basin.id,
+            "description": "Arno basin meteorological data",
+        },
+    )
+
+    print(f"  [OK] Meteo data converted and saved to: {config.paths.meteodata}")
+    print(f"  [OK] Variables: {meteo_data.variables}")
+    print(f"  [OK] Period: {meteo_data.start_date} to {meteo_data.end_date}")
+else:
+    print(f"  Meteorological data already exists: {config.paths.meteodata}")
+    print("  (Set force_preprocessing=True to reconvert)")
+
+print()
+
+# =========================================================================
+# Step 4: Simulation 1 - Station-based forcing with interpolation output
+# =========================================================================
+print("Step 4: First simulation with station-based forcing...")
 print("  (This will generate interpolated meteorological data)")
 print()
 
@@ -134,9 +167,9 @@ else:
 print()
 
 # =========================================================================
-# Step 4: Simulation 2 - Raster-based forcing (pre-interpolated)
+# Step 5: Simulation 2 - Raster-based forcing (pre-interpolated)
 # =========================================================================
-print("Step 4: Second simulation with raster-based forcing...")
+print("Step 5: Second simulation with raster-based forcing...")
 print("  (Using pre-interpolated meteorological data)")
 print()
 
@@ -173,9 +206,9 @@ print(f"  Execution time: {elapsed_time2:.2f} seconds ({elapsed_time2 / 60:.2f} 
 print()
 
 # =========================================================================
-# Step 5: Compare Results
+# Step 6: Compare Results
 # =========================================================================
-print("Step 5: Comparing results...")
+print("Step 6: Comparing results...")
 print()
 
 # Get discharge time series from both simulations
@@ -204,9 +237,9 @@ print(f"    Speedup factor: {speedup:.2f}x")
 print()
 
 # =========================================================================
-# Step 6: Visualize Results
+# Step 7: Visualize Results
 # =========================================================================
-print("Step 6: Plotting results...")
+print("Step 7: Plotting results...")
 
 # Select reach for detailed comparison
 reach_id = 329
