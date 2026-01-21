@@ -3,12 +3,11 @@
 import numpy as np
 import pytest
 import xarray as xr
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 import geopandas as gpd
 from shapely.geometry import LineString
 from rasterio.transform import from_origin
-from mobidic import load_config, load_gisdata, MeteoRaster, Simulation, MOBIDICConfig, GISData
+from mobidic import MeteoRaster, Simulation, MOBIDICConfig, GISData
 
 
 # Fixtures
