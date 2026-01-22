@@ -4,7 +4,7 @@
   <img src="assets/logo_mobidic_color.svg" alt="MOBIDICpy Logo" width="200" class="theme-logo">
 </p>
 
-MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a raster-based distributed hydrological model that simulates the water and energy balance of the hydrological cycle at the cell level.
+MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a physically-based distributed hydrological model that simulates the water and energy balance of the hydrological cycle at the cell level and run-off propagation in the river network.
 
 **MOBIDICpy** is a Python implementation of the MOBIDIC model, originally developed in MATLAB by Castelli et al. See [References](#references) for more details.
 
@@ -47,30 +47,30 @@ See [examples/run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blo
 
 ## Features
 
-**Currently Implemented (v0.0.1 - Pre-Alpha)**
+**Currently implemented (v0.0.1)**
 
-- Schema-driven configuration system with YAML and Pydantic validation
+- Simulation setup with YAML configuration file and parameter validation
 - GIS data I/O (raster and vector formats)
 - Grid operations (resolution degradation, flow direction conversion)
-- River network processing (topology, Strahler ordering, routing parameters)
+- River network processing (topology, Strahler ordering, calculation of routing parameters)
 - Hillslope-reach mapping
-- Meteorological data preprocessing (MAT to NetCDF conversion)
+- Meteorological data preprocessing from MATLAB format (.mat to NetCDF conversion)
 - Meteorological data spatial interpolation (IDW and nearest neighbor)
-- Consolidated I/O for preprocessed data
 - Soil water balance module (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope and channel)
 - Reservoir module (preprocessing, routing, time-varying regulation)
-- Basic I/O (NetCDF states, Parquet time series)
+- Basic I/O (NetCDF states, Parquet time series, export of interpolated meteorological data)
 
 **To be implemented**
 
-- Meteorological gap filling and quality control
-- Energy balance schemes (1L, 5L, Snow)
-- Groundwater models (Linear, Dupuit, MODFLOW)
-- Advanced routing (Muskingum-Cunge)
+- Calibration, sensitivity, and uncertainty analysis tools
+- Meteorological data gap filling and quality control
+- Energy balance schemes
+- Groundwater models
+- Advanced routing methods
 - CLI interface
 
-## Documentation Structure
+## Documentation structure
 
 - **[Introduction](introduction.md)** - Background, references, and model overview
 - **[Development](development.md)** - Developer setup, testing, and contribution guidelines

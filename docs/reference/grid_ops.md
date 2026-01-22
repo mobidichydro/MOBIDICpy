@@ -1,4 +1,4 @@
-# Grid Operations
+# Grid operations
 
 The grid operations module provides functions for processing and transforming gridded raster data, including resolution decimation and flow direction conversions.
 
@@ -6,27 +6,27 @@ The grid operations module provides functions for processing and transforming gr
 
 Grid operations are essential for:
 
-- **Multi-resolution modeling**: Coarsen high-resolution DEMs to computationally manageable resolutions
+- **Multi-resolution modeling**: Coarsen high-resolution DEMs, flow direction, and accumulation grids
 - **Flow direction processing**: Handle different flow direction notation systems (Grass vs Arc)
 - **Preprocessing**: Prepare gridded data for hydrological modeling
 
-All functions handle NaN values appropriately and provide comprehensive logging.
+All functions handle NaN values.
 
 ## Functions
 
-### Resolution Degradation
+### Resolution decimation
 
 ::: mobidic.preprocessing.grid_operations.decimate_raster
 
 ::: mobidic.preprocessing.grid_operations.decimate_flow_direction
 
-### Flow Direction Conversion
+### Flow direction conversion
 
 ::: mobidic.preprocessing.grid_operations.convert_to_mobidic_notation
 
 ## Examples
 
-### Coarsening a Raster
+### Coarsening a raster
 
 ```python
 from mobidic import grid_to_matrix, decimate_raster
@@ -48,7 +48,7 @@ print(f"Original cellsize: {dtm['cellsize']} m")
 print(f"New cellsize: {dtm['cellsize'] * 5} m")
 ```
 
-### Coarsening Flow Direction
+### Coarsening flow direction
 
 ```python
 from mobidic import grid_to_matrix, decimate_flow_direction
@@ -69,7 +69,7 @@ print(f"Original shape: {flow_dir_data['data'].shape}")
 print(f"Decimated shape: {flow_dir_coarse.shape}")
 ```
 
-### Converting Flow Direction Notation
+### Converting flow direction notation
 
 ```python
 from mobidic import grid_to_matrix, convert_to_mobidic_notation
@@ -91,11 +91,11 @@ flow_dir_mobidic = convert_to_mobidic_notation(
 )
 ```
 
-## Flow Direction Notations
+## Flow direction notations
 
 MOBIDICpy supports three flow direction notation systems:
 
-### Grass Notation (1-8)
+### Grass notation (1-8)
 
 Sequential numbering from 1 to 8, starting from East and going counter-clockwise:
 
@@ -109,7 +109,7 @@ Sequential numbering from 1 to 8, starting from East and going counter-clockwise
 └───┴───┴───┘
 ```
 
-### Arc Notation (Power of 2)
+### Arc notation (Power of 2)
 
 Powers of 2 from 1 to 128, starting from East and going counter-clockwise:
 
@@ -123,7 +123,7 @@ Powers of 2 from 1 to 128, starting from East and going counter-clockwise:
 └─────┴─────┴─────┘
 ```
 
-### MOBIDIC Notation (1-8)
+### MOBIDIC notation (1-8)
 
 MOBIDIC uses a transformed version of Grass notation with a 180-degree rotation. This is the notation used internally by the model:
 
@@ -150,16 +150,16 @@ MOBIDIC uses a transformed version of Grass notation with a 180-degree rotation.
 - 7: down-right (row +1, col +1)
 - 8: right (row 0, col +1)
 
-## Technical Details
+## Technical details
 
-### Degradation Algorithm
+### Degradation algorithm
 
 1. Divides the input grid into blocks of size `factor × factor`
 2. For regular rasters: computes mean of valid cells in each block
 3. For flow direction: finds the cell with maximum flow accumulation in each block, determines the dominant flow direction
 4. Applies `min_valid_fraction` threshold to avoid blocks with too few valid cells
 
-### Flow Direction Degradation
+### Flow direction degradation
 
 The algorithm preserves drainage patterns by:
 

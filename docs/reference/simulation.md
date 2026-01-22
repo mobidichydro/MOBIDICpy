@@ -6,10 +6,13 @@ The simulation module implements the main time-stepping loop of the MOBIDIC hydr
 
 The simulation engine coordinates:
 
-- **Input data loading**: GIS preprocessing and meteorological forcing
+- **Input data loading**: GIS preprocessing and meteorological forcing (station-based or raster-based)
+- **Meteorological forcing**: Automatically detects station data (with spatial interpolation) or pre-interpolated raster data
 - **State initialization**: Initial conditions for soil, surface, and channel states (supports warm start)
 - **Time-stepping loop**: Sequential water balance and routing calculations
-- **Meteorological interpolation**: Station data: grid interpolation (IDW, nearest neighbor)
+- **Station-based interpolation**: Grid interpolation using IDW or nearest neighbor with pre-computed weights
+- **Raster-based forcing**: Direct sampling from pre-interpolated grids with grid alignment validation
+- **Interpolated meteo output**: Optional export of interpolated grids for subsequent raster-based runs
 - **PET calculation**: Simple 1 mm/day constant rate (energy balance not yet implemented)
 - **Results storage**: Time series collection and state snapshots with automatic file chunking
 - **Output generation**: NetCDF states (with chunking) and Parquet/CSV reports
@@ -29,16 +32,17 @@ The simulation engine coordinates:
 
 The main simulation loop performs the following operations for each time step:
 
-1. **Interpolate forcing**: Precipitation from station data to grid (IDW or nearest neighbor)
+1. **Get forcing**: Precipitation from station data (interpolated to grid using IDW/nearest) or from raster data (direct sampling)
 2. **Calculate PET**: Simple 1 mm/day method (constant rate)
-3. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep
-4. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows
-5. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge, zero basin fluxes
-6. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
-7. **Channel routing**: Linear reservoir routing through river network
-8. **Store results**: Save discharge and lateral inflow time series
-9. **Output states**: Optionally save states (with automatic chunking if needed)
-10. **Update and advance**: Store flow fields for next timestep and advance simulation time
+3. **Save interpolated meteo** (optional): Export interpolated grids when using station-based forcing
+4. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep
+5. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows
+6. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge, zero basin fluxes
+7. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
+8. **Channel routing**: Linear reservoir routing through river network
+9. **Store results**: Save discharge and lateral inflow time series
+10. **Output states**: Optionally save states (with automatic chunking if needed)
+11. **Update and advance**: Store flow fields for next timestep and advance simulation time
 
 **Key feature**: The simulation uses a feedback loop where flows from timestep `t` are routed through the hillslope at timestep `t+1` before entering the soil water balance. This ensures proper spatial connectivity of overland flow.
 
@@ -54,7 +58,7 @@ The main simulation loop performs the following operations for each time step:
 
 ## Examples
 
-### Basic simulation
+### Basic simulation with station-based forcing
 
 ```python
 from mobidic import load_config, load_gisdata, Simulation, MeteoData
@@ -75,6 +79,47 @@ results.save_report("discharge.parquet")
 
 # Save lateral inflow report
 results.save_lateral_inflow_report("lateral_inflow.parquet")
+```
+
+### Simulation with raster-based forcing
+
+```python
+from mobidic import load_config, load_gisdata, Simulation, MeteoRaster
+
+# Load configuration and data
+config = load_config("config.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+
+# Load raster forcing (preload into memory for fast access)
+forcing = MeteoRaster.from_netcdf("meteo_raster.nc")
+
+# Create simulation (automatically detects raster mode)
+sim = Simulation(gisdata, forcing, config)
+
+# Run simulation (no interpolation needed, uses direct sampling)
+results = sim.run("2020-01-01", "2020-12-31")
+
+# Save results
+results.save_report("discharge.parquet")
+```
+
+### Export and use interpolated meteorological data
+
+```python
+from mobidic import MeteoData, MeteoRaster, Simulation
+
+# Run 1: Station-based with interpolated output enabled
+config.output_interpolated_data.meteo_data = True
+forcing_stations = MeteoData.from_netcdf("meteo_stations.nc")
+sim1 = Simulation(gisdata, forcing_stations, config)
+results1 = sim1.run("2020-01-01", "2020-12-31")
+# Interpolated data saved to: output/meteo_interpolated.nc
+
+# Run 2: Use exported raster forcing (faster, identical results)
+config.output_interpolated_data.meteo_data = False
+forcing_raster = MeteoRaster.from_netcdf("output/meteo_interpolated.nc")
+sim2 = Simulation(gisdata, forcing_raster, config)
+results2 = sim2.run("2020-01-01", "2020-12-31")
 ```
 
 ### Warm start (resume from saved simulation state)
@@ -255,8 +300,18 @@ When reservoirs are configured:
 ```yaml
 simulation:
   timestep: 900                      # Time step in seconds (15 minutes)
-  precipitation_interp: "IDW"        # Options: "IDW", "Nearest"
+  precipitation_interp: "IDW"        # Options: "IDW", "Nearest" (for station-based forcing)
+
+output_interpolated_data:
+  meteo_data: false                  # Save interpolated meteorological grids
+                                     # Only available with station-based forcing
+                                     # Output file: {output_dir}/meteo_interpolated.nc
 ```
+
+**Notes:**
+- `precipitation_interp` only applies when using station-based forcing (`MeteoData`)
+- When using raster-based forcing (`MeteoRaster`), interpolation is skipped entirely
+- `output_interpolated_data.meteo_data` is automatically disabled with a warning if using raster forcing
 
 ## Implemented modules
 

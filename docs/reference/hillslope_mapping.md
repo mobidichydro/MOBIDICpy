@@ -1,4 +1,4 @@
-# Hillslope-Reach Mapping
+# Hillslope-reach mapping
 
 The hillslope-reach mapping module connects hillslope grid cells to river reaches, enabling lateral flow routing from the distributed grid to the channel network.
 
@@ -9,15 +9,15 @@ This module performs two key operations:
 1. **Rasterization**: Identifies which grid cells are occupied by river reaches
 2. **Flow routing**: Traces flow paths from hillslope cells to their corresponding reaches
 
-These functions are essential for distributing lateral inflow from the hillslope water balance to the appropriate river reaches in the channel routing module.
+These functions are used for distributing lateral inflow from the hillslope water balance to the appropriate river reaches in the channel routing module.
 
 ## Functions
 
-### Compute Hillslope Cells
+### Compute hillslope cells
 
 ::: mobidic.preprocessing.hillslope_reach_mapping.compute_hillslope_cells
 
-### Map Hillslope to Reach
+### Map hillslope to reach
 
 ::: mobidic.preprocessing.hillslope_reach_mapping.map_hillslope_to_reach
 
@@ -56,9 +56,9 @@ print(f"Grid shape: {reach_map.shape}")
 print(f"Reaches identified: {len(set(reach_map[reach_map >= 0]))}")
 ```
 
-## Algorithm Details
+## Algorithm details
 
-### Rasterization Algorithm
+### Rasterization algorithm
 
 `compute_hillslope_cells()` performs the following steps:
 
@@ -69,9 +69,8 @@ print(f"Reaches identified: {len(set(reach_map[reach_map >= 0]))}")
    - Records all cells intersected by the reach geometry
 3. Stores the list of cell indices (as linear indices) in a `hillslope_cells` column
 
-**Linear indexing**: Cells are stored as linear indices computed from (row, col) as `index = row * ncols + col`. This format is efficient for sparse storage.
 
-### Flow Path Tracing Algorithm
+### Flow path 
 
 `map_hillslope_to_reach()` implements a flow path following algorithm:
 
@@ -83,16 +82,7 @@ print(f"Reaches identified: {len(set(reach_map[reach_map >= 0]))}")
 
 **Flow direction support**: Both Grass (1-8 notation) and Arc (power-of-2 notation) formats are supported.
 
-## MATLAB Translation
-
-This module translates two MATLAB functions:
-
-- `inter_quote_ret.m` → `compute_hillslope_cells()`
-- `hill2chan.m` → `map_hillslope_to_reach()`
-
-The Python implementation provides identical functionality with improved performance through vectorized NumPy operations.
-
-## Return Values
+## Return values
 
 ### compute_hillslope_cells()
 
@@ -108,18 +98,7 @@ Returns a 2D numpy array with:
 - Value = -9999: Cell does not drain to any reach (e.g., basin outlet)
 - NaN: Nodata cells outside the valid domain
 
-## Performance Considerations
-
-- **Rasterization**: O(n_reaches × avg_reach_length) - Linear in network size
-- **Flow tracing**: O(n_cells × avg_path_length) - Can be slow for large grids with long flow paths
-
-For large basins, consider:
-
-1. Using coarser resolution grids
-2. Degrading the flow direction grid before mapping
-3. Caching the reach_map result for reuse
-
-## Example Output
+## Example output
 
 After processing, the network GeoDataFrame contains:
 

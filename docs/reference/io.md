@@ -1,4 +1,4 @@
-# Data I/O and GISData Container
+# Data I/O and GISData container
 
 This module provides consolidated I/O for preprocessed MOBIDIC data and a container class for managing the complete preprocessed dataset.
 
@@ -13,13 +13,13 @@ After preprocessing GIS data, processing the river network, and optionally proce
 
 ## Classes
 
-### GISData Container
+### GISData container
 
-::: mobidic.preprocessing.io.GISData
+::: mobidic.preprocessing.preprocessor.GISData
 
 ## Functions
 
-### Save and Load Functions
+### Save and load functions
 
 ::: mobidic.preprocessing.io.save_gisdata
 
@@ -33,9 +33,9 @@ After preprocessing GIS data, processing the river network, and optionally proce
 
 ::: mobidic.preprocessing.io.load_reservoirs
 
-## Usage Examples
+## Usage examples
 
-### Example 1: Complete Preprocessing Workflow
+### Example 1: complete preprocessing workflow
 
 ```python
 from mobidic import load_config, run_preprocessing, GISData
@@ -68,7 +68,7 @@ if loaded_gisdata.reservoirs:
     print(f"Reservoirs: {len(loaded_gisdata.reservoirs)}")
 ```
 
-### Example 2: Working with GISData
+### Example 2: working with GISData
 
 ```python
 from mobidic import GISData
@@ -97,7 +97,7 @@ gisdata.metadata = {
 gisdata.save("output/gisdata.nc", "output/network.parquet")
 ```
 
-### Example 3: Saving Network Only
+### Example 3: saving network only
 
 ```python
 from mobidic import process_river_network, save_network, load_network
@@ -118,7 +118,7 @@ save_network(network, "output/network.shp", format="shapefile")
 loaded_network = load_network("output/network.parquet")
 ```
 
-### Example 4: Working with Reservoirs
+### Example 4: working with reservoirs
 
 ```python
 from mobidic import process_reservoirs, save_reservoirs, load_reservoirs, GISData
@@ -159,9 +159,9 @@ gisdata.save(
 )
 ```
 
-## File Formats
+## File formats
 
-### NetCDF for Grid Data
+### NetCDF for grid data
 
 Grid data is saved in NetCDF4 format with:
 
@@ -180,7 +180,7 @@ Grid data is saved in NetCDF4 format with:
 - CF-compliant for interoperability
 - Supports NaN for nodata values
 
-### GeoParquet for Network Data
+### GeoParquet for network data
 
 River network data is saved in GeoParquet format with:
 
@@ -198,7 +198,7 @@ River network data is saved in GeoParquet format with:
 - If pyarrow not available, can use Shapefile format
 - Shapefile has limitations (attribute names, data types)
 
-### GeoParquet for Reservoir Data
+### GeoParquet for reservoir data
 
 Reservoir data is saved in GeoParquet format with:
 
@@ -220,11 +220,11 @@ Reservoir data is saved in GeoParquet format with:
 - Dictionary keys are zero-padded strings ("000", "001", etc.) for Parquet compatibility
 - DataFrames are serialized to Parquet bytes and stored as binary columns
 
-## Data Consistency
+## Data consistency
 
 The `GISData` class ensures consistency between components:
 
-### Grid Validation
+### Grid validation
 
 All grids must have the same shape:
 
@@ -234,7 +234,7 @@ gisdata.grids['dtm'] = np.zeros((100, 100))
 gisdata.grids['ks'] = np.zeros((100, 150))  # Different shape - will raise error on save
 ```
 
-### Metadata Requirements
+### Metadata requirements
 
 Required metadata fields:
 - `shape`: Tuple (nrows, ncols)
@@ -242,7 +242,7 @@ Required metadata fields:
 - `crs`: String (e.g., "EPSG:32632")
 - `transform`: Affine transform object
 
-### Network Validation
+### Network validation
 
 The network must be a GeoDataFrame with specific required columns:
 - `mobidic_id`: Integer reach identifiers
@@ -251,37 +251,9 @@ The network must be a GeoDataFrame with specific required columns:
 - `strahler_order`, `calc_order`: Ordering information
 - `length_m`, `width_m`: Geometric parameters
 
-## Performance Considerations
+## Spatial reference handling
 
-### File Sizes
-
-Typical file sizes for a medium-sized basin (1000×1000 grid, 1000 reaches):
-
-| Component | Format | Compressed Size | Uncompressed Size |
-|-----------|--------|-----------------|-------------------|
-| Grid data (5 variables) | NetCDF | ~5-10 MB | ~20-40 MB |
-| River network | GeoParquet | ~1-2 MB | ~5-10 MB |
-| River network | Shapefile | ~3-5 MB | ~3-5 MB |
-| Reservoirs (10 reservoirs) | GeoParquet | ~50-200 KB | ~200-500 KB |
-
-### Read/Write Speed
-
-Approximate times on modern hardware:
-
-| Operation | Format | Time |
-|-----------|--------|------|
-| Write grids | NetCDF | ~1-2 seconds |
-| Read grids | NetCDF | ~0.5-1 seconds |
-| Write network | GeoParquet | ~0.1-0.3 seconds |
-| Read network | GeoParquet | ~0.1-0.2 seconds |
-| Write network | Shapefile | ~1-3 seconds |
-| Read network | Shapefile | ~0.5-1 seconds |
-
-**Recommendation**: Use GeoParquet for best performance.
-
-## Spatial Reference Handling
-
-### CRS Representation
+### CRS representation
 
 The CRS is stored in multiple places:
 
@@ -291,7 +263,7 @@ The CRS is stored in multiple places:
 
 These should all be consistent and are validated on save/load.
 
-### Affine Transform
+### Affine transform
 
 The affine transform maps pixel coordinates to geographic coordinates:
 
@@ -308,7 +280,7 @@ x, y = transform * (col, row)
 
 The transform is stored in the metadata dict and embedded in NetCDF grid variables.
 
-## Integration with Preprocessing
+## Integration with preprocessing
 
 The preprocessing workflow automatically creates and populates GISData:
 
@@ -329,24 +301,3 @@ gisdata = run_preprocessing(config)
 # Save for later use
 gisdata.save(config.paths.gisdata, config.paths.network)
 ```
-
-## API Stability
-
-The GISData format and I/O functions are designed for long-term stability:
-
-- NetCDF and GeoParquet are standard formats
-- Metadata schema is versioned
-- Future versions will maintain backward compatibility
-- Migration tools will be provided if format changes are needed
-
-## Error Handling
-
-All I/O functions provide comprehensive error handling:
-
-- **File not found**: Clear messages with expected paths
-- **Format errors**: Validation of required fields and data types
-- **CRS mismatches**: Warnings when CRS differs between components
-- **Corruption detection**: Checksums and validation on load
-- **Missing dependencies**: Helpful messages for optional packages (pyarrow)
-
-All operations use loguru for structured logging.

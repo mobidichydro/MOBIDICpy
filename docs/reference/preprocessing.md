@@ -1,6 +1,6 @@
-# Preprocessing Workflow
+# Preprocessing workflow
 
-The preprocessing workflow module provides a high-level function that orchestrates the complete MOBIDIC preprocessing pipeline, from raw GIS data to simulation-ready inputs.
+The preprocessing module provides a high-level function that runs the complete MOBIDIC preprocessing, from raw GIS data to inputs that can be directly used in the simulation.
 
 ## Overview
 
@@ -17,19 +17,19 @@ This is the recommended entry point for most users, as it handles all preprocess
 
 ## Functions
 
-### Main Preprocessing Function
+### Main preprocessing function
 
 ::: mobidic.preprocessing.preprocessor.run_preprocessing
 
-### Reservoir Preprocessing Function
+### Reservoir preprocessing function
 
 ::: mobidic.preprocessing.reservoirs.process_reservoirs
 
-## Workflow Stages
+## Workflow stages
 
 The preprocessing pipeline consists of up to seven stages (stages 6-7 are optional if reservoirs are configured):
 
-### Stage 1: Configuration Loading
+### Stage 1: configuration loading
 
 Loads and validates the YAML configuration file:
 
@@ -39,7 +39,7 @@ config = load_config(config_path)
 
 All subsequent steps are driven by paths and parameters in this configuration.
 
-### Stage 2: Raster Data Loading
+### Stage 2: raster data loading
 
 Reads all raster files specified in the configuration:
 
@@ -53,7 +53,7 @@ All rasters are:
 - Converted to numpy arrays with NaN for nodata
 - Stored in the `GISData.grids` dictionary
 
-### Stage 3: River Network Processing
+### Stage 3: river network processing
 
 Processes the river network shapefile:
 
@@ -77,7 +77,7 @@ This step:
 - Calculates routing parameters
 - Determines calculation order
 
-### Stage 4: Hillslope-Reach Mapping
+### Stage 4: hillslope-reach mapping
 
 Maps hillslope grid cells to river reaches:
 
@@ -88,7 +88,7 @@ reach_map = map_hillslope_to_reach(network, flowdir_path, flow_dir_type)
 
 This establishes the connection between the distributed grid and the river network for lateral inflow routing.
 
-### Stage 5: Data Consolidation
+### Stage 5: data consolidation
 
 Packages everything into a `GISData` object:
 
@@ -101,7 +101,7 @@ gisdata.metadata = spatial_reference_info
 
 The `GISData` object can then be saved for reuse or passed directly to the simulation.
 
-### Stage 6: Reservoir Preprocessing (Optional)
+### Stage 6: reservoir preprocessing (optional)
 
 If reservoirs are configured (`config.parameters.reservoirs.res_shape` is set), process reservoir data:
 
@@ -128,7 +128,7 @@ This step:
 - Auto-calculates initial volumes from z_max if not provided
 - Consolidates all reservoir data into Reservoirs container
 
-### Stage 7: Reservoir I/O (Optional)
+### Stage 7: reservoir I/O (optional)
 
 Save/load processed reservoir data:
 
@@ -148,7 +148,7 @@ gisdata = GISData.load(
 )
 ```
 
-## Complete Example
+## Complete example
 
 ```python
 from mobidic import load_config, run_preprocessing
@@ -175,11 +175,13 @@ gisdata.save(
 )
 ```
 
-## Configuration Requirements
+**Note:** To configure logging behavior (level, output file, etc.), see the [Logging](config.md#logging) section in the Configuration reference.
+
+## Configuration requirements
 
 The preprocessing workflow requires the following configuration sections:
 
-### Required Paths
+### Required paths
 
 ```yaml
 paths:
@@ -190,7 +192,7 @@ paths:
   output: path/to/output/          # For simulation outputs
 ```
 
-### Required Vector Files
+### Required vector files
 
 ```yaml
 vector_files:
@@ -199,7 +201,7 @@ vector_files:
     id_field: REACH_ID  # Optional, for tracking original IDs
 ```
 
-### Required Raster Files
+### Required raster files
 
 ```yaml
 raster_files:
@@ -211,14 +213,14 @@ raster_files:
   ks: path/to/ks.tif    # Hydraulic conductivity
 ```
 
-### Required Raster Settings
+### Required raster settings
 
 ```yaml
 raster_settings:
   flow_dir_type: Grass  # or Arc
 ```
 
-### Required Routing Parameters
+### Required routing parameters
 
 ```yaml
 parameters:
@@ -230,7 +232,7 @@ parameters:
     n_Man: 0.03    # Manning's n (s/m^(1/3))
 ```
 
-### Optional Reservoir Parameters
+### Optional reservoir parameters
 
 ```yaml
 parameters:
@@ -259,157 +261,49 @@ output_states:
 
 See the [sample configuration](https://github.com/mobidichydro/mobidicpy/blob/main/examples/sample_config.yaml) for a complete example.
 
-## Performance Considerations
-
-### Execution Time
-
-Typical preprocessing times (varies by basin size):
-
-| Basin Size | Grid Cells | Reaches | Time |
-|------------|-----------|---------|------|
-| Small | 100×100 | 100 | ~10 sec |
-| Medium | 1000×1000 | 1000 | ~1-2 min |
-| Large | 5000×5000 | 5000 | ~10-20 min |
-
-Most time is spent in:
-1. Reading raster files (I/O bound)
-2. Hillslope-reach mapping (computation bound)
-
-### Memory Usage
-
-Memory usage scales with grid size:
-
-- Small basin (100×100): ~100 MB
-- Medium basin (1000×1000): ~1-2 GB
-- Large basin (5000×5000): ~10-20 GB
-
-To reduce memory usage:
-- Use grid resolution degradation
-- Process in tiles (future feature)
-- Increase virtual memory/swap
-
-### Caching Results
-
-After preprocessing once, save the results:
-
-```python
-# First run: expensive preprocessing
-gisdata = run_preprocessing(config)
-gisdata.save("output/gisdata.nc", "output/network.parquet")
-
-# Subsequent runs: fast loading
-from mobidic import GISData
-gisdata = GISData.load("output/gisdata.nc", "output/network.parquet")
-```
-
-Loading is ~100× faster than preprocessing from scratch.
-
-## Error Handling
+## Error handling
 
 The preprocessing workflow performs comprehensive validation:
 
-### Configuration Validation
+### Configuration validation
 
 - All required paths and parameters are present
 - Numeric parameters are within valid ranges
 - File paths exist (if validation enabled)
 
-### Spatial Consistency
+### Spatial consistency
 
 - All rasters have the same shape
 - All rasters have the same resolution
 - All rasters have compatible CRS
 - Network CRS matches raster CRS (or is reprojected)
 
-### Data Quality
+### Data quality
 
 - Rasters have valid nodata handling
 - Network has no topological errors
 - Flow direction is valid (no invalid direction codes)
 - Flow accumulation is consistent with flow direction
 
-### Error Messages
+## Advanced usage
 
-All errors provide:
-- Clear description of the problem
-- Location (file path, line number)
-- Suggested fixes
-- Links to documentation
+### Skipping preprocessing stages
 
-## Logging
-
-Preprocessing operations are logged using loguru:
+If you already have some preprocessed data, you can skip certain stages and load existing files:
 
 ```python
-from mobidic import configure_logger, run_preprocessing
+from mobidic import load_network, load_gisdata, GISData
 
-# Set logging level
-configure_logger(level="INFO")  # or DEBUG, WARNING, ERROR
+# Option 1: Load complete preprocessed data
+gisdata = load_gisdata("existing_gisdata.nc", "existing_network.parquet")
 
-# Run preprocessing with logging
-gisdata = run_preprocessing(config)
-```
-
-Log levels:
-- **DEBUG**: Detailed information for troubleshooting
-- **INFO**: Progress updates for each stage
-- **WARNING**: Non-critical issues (e.g., missing optional files)
-- **ERROR**: Critical failures that stop execution
-
-Logs are written to:
-- Console (stdout)
-- File (if specified in `config.advanced.log_file`)
-
-## Customization
-
-For advanced users who need custom preprocessing:
-
-### Custom Grid Processing
-
-```python
-from mobidic import load_config, GISData, grid_to_matrix
-
-config = load_config("config.yaml")
-gisdata = GISData()
-
-# Custom raster processing
-dtm_data = grid_to_matrix(config.raster_files.dtm)
-dtm_processed = custom_processing(dtm_data['data'])
-gisdata.grids['dtm'] = dtm_processed
-
-# ... add other grids
-```
-
-### Custom Network Processing
-
-```python
-from mobidic import process_river_network
-
-# Custom routing parameters
-network = process_river_network(
-    shapefile_path="river_network.shp",
-    join_single_tributaries=False,  # Keep all reaches
-    routing_params={
-        "wcel": 7.0,  # Custom wave celerity
-        "Br0": 2.0,   # Custom base width
-        "NBr": 1.3,   # Custom width exponent
-        "n_Man": 0.025,  # Custom Manning coefficient
-    }
-)
-```
-
-### Skip Stages
-
-```python
-# If you already have processed network, skip that stage
-from mobidic import load_network, GISData
-
+# Option 2: Load network separately
 gisdata = GISData()
 # ... load grids manually
 gisdata.network = load_network("existing_network.parquet")
 ```
 
-## Integration with Simulation
+## Integration with simulation
 
 After preprocessing, the `GISData` object is ready for simulation:
 

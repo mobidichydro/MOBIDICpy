@@ -9,7 +9,7 @@ Report files store:
 - **Discharge time series**: River discharge for selected reaches over simulation period
 - **Lateral inflow time series**: Hillslope contributions to river reaches
 - **Time index**: Datetime index for all time steps
-- **Reach selection**: Configurable subset (all, outlets, custom list)
+- **Reach selection**: Configurable subset (all, from file, custom list)
 - **Metadata**: Simulation details saved as separate JSON file
 
 Parquet format offers:
@@ -28,11 +28,11 @@ Parquet format offers:
 ::: mobidic.io.report.save_lateral_inflow_report
 
 
-## Design Features
+## Design features
 
 - **Efficient storage**: Parquet columnar format with compression
 - **Fast loading**: Optimized for time series analysis
-- **Flexible selection**: All reaches, outlets only, or custom list
+- **Flexible selection**: All reaches, from file, or custom list
 - **Type preservation**: Maintains datetime and float64 types
 - **Metadata support**: Optional JSON metadata file
 - **pandas integration**: Seamless integration with pandas workflows

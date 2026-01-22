@@ -2,7 +2,7 @@
 
 ## Model overview
 
-MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a physically-based, raster-based distributed hydrological model that simulates the water and energy balance of the hydrological cycle at the cell level.
+MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a physically-based distributed hydrological model that simulates the water and energy balance of the hydrological cycle at the cell level and run-off propagation in the river network.
 
 **MOBIDICpy** represents a complete Python reimplementation of MOBIDIC, originally developed in MATLAB. This translation aims to improve usability, maintainability, and computational performance while preserving the scientific methods of the original model.
 
@@ -31,7 +31,7 @@ The hydrological processes in the soil-water balance include:
 
 - **Runoff**: Outgoing runoff toward the downhill cell is evaluated as linearly dependent from surface water content through a kinematic parameter ($\alpha$).
 
-### Energy Balance
+### Energy balance (not yet implemented)
 
 MOBIDIC solves water and energy balance simultaneously in the soil-vegetation subsystem. The energy module computes:
 
@@ -59,9 +59,9 @@ Water routing occurs at two levels:
 
 2. **Channel routing**: The river network is represented as a **vector map** (polylines) with channels treated as cylindrical. Rivers are fed by surface runoff and baseflow from groundwater. Available routing methods include:
     - **Linear reservoir cascade**: Each reach is modeled as a simple reservoir with exponential recession (storage coefficient $K$). This method represents an optimal compromise between complexity and physical representativeness.
-    - **Lag method**: Simple translation with no attenuation
-    - **Muskingum method**: Hydraulic routing with wedge storage
-    - **Muskingum-Cunge method**: Physically-based hydraulic routing
+    - **Lag method (not yet implemented)**: Simple translation with no attenuation
+    - **Muskingum method (not yet implemented)**: Hydraulic routing with wedge storage
+    - **Muskingum-Cunge method (not yet implemented)**: Physically-based hydraulic routing
 
 ### Reservoir routing
 
@@ -74,7 +74,7 @@ When reservoirs are present in the river network, a dedicated **reservoir routin
 - **Network integration**: Reservoir outflow is added to the lateral inflow of the outlet  reach. Inlet reach discharge is zeroed to prevent double-counting of water that enters the  reservoir.
 
 
-### Groundwater
+### Groundwater (not yet implemented)
 
 Several groundwater models are available:
 
@@ -112,7 +112,7 @@ The original MATLAB implementation is being systematically translated with numer
 
 ## Current Status
 
-**Version 0.0.1 (Pre-Alpha)** - Configuration, preprocessing and core simulation engine are functional. Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.
+**Version 0.0.1** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.
 
 See the [home page](index.md) for implementation status.
 

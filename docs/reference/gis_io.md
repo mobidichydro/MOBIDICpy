@@ -1,4 +1,4 @@
-# GIS Data I/O
+# GIS data I/O
 
 The GIS I/O module provides functions for reading geospatial data in various formats, including raster (GeoTIFF) and vector (Shapefile) files.
 
@@ -44,7 +44,7 @@ mean_elevation = np.nanmean(elevation)
 print(f"Mean elevation: {mean_elevation:.2f} m")
 ```
 
-### Reading a Shapefile
+### Reading a shapefile
 
 ```python
 from mobidic import read_shapefile
@@ -64,9 +64,9 @@ network_utm = read_shapefile(
 )
 ```
 
-## Return Values
+## Return values
 
-### Raster Data
+### Raster data
 
 `grid_to_matrix()` returns a dictionary with:
 
@@ -76,11 +76,11 @@ network_utm = read_shapefile(
 - `cellsize` (float): Cell size in map units
 - `crs` (rasterio.crs.CRS): Coordinate reference system
 
-### Vector Data
+### Vector data
 
 `read_shapefile()` returns a `geopandas.GeoDataFrame` with geometry and attribute columns.
 
-## Error Handling
+## Error handling
 
 Both functions provide detailed error messages and logging:
 
