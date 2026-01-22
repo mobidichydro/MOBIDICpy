@@ -72,13 +72,14 @@ class MeteoWriter:
 
         logger.debug(f"MeteoWriter initialized: {self.output_path}, variables={variables}")
 
-    def append(self, time: datetime, **grids) -> None:
+    def append(self, time: datetime, **grids: np.ndarray) -> None:
         """
         Append meteorological grids for a timestep.
 
         Args:
             time: Timestamp for this data
-            **grids: Keyword arguments for each variable grid (e.g., precipitation=precip_grid)
+            **grids: Keyword arguments for each variable grid (e.g., precipitation=precip_grid).
+                Each grid should be a 2D numpy array with shape (nrows, ncols).
 
         Raises:
             ValueError: If a required variable is missing or has wrong shape
