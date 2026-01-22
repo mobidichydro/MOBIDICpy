@@ -12,11 +12,15 @@ Default behavior (applied on package import):
 
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from loguru import logger
 
+if TYPE_CHECKING:
+    from mobidic.config.schema import MOBIDICConfig
 
-def configure_logger_from_config(config) -> None:
+
+def configure_logger_from_config(config: "MOBIDICConfig") -> None:
     """Configure the logger from a MOBIDICConfig object.
 
     This function reads the logging settings from the config's advanced section
