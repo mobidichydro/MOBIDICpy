@@ -2,7 +2,7 @@
 
 This page provides practical examples demonstrating the main features of MOBIDICpy. All example scripts are available in the `examples/` directory of the repository.
 
-## Configuration Parser
+## Configuration parser
 
 This example shows how to load and validate MOBIDIC configuration files.
 
@@ -38,7 +38,7 @@ print(f"Wave celerity: {config.parameters.routing.wcel} m/s")
 
 ---
 
-## River Network Processing
+## River network processing
 
 Process a river network shapefile to create a routing network with topology and parameters.
 
@@ -83,7 +83,7 @@ save_network(network, config.paths.network, format="parquet")
 
 ---
 
-## Hillslope-Reach Mapping
+## Hillslope-reach mapping
 
 Map hillslope grid cells to river reaches for lateral inflow routing.
 
@@ -206,7 +206,7 @@ print(f"\nLoaded from NetCDF: {meteo_from_nc}")
 
 ---
 
-## Complete Preprocessing Workflow
+## Complete preprocessing workflow
 
 The complete preprocessing workflow demonstrates how to process all GIS data and prepare it for simulation.
 
@@ -253,9 +253,9 @@ loaded_gisdata = GISData.load(
 
 ---
 
-## Complete Simulation: Arno Basin
+## Complete simulation: Arno river catchment
 
-The Arno basin example demonstrates a complete end-to-end MOBIDIC simulation workflow, from preprocessing through simulation to visualization.
+The Arno river example demonstrates a complete MOBIDIC simulation workflow, from preprocessing through simulation to visualization.
 
 **Script**: `examples/run_example_Arno.py`
 
@@ -296,9 +296,39 @@ results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
 
 ---
 
-## Simulation Restart Capability
+## Station vs raster forcing comparison
 
-The restart example demonstrates MOBIDICpy's ability to save intermediate simulation states and continue from saved checkpoints, enabling multi-stage modeling workflows.
+Compare station-based forcing (with spatial interpolation) against pre-interpolated raster forcing.
+
+**Script**: `examples/run_example_Arno_raster_forcing.py`
+
+```python
+from mobidic import MeteoData, MeteoRaster, Simulation
+
+# Run 1: Station-based with interpolated output
+config.output_interpolated_data.meteo_data = True
+forcing_stations = MeteoData.from_netcdf(config.paths.meteodata)
+sim1 = Simulation(gisdata, forcing_stations, config)
+results1 = sim1.run(start_date, end_date)
+
+# Run 2: Raster-based (using exported data)
+forcing_raster = MeteoRaster.from_netcdf("output/meteo_interpolated.nc")
+sim2 = Simulation(gisdata, forcing_raster, config)
+results2 = sim2.run(start_date, end_date)
+```
+
+**What it demonstrates:**
+
+- Exporting interpolated meteorological data as raster forcing
+- Using raster forcing for subsequent runs (faster, no interpolation)
+
+**Use cases:** Calibration runs, scenario analysis, large domains
+
+---
+
+## Simulation restart capability
+
+The restart example demonstrates MOBIDICpy's ability to save intermediate simulation states and continue the simulation from a saved state.
 
 **Script**: `examples/run_example_Arno_restart.py`
 
@@ -332,21 +362,20 @@ results_continuous = sim_continuous.run(start_date=start_date, end_date=end_date
 - Saving intermediate simulation states to NetCDF files
 - Loading states from file using `set_initial_state()`
 - Continuing simulations from saved checkpoints
-- Validating restart accuracy against continuous run (differences < 1e-6)
+- Validating restart accuracy against continuous run
 
 **Use cases:**
 
 - **Long-term simulations**: Break simulations into manageable chunks
 - **Checkpoint recovery**: Resume after system interruptions
 - **Multi-stage modeling**: Apply different parameters or forcings in different periods
-- **Ensemble forecasting**: Initialize multiple forecasts from single spin-up
 - **Real-time operations**: Save current state and restart with new forecast data
 
 ---
 
-## Reservoir Routing: Arno Basin with Reservoirs
+## Reservoir routing: Arno river basin with reservoirs
 
-The reservoir example demonstrates how to configure and simulate reservoirs with time-varying regulation curves and stage-discharge relationships.
+This example demonstrates how to configure and simulate reservoirs with time-varying regulation curves and stage-discharge relationships.
 
 **Script**: `examples/run_example_Arno_reservoirs.py`
 
@@ -466,13 +495,9 @@ output_states:
 
 - Configuring reservoirs with shapefiles and CSV data files
 - Processing reservoir data during preprocessing
-- Stage-storage relationships (cubic spline interpolation)
-- Time-varying regulation curves (seasonal winter/summer operations)
-- Automatic initial volume calculation from z_max (if CSV not provided)
-- Basin pixel identification via polygon rasterization
+- Time-varying regulation curves (e.g., seasonal winter/summer operations)
 - Inlet/outlet reach detection by network topology
 - Reservoir state output (volume, stage, discharge) to NetCDF
-- Integration with hillslope and channel routing
 
 **Output files:**
 
@@ -482,18 +507,11 @@ output_states:
 
 **Visualization script**: `examples/run_example_Arno_reservoirs_plots.py`
 
-Generates plots showing:
-- Reservoir volume over time
-- Reservoir stage over time
-- Reservoir inflow vs outflow
-- Regulation curve switching (winter/summer)
-- Outlet discharge comparison (with/without reservoirs)
-
 ---
 
 ## Sample Configuration
 
-A complete annotated configuration file is provided at `examples/sample_config.yaml`. This file includes:
+A sample configuration file is provided at `examples/sample_config.yaml`. This file includes:
 
 - Basin metadata and identification
 - Input/output file paths
@@ -503,13 +521,13 @@ A complete annotated configuration file is provided at `examples/sample_config.y
 - Simulation settings (time step, schemes)
 - Output configuration
 
-Refer to this file as a template when creating your own configurations.
+Refer to this file as a template when creating new configurations.
 
 ---
 
-## Additional Resources
+## Additional resources
 
-### Running Examples
+### How to run the examples
 
 All example scripts can be run from the repository root:
 
@@ -519,6 +537,9 @@ python examples/run_example_Arno.py
 
 # Visualization of results
 python examples/run_example_Arno_plots.py
+
+# Station vs raster forcing comparison
+python examples/run_example_Arno_raster_forcing.py
 
 # Complete Arno basin with reservoir routing
 python examples/run_example_Arno_reservoirs.py
@@ -545,9 +566,9 @@ python examples/demo_hill_reach_map.py
 python examples/demo_meteo_mat_to_nc.py
 ```
 
-### Test Data
+### Test data
 
-Example data for the Arno basin is provided in `examples/Arno/`:
+Example data for the Arno river catchment is provided in `examples/Arno/`:
 
 - Configuration files: `Arno.yaml`, `Arno.reservoirs.yaml`
 - River network shapefile
@@ -555,7 +576,7 @@ Example data for the Arno basin is provided in `examples/Arno/`:
 - Meteorological data
 - Reservoir data (shapefiles, stage-storage curves, regulation curves/schedules)
 
-### More Information
+### More information
 
 - See the [API Reference](reference/index.md) for detailed function documentation
 - See the [Introduction](introduction.md) for model background
