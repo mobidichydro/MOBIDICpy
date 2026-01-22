@@ -363,10 +363,6 @@ output_states:
   # [boolean]
   evapotranspiration: false
 
-  # OPTIONAL: Save interpolated station data (e.g. precipitation, temperature, etc.). Default: false
-  # [boolean]
-  interpolated_data: false
-
 
 output_states_settings:
   # OPTIONAL: Format for state output files
