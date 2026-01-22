@@ -1,31 +1,66 @@
-# Meteorological Preprocessing
+# Meteorological data
 
-The meteorological preprocessing module handles conversion of meteorological forcing data from various formats into CF-compliant NetCDF files for use in MOBIDIC simulations.
+The meteorological data module handles both station-based and gridded (raster) meteorological forcing for MOBIDIC simulations.
 
 ## Overview
 
-MOBIDICpy uses a modular architecture for meteorological data preprocessing:
+MOBIDICpy supports two modes of meteorological forcing, each suited to different workflows:
 
-- **Abstract interface**: `MeteoReader` base class for extensibility
-- **Format-specific readers**: Currently supports MATLAB .mat files
-- **Unified data container**: `MeteoData` class organizes station data by variable type
-- **CF-compliant output**: NetCDF files following Climate and Forecast conventions
+### Station-based forcing (MeteoData)
 
-This design allows easy extension to additional input formats (CSV, NetCDF, database connections) while maintaining a consistent internal representation.
+Use when you have time-series from weather stations that need spatial interpolation.
 
-## Classes
+- **Station time series**: Time-series from weather stations
+- **Spatial interpolation**: Performed during simulation (IDW or Nearest Neighbor)
+- **Format support**: MATLAB .mat files and CF-compliant NetCDF
+- **Optional grid export**: Can save interpolated grids as NetCDF for reuse
 
-### MeteoData
+
+### Raster-based forcing (MeteoRaster)
+
+Use when you have pre-interpolated gridded data or want to reuse previously interpolated results.
+
+- **Gridded data**: Reads pre-interpolated NetCDF files with dimensions (time, y, x)
+- **Performance**: Faster simulation by skipping real-time interpolation
+- **Grid validation**: Automatically validates that rasters match the model grid
+- **Best for**: Production runs, scenario analysis, or when using external gridded datasets (e.g., reanalysis products)
+
+
+**Workflow recommendation:**
+
+1. **Initial run**: Use station-based forcing with `output_interpolated_data.meteo_data = True`
+2. **Subsequent runs**: Use the exported raster forcing for faster performance
+3. **Different interpolation**: Re-run with station forcing if you need to change interpolation method
+
+## API Reference
+
+### Input data classes
+
+#### MeteoData
+Container for station-based meteorological data with spatial interpolation capability.
 
 ::: mobidic.preprocessing.meteo_preprocessing.MeteoData
 
-## Functions
+#### MeteoRaster
+Container for pre-interpolated raster meteorological forcing.
 
-### Convenience Functions
+::: mobidic.preprocessing.meteo_raster.MeteoRaster
+
+### Output classes
+
+#### MeteoWriter
+Writer for saving interpolated meteorological grids from station-based simulations.
+
+::: mobidic.io.meteo.MeteoWriter
+
+### Utility functions
+
+#### convert_mat_to_netcdf
+Direct conversion from MATLAB .mat format to CF-compliant NetCDF.
 
 ::: mobidic.preprocessing.meteo_preprocessing.convert_mat_to_netcdf
 
-## Supported Variables
+## Supported variables
 
 The meteorological preprocessing module handles six standard variables:
 
@@ -38,11 +73,11 @@ The meteorological preprocessing module handles six standard variables:
 | `wind_speed` | Wind speed | m/s | `s_vv` |
 | `radiation` | Solar radiation | W/m² | `s_ra` |
 
-## Usage Examples
+## Usage examples
 
-### Example 1: Direct Conversion
+### Example 1: Quick conversion from MATLAB format
 
-Convert MATLAB .mat file directly to NetCDF:
+The fastest way to convert legacy MATLAB meteorological data:
 
 ```python
 from mobidic import convert_mat_to_netcdf
@@ -58,9 +93,9 @@ convert_mat_to_netcdf(
 )
 ```
 
-### Example 2: Load and Inspect
+### Example 2: Load, inspect, and save station data
 
-Load data, inspect it, and then save:
+When you need to examine data before using it in simulations:
 
 ```python
 from mobidic import MeteoData
@@ -85,9 +120,9 @@ meteo.to_netcdf(
 )
 ```
 
-### Example 3: Read Back from NetCDF
+### Example 3: Work with existing NetCDF station data
 
-Load previously saved NetCDF file:
+Load and access station data from CF-compliant NetCDF files:
 
 ```python
 from mobidic import MeteoData
@@ -95,7 +130,7 @@ from mobidic import MeteoData
 # Load from NetCDF
 meteo = MeteoData.from_netcdf("output/meteodata.nc")
 
-# Access station data
+# Access station data for a specific variable
 precip_stations = meteo.stations["precipitation"]
 first_station = precip_stations[0]
 
@@ -105,14 +140,66 @@ print(f"Elevation: {first_station['elevation']:.1f} m")
 print(f"Data shape: {first_station['data'].shape}")
 ```
 
-## Data Structure
+### Example 4: Use pre-interpolated raster forcing
 
-### MATLAB Input Format
+Load and run simulations with gridded meteorological data:
 
-MATLAB .mat files should contain struct arrays with the following fields:
+```python
+from mobidic import MeteoRaster, Simulation, load_gisdata, load_config
+
+# Load raster forcing (default: preload into memory for best performance)
+forcing = MeteoRaster.from_netcdf("meteo_raster.nc")
+
+# Inspect raster data
+print(f"Variables: {forcing.variables}")
+print(f"Time range: {forcing.start_date} to {forcing.end_date}")
+print(f"Grid shape: {forcing.grid_metadata['shape']}")
+print(f"Resolution: {forcing.grid_metadata['resolution']:.1f} m")
+
+# For very large datasets (>several GB), use lazy loading to save memory
+forcing_lazy = MeteoRaster.from_netcdf("meteo_raster.nc", preload=False)
+
+# Use in simulation (automatically detects raster mode)
+config = load_config("basin.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+sim = Simulation(gisdata, forcing, config)
+results = sim.run("2023-01-01", "2023-12-31")
+```
+
+### Example 5: Export interpolated data for reuse
+
+Create reusable raster forcing from station-based simulations:
+
+```python
+from mobidic import MeteoData, Simulation, load_gisdata, load_config
+
+# Load station-based forcing
+forcing = MeteoData.from_netcdf("meteo_stations.nc")
+
+# Enable interpolated meteo output in configuration
+config = load_config("basin.yaml")
+config.output_interpolated_data.meteo_data = True
+
+# Run simulation (exports interpolated grids automatically)
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+sim = Simulation(gisdata, forcing, config)
+results = sim.run("2023-01-01", "2023-12-31")
+
+# Interpolated data saved to: {output_dir}/meteo_interpolated.nc
+# Use this file as raster forcing in subsequent runs for faster performance
+```
+
+
+## Data formats
+
+### Station data (MeteoData)
+
+#### MATLAB format
+
+Legacy MATLAB .mat files should contain struct arrays with these fields:
 
 ```matlab
-% Example structure for precipitation
+% Example structure for precipitation (variable name: sp)
 sp(i).code      % Station identifier (string or number)
 sp(i).est       % X coordinate (easting)
 sp(i).nord      % Y coordinate (northing)
@@ -122,130 +209,115 @@ sp(i).time      % Time vector (MATLAB datenum)
 sp(i).dati      % Data vector (values)
 ```
 
-**Important**: MATLAB datenum values are automatically converted to pandas datetime, accounting for the MATLAB epoch (January 1, 0000) vs Unix epoch (January 1, 1970) offset.
+Variable names in MATLAB: `sp` (precipitation), `s_ta_min` (temperature min), `s_ta_max` (temperature max), `s_ua` (humidity), `s_vv` (wind speed), `s_ra` (radiation).
 
-### Internal Representation
+**Note**: MATLAB datenum values are automatically converted to pandas datetime, accounting for the epoch difference (MATLAB: January 1, 0000; Unix: January 1, 1970).
 
-`MeteoData` stores data in a dictionary structure:
+#### Internal Python representation
+
+`MeteoData` stores station data as a nested dictionary:
 
 ```python
 meteo.stations = {
     "precipitation": [
         {
             "code": "STATION_001",
-            "x": 671234.5,
-            "y": 4821098.3,
-            "elevation": 342.0,
+            "x": 671234.5,              # Easting
+            "y": 4821098.3,             # Northing
+            "elevation": 342.0,         # meters
             "name": "Firenze",
             "time": pd.DatetimeIndex([...]),
-            "data": np.array([...])
+            "data": np.array([...])     # Time series values
         },
-        # ... more stations
+        # ... additional stations
     ],
     "temperature_min": [...],
+    "temperature_max": [...],
     # ... other variables
 }
 ```
 
-### NetCDF Output Format
+#### NetCDF format (CF-1.12 compliant)
 
-NetCDF files follow CF-1.12 conventions with:
+Station data exported to NetCDF follows Climate and Forecast conventions:
 
-**Dimensions:**
-- `time`: Temporal dimension
-- `station_{var}`: Station dimension for each variable
+**Structure:**
+```
+Dimensions:
+  - time: N timesteps
+  - station_precipitation: M stations for precipitation
+  - station_temperature_min: K stations for temperature_min
+  - ... (one dimension per variable)
 
-**Coordinates:**
-- `time`: Datetime values (CF-compliant with calendar and units)
-- `x_{var}`, `y_{var}`: Station coordinates
-- `elevation_{var}`: Station elevations
-- `station_code_{var}`: Station identifiers
+Coordinates:
+  - time(time): datetime64[ns]
+  - x_precipitation(station_precipitation): float64
+  - y_precipitation(station_precipitation): float64
+  - elevation_precipitation(station_precipitation): float32
+  - station_code_precipitation(station_precipitation): str
 
-**Data variables:**
-- `{var}`: 2D arrays (time × station) for each meteorological variable
-
-**Attributes:**
-- Global attributes: CF conventions, creation date, custom metadata
-- Variable attributes: standard_name, long_name, units, _FillValue
-
-**Compression:**
-- Uses zlib compression (default level 4)
-- Significantly reduces file size for sparse station networks
-
-## Architecture
-
-### Extensibility
-
-The module is designed for easy extension to new input formats:
-
-```python
-from mobidic.preprocessing.meteo_preprocessing import MeteoReader
-
-class CSVMeteoReader(MeteoReader):
-    """Reader for CSV-formatted meteorological data."""
-
-    def read(self, file_path):
-        # Implement CSV reading logic
-        # Return dictionary of stations by variable
-        pass
-
-# Then use it:
-meteo = MeteoData()
-reader = CSVMeteoReader()
-meteo.stations = reader.read("data.csv")
-meteo.to_netcdf("output.nc")
+Data variables:
+  - precipitation(time, station_precipitation): float32
+  - temperature_min(time, station_temperature_min): float32
+  - ... (one variable per meteorological parameter)
 ```
 
-### Planned Extensions
+**Features:**
 
-Future enhancements include:
+- CF-1.12 compliant metadata (standard_name, long_name, units)
+- Zlib compression (default level 4) for efficient storage
+- Custom global attributes supported via `add_metadata`
 
-- CSV and Excel readers
-- Database connectivity (PostgreSQL, InfluxDB)
-- Quality control and gap filling
-- Temporal aggregation and interpolation
-- Spatial interpolation onto model grid
-- Real-time data ingestion
+### Raster data (MeteoRaster)
 
-## Performance Considerations
+#### NetCDF format (CF-1.12 compliant)
 
-### Memory Usage
+Gridded forcing data follows standard CF conventions:
 
-MeteoData loads all station time series into memory. For very large datasets:
+**Required structure:**
+```
+Dimensions:
+  - time: unlimited (temporal)
+  - y: grid rows (north-south)
+  - x: grid columns (east-west)
 
-- Consider processing in chunks by variable or time period
-- Use generators for streaming processing
-- Leverage Dask for out-of-core computation
+Coordinates:
+  - time(time): datetime64[ns] with CF-compliant calendar
+  - x(x): float64 (easting or longitude)
+  - y(y): float64 (northing or latitude)
 
-### File Sizes
+Data variables:
+  - precipitation(time, y, x): float32 [mm/h]
+  - pet(time, y, x): float32 [mm/h]
+  - temperature(time, y, x): float32 [°C]
+  - ... (additional variables as needed)
 
-NetCDF compression significantly reduces file sizes:
+Grid mapping:
+  - crs(): int32 with spatial_ref or crs_wkt attribute
+```
 
-| Compression Level | Compression Ratio | Write Speed |
-|-------------------|-------------------|-------------|
-| 0 (none) | 1.0× | Fastest |
-| 4 (default) | ~3-5× | Fast |
-| 9 (maximum) | ~4-6× | Slow |
+**Example inspection:**
+```python
+import xarray as xr
 
-Level 4 provides good compression with minimal performance impact.
+ds = xr.open_dataset("meteo_raster.nc")
+print(ds)
+# <xarray.Dataset>
+# Dimensions:         (time: 8761, y: 200, x: 300)
+# Coordinates:
+#   * time            (time) datetime64[ns] 2023-01-01 ... 2023-12-31
+#   * x               (x) float64 600000.0 ... 629900.0
+#   * y               (y) float64 4800000.0 ... 4820000.0
+# Data variables:
+#     precipitation   (time, y, x) float32 ...
+#     pet             (time, y, x) float32 ...
+#     temperature     (time, y, x) float32 ...
+#     crs             () int32 ...
+```
 
-## MATLAB Translation
+**Requirements:**
 
-This module replaces MATLAB's manual .mat file handling and provides:
+- Grid must align with model grid (validated automatically)
+- Units: mm/h for precipitation, °C for temperature
+- Missing values: represented as NaN
 
-- Automatic datenum conversion
-- CF-compliant NetCDF output (not available in MATLAB version)
-- Type safety and validation
-- Extensible architecture for multiple input formats
-
-## Error Handling
-
-The module provides comprehensive error checking:
-
-- **File not found**: Clear error messages with file paths
-- **Invalid format**: Validation of expected MATLAB struct fields
-- **Missing data**: Warnings for stations with no valid data
-- **Coordinate issues**: Validation of coordinate ranges
-- **Time issues**: Detection of non-monotonic or duplicate timestamps
-
-All operations use loguru for structured logging at appropriate levels (DEBUG, INFO, WARNING, ERROR).
