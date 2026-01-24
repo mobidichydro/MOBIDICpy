@@ -1,4 +1,4 @@
-"""Meteorological data I/O for interpolated grids.
+"""Meteorological data I/O.
 
 This module provides functionality to save interpolated meteorological data
 (precipitation, temperature, etc.) from simulation to NetCDF format.

@@ -1,9 +1,8 @@
-"""Potential evapotranspiration (PET) calculation for MOBIDIC.
+"""Potential evapotranspiration (PET).
 
-This module provides PET calculation matching the MATLAB implementation.
-For Phase 1 (no energy balance), MOBIDIC uses constant 1 mm/day PET.
+This module provides PET calculation. Currently, it implements a constant PET rate,
+with a default of 1 mm/day. The energy balance approach is not yet implemented.
 
-Translated from MATLAB: mobidic_sid.m (line 332)
 """
 
 import numpy as np

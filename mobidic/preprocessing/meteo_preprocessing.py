@@ -1,4 +1,4 @@
-"""Meteorological data preprocessing for MOBIDIC.
+"""Meteorological data preprocessing - station-based forcing data.
 
 This module handles conversion of meteorological forcing data from various formats
 (MATLAB .mat, NetCDF, CSV, etc.) to CF-compliant NetCDF format for use in MOBIDIC simulations.
@@ -6,7 +6,7 @@ This module handles conversion of meteorological forcing data from various forma
 The module provides:
 - MAT file reader for MATLAB meteodata.mat files
 - NetCDF reader/writer for CF-compliant input/output
-- Validation and gap-filling capabilities (planned)
+- Validation and gap-filling capabilities (not yet implemented)
 """
 
 from pathlib import Path
@@ -228,7 +228,7 @@ class MeteoData:
 
     @classmethod
     def from_mat(cls, mat_path: str | Path) -> "MeteoData":
-        """Load meteorological data from MATLAB .mat file.
+        """Load meteorological data from MATLAB .mat file (legacy MOBIDIC format).
 
         Args:
             mat_path: Path to MATLAB .mat file containing meteodata

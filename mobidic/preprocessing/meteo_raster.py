@@ -1,4 +1,4 @@
-"""Meteorological raster data handling for MOBIDIC.
+"""Meteorological raster data handling.
 
 This module handles loading and accessing gridded meteorological forcing data
 from NetCDF raster files for use in MOBIDIC simulations.
@@ -11,11 +11,9 @@ The module provides:
 - Single-timestep caching to avoid redundant reads
 - Time indexing using nearest neighbor sampling
 
-Performance note:
-- Default behavior (preload=True) loads entire NetCDF into memory at initialization
-  This provides optimal performance for simulations (comparable to station interpolation)
-- Use preload=False for very large datasets that don't fit in memory
-  This uses lazy loading but will be slower due to disk I/O at each timestep
+Performance:
+- Default behavior (preload=True) loads entire NetCDF into memory at initialization (faster)
+- Use preload=False for very large datasets that don't fit in memory (slower)
 """
 
 from datetime import datetime
