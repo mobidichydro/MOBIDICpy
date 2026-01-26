@@ -1234,6 +1234,12 @@ class Simulation:
                 logger.warning(f"Precipitation data not found for {current_time}, using zero")
                 precip = np.zeros((self.nrows, self.ncols))
 
+            # Log precipitation statistics (precip is in m/s, convert to mm/h for readability)
+            precip_mm_h = precip * 1000.0 * 3600.0  # m/s -> mm/h
+            precip_valid = precip_mm_h[np.isfinite(precip_mm_h)]
+            if len(precip_valid) > 0:
+                logger.debug(f"Precipitation: mean={np.mean(precip_valid):.4f} mm/h, max={np.max(precip_valid):.4f} mm/h")
+
             # 2. Calculate PET
             pet = self._calculate_pet(current_time)
 
