@@ -419,8 +419,8 @@ output_report_settings:
   # [list of integers, e.g. [1234, 5678]. Used if reach_selection=list]
   sel_list: [292, 313, 329, 514]
 
-output_interpolated_data:
-  # OPTIONAL: Save interpolated meteorological data from stations. Is ignored if using raster meteorological data. Default: false
+output_forcing_data:
+  # OPTIONAL: Save meteorological forcing data to NetCDF. Default: false
   # [boolean]
   meteo_data: false
 
