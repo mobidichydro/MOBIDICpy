@@ -578,9 +578,9 @@ class Simulation:
                         power=6.0,  # tmww3 in MATLAB: (1/dist^2)^3 = 1/dist^6
                     )
 
-                # Convert from mm (over dt) to m/s, matching MATLAB line 1240 (mobidic_sid.m):
-                # pp=pp/1000/dt; % average intensity during dt [m/s]
-                grid_values = grid_values / 1000.0 / self.dt
+                # Convert from mm/h to m/s
+                # Station data is stored in mm/h (same as raster data)
+                grid_values = grid_values / 1000.0 / 3600.0
         else:
             # Use IDW with elevation correction for temperature and other variables
             # MATLAB calc_forcing_day.m uses different settings per variable:

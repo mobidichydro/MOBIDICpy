@@ -470,7 +470,7 @@ class TestNetCDFMeteoReader:
                 "precipitation": (
                     ["time", "station_precipitation"],
                     np.random.rand(5, 1),
-                    {"long_name": "precipitation", "units": "mm"},
+                    {"long_name": "precipitation", "units": "mm h-1"},
                 )
             },
             coords={

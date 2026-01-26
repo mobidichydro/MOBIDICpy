@@ -367,6 +367,24 @@ class MATMeteoReader:
                     logger.warning(f"Failed to parse station {i} for {standard_var}: {e}")
                     continue
 
+            # Convert precipitation from mm (cumulated over sampling interval) to mm/h
+            # Infer timestep from the first station's time array: dt = time[1] - time[0]
+            if standard_var == "precipitation" and len(var_stations) > 0:
+                # Find a station with at least 2 timesteps to infer dt
+                dt_hours = None
+                for station in var_stations:
+                    if len(station["time"]) >= 2:
+                        dt_seconds = (station["time"][1] - station["time"][0]).total_seconds()
+                        dt_hours = dt_seconds / 3600.0
+                        break
+
+                if dt_hours is not None and dt_hours > 0:
+                    for station in var_stations:
+                        station["data"] = station["data"] / dt_hours
+                    logger.info(f"Converted precipitation from mm (cumulated over {dt_hours:.2f}h) to mm/h")
+                else:
+                    logger.warning("Could not infer timestep for precipitation conversion (need at least 2 timesteps)")
+
             stations[standard_var] = var_stations
             logger.debug(f"Loaded {len(var_stations)} stations for {standard_var}")
 
@@ -585,7 +603,7 @@ def _get_variable_units(var_name: str) -> str:
         Units string
     """
     units = {
-        "precipitation": "mm",
+        "precipitation": "mm h-1",
         "temperature_min": "degC",
         "temperature_max": "degC",
         "humidity": "%",
