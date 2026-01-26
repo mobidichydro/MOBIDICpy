@@ -32,7 +32,7 @@ class MeteoWriter:
     Examples:
         >>> # Create writer for precipitation and temperature
         >>> writer = MeteoWriter(
-        ...     "meteo_interpolated.nc",
+        ...     "meteo_forcing.nc",
         ...     metadata,
         ...     variables=['precipitation', 'temperature']
         ... )

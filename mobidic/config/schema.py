@@ -492,12 +492,10 @@ class OutputReportSettings(BaseModel):
         return self
 
 
-class OutputInterpolatedData(BaseModel):
-    """Output interpolated data options."""
+class OutputForcingData(BaseModel):
+    """Output forcing data options."""
 
-    meteo_data: Optional[bool] = Field(
-        False, description="Option to save interpolated meteorological data from stations"
-    )
+    meteo_data: Optional[bool] = Field(False, description="Option to save meteorological forcing data to NetCDF")
 
 
 class Advanced(BaseModel):
@@ -528,23 +526,5 @@ class MOBIDICConfig(BaseModel):
     output_states_settings: Optional[OutputStatesSettings] = Field(default_factory=OutputStatesSettings)
     output_report: Optional[OutputReport] = Field(default_factory=OutputReport)
     output_report_settings: Optional[OutputReportSettings] = Field(default_factory=OutputReportSettings)
-    output_interpolated_data: Optional[OutputInterpolatedData] = Field(default_factory=OutputInterpolatedData)
+    output_forcing_data: Optional[OutputForcingData] = Field(default_factory=OutputForcingData)
     advanced: Optional[Advanced] = Field(default_factory=Advanced)
-
-    @model_validator(mode="after")
-    def check_meteo_interpolation_compatibility(self) -> "MOBIDICConfig":
-        """Ensure interpolated meteo output is only enabled with station data, not raster data."""
-        if self.output_interpolated_data.meteo_data:
-            if self.paths.meteoraster is not None and self.paths.meteodata is None:
-                # Automatically disable meteo_data output and issue warning
-                import warnings
-
-                warnings.warn(
-                    "output_interpolated_data.meteo_data is being disabled because raster meteorological data "
-                    "(paths.meteoraster) is being used instead of station data (paths.meteodata). "
-                    "Interpolated meteo output is only available when using station-based meteorological input.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                self.output_interpolated_data.meteo_data = False
-        return self

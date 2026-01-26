@@ -28,7 +28,7 @@ Use when you have pre-interpolated gridded data or want to reuse previously inte
 
 **Workflow recommendation:**
 
-1. **Initial run**: Use station-based forcing with `output_interpolated_data.meteo_data = True`
+1. **Initial run**: Use station-based forcing with `output_forcing_data.meteo_data = True`
 2. **Subsequent runs**: Use the exported raster forcing for faster performance
 3. **Different interpolation**: Re-run with station forcing if you need to change interpolation method
 
@@ -179,16 +179,16 @@ from mobidic import MeteoData, Simulation, load_gisdata, load_config
 # Load station-based forcing
 forcing = MeteoData.from_netcdf("meteo_stations.nc")
 
-# Enable interpolated meteo output in configuration
+# Enable meteo forcing output in configuration
 config = load_config("basin.yaml")
-config.output_interpolated_data.meteo_data = True
+config.output_forcing_data.meteo_data = True
 
-# Run simulation (exports interpolated grids automatically)
+# Run simulation (exports forcing grids automatically)
 gisdata = load_gisdata("gisdata.nc", "network.parquet")
 sim = Simulation(gisdata, forcing, config)
 results = sim.run("2023-01-01", "2023-12-31")
 
-# Interpolated data saved to: {output_dir}/meteo_interpolated.nc
+# Forcing data saved to: {output_dir}/meteo_forcing.nc
 # Use this file as raster forcing in subsequent runs for faster performance
 ```
 

@@ -108,16 +108,16 @@ results.save_report("discharge.parquet")
 ```python
 from mobidic import MeteoData, MeteoRaster, Simulation
 
-# Run 1: Station-based with interpolated output enabled
-config.output_interpolated_data.meteo_data = True
+# Run 1: Station-based with forcing output enabled
+config.output_forcing_data.meteo_data = True
 forcing_stations = MeteoData.from_netcdf("meteo_stations.nc")
 sim1 = Simulation(gisdata, forcing_stations, config)
 results1 = sim1.run("2020-01-01", "2020-12-31")
-# Interpolated data saved to: output/meteo_interpolated.nc
+# Forcing data saved to: output/meteo_forcing.nc
 
 # Run 2: Use exported raster forcing (faster, identical results)
-config.output_interpolated_data.meteo_data = False
-forcing_raster = MeteoRaster.from_netcdf("output/meteo_interpolated.nc")
+config.output_forcing_data.meteo_data = False
+forcing_raster = MeteoRaster.from_netcdf("output/meteo_forcing.nc")
 sim2 = Simulation(gisdata, forcing_raster, config)
 results2 = sim2.run("2020-01-01", "2020-12-31")
 ```
@@ -302,16 +302,14 @@ simulation:
   timestep: 900                      # Time step in seconds (15 minutes)
   precipitation_interp: "IDW"        # Options: "IDW", "Nearest" (for station-based forcing)
 
-output_interpolated_data:
-  meteo_data: false                  # Save interpolated meteorological grids
-                                     # Only available with station-based forcing
-                                     # Output file: {output_dir}/meteo_interpolated.nc
+output_forcing_data:
+  meteo_data: false                  # Save meteorological forcing grids
+                                     # Output file: {output_dir}/meteo_forcing.nc
 ```
 
 **Notes:**
 - `precipitation_interp` only applies when using station-based forcing (`MeteoData`)
 - When using raster-based forcing (`MeteoRaster`), interpolation is skipped entirely
-- `output_interpolated_data.meteo_data` is automatically disabled with a warning if using raster forcing
 
 ## Implemented modules
 

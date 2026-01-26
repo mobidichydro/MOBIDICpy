@@ -1190,7 +1190,7 @@ class Simulation:
 
         # Initialize meteo writer (if enabled)
         meteo_writer = None
-        if self.config.output_interpolated_data.meteo_data:
+        if self.config.output_forcing_data.meteo_data:
             output_dir = Path(self.config.paths.output)
             output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1200,7 +1200,7 @@ class Simulation:
             meteo_variables = ["precipitation"]
 
             meteo_writer = MeteoWriter(
-                output_path=output_dir / "meteo_interpolated.nc",
+                output_path=output_dir / "meteo_forcing.nc",
                 grid_metadata=self.gisdata.metadata,
                 variables=meteo_variables,
                 add_metadata={

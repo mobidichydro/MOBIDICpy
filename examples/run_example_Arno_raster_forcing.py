@@ -118,9 +118,9 @@ print("Step 4: First simulation with station-based forcing...")
 print("  (This will generate interpolated meteorological data)")
 print()
 
-# Modify config to enable interpolated meteo data output
-config.output_interpolated_data.meteo_data = True
-print("  Enabled interpolated meteo data output")
+# Modify config to enable meteo forcing data output
+config.output_forcing_data.meteo_data = True
+print("  Enabled meteo forcing data output")
 
 # Load station-based forcing
 print("  Loading station-based meteorological forcing...")
@@ -155,12 +155,12 @@ print("  [OK] Simulation 1 completed successfully!")
 print(f"  Execution time: {elapsed_time1:.2f} seconds ({elapsed_time1 / 60:.2f} minutes)")
 print()
 
-# Check that interpolated data was created
-interpolated_meteo_path = config.paths.output / "meteo_interpolated.nc"
+# Check that forcing data was created
+interpolated_meteo_path = config.paths.output / "meteo_forcing.nc"
 if interpolated_meteo_path.exists():
-    print(f"  [OK] Interpolated meteo data saved to: {interpolated_meteo_path}")
+    print(f"  [OK] Meteo forcing data saved to: {interpolated_meteo_path}")
 else:
-    print(f"  [WARNING] Interpolated meteo data not found at: {interpolated_meteo_path}")
+    print(f"  [WARNING] Meteo forcing data not found at: {interpolated_meteo_path}")
     print("  Cannot proceed with second simulation.")
     exit(1)
 
@@ -173,8 +173,8 @@ print("Step 5: Second simulation with raster-based forcing...")
 print("  (Using pre-interpolated meteorological data)")
 print()
 
-# Disable interpolated meteo data output for second run (not needed)
-config.output_interpolated_data.meteo_data = False
+# Disable meteo forcing data output for second run (not needed)
+config.output_forcing_data.meteo_data = False
 
 # Load raster-based forcing (the interpolated data from simulation 1)
 print("  Loading raster-based meteorological forcing...")

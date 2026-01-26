@@ -305,14 +305,14 @@ Compare station-based forcing (with spatial interpolation) against pre-interpola
 ```python
 from mobidic import MeteoData, MeteoRaster, Simulation
 
-# Run 1: Station-based with interpolated output
-config.output_interpolated_data.meteo_data = True
+# Run 1: Station-based with forcing output
+config.output_forcing_data.meteo_data = True
 forcing_stations = MeteoData.from_netcdf(config.paths.meteodata)
 sim1 = Simulation(gisdata, forcing_stations, config)
 results1 = sim1.run(start_date, end_date)
 
 # Run 2: Raster-based (using exported data)
-forcing_raster = MeteoRaster.from_netcdf("output/meteo_interpolated.nc")
+forcing_raster = MeteoRaster.from_netcdf("output/meteo_forcing.nc")
 sim2 = Simulation(gisdata, forcing_raster, config)
 results2 = sim2.run(start_date, end_date)
 ```

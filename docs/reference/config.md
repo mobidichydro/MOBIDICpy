@@ -23,7 +23,7 @@ Configuration files define all aspects of a MOBIDIC simulation, including:
     - `output_states_settings`: State output format (NetCDF) and intervals
     - `output_report`: Report variables to save (discharge, lateral inflow)
     - `output_report_settings`: Report format (CSV/Parquet) and reach selection
-    - `output_interpolated_data`: Interpolated meteorological data output options
+    - `output_forcing_data`: Meteorological forcing data output options
 - **Advanced settings**: Logging level and log file
 
 The configuration system ensures all required fields are present, validates ranges and consistency, and provides sensible defaults for optional parameters.
