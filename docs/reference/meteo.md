@@ -64,14 +64,17 @@ Direct conversion from MATLAB .mat format to CF-compliant NetCDF.
 
 The meteorological preprocessing module handles six standard variables:
 
-| Variable | Description | Units | MATLAB field |
-|----------|-------------|-------|--------------|
-| `precipitation` | Rainfall and snowfall | mm | `sp` |
-| `temperature_min` | Minimum air temperature | °C | `s_ta_min` |
-| `temperature_max` | Maximum air temperature | °C | `s_ta_max` |
-| `humidity` | Relative humidity | % | `s_ua` |
-| `wind_speed` | Wind speed | m/s | `s_vv` |
-| `radiation` | Solar radiation | W/m² | `s_ra` |
+| Variable | Description | Units (NetCDF) | MATLAB field | MATLAB units |
+|----------|-------------|----------------|--------------|--------------|
+| `precipitation` | Rainfall and snowfall | mm/h | `sp` | mm (cumulated) |
+| `temperature_min` | Minimum air temperature | °C | `s_ta_min` | °C |
+| `temperature_max` | Maximum air temperature | °C | `s_ta_max` | °C |
+| `humidity` | Relative humidity | % | `s_ua` | % |
+| `wind_speed` | Wind speed | m/s | `s_vv` | m/s |
+| `radiation` | Solar radiation | W/m² | `s_ra` | W/m² |
+
+!!! note "Automatic precipitation unit conversion"
+    When loading from MATLAB .mat files, precipitation is automatically converted from mm (cumulated over the sampling interval) to mm/h. The conversion infers the timestep from the time array (`dt = time[1] - time[0]`) and divides precipitation values by the timestep in hours. This ensures consistency with raster forcing, which also uses mm/h.
 
 ## Usage examples
 
@@ -211,7 +214,9 @@ sp(i).dati      % Data vector (values)
 
 Variable names in MATLAB: `sp` (precipitation), `s_ta_min` (temperature min), `s_ta_max` (temperature max), `s_ua` (humidity), `s_vv` (wind speed), `s_ra` (radiation).
 
-**Note**: MATLAB datenum values are automatically converted to pandas datetime, accounting for the epoch difference (MATLAB: January 1, 0000; Unix: January 1, 1970).
+!!! note "Unit conversions during import"
+    - **MATLAB datenum**: Automatically converted to pandas datetime, accounting for the epoch difference (MATLAB: January 1, 0000; Unix: January 1, 1970).
+    - **Precipitation**: Automatically converted from mm (cumulated over sampling interval) to mm/h by inferring the timestep from the time array.
 
 #### Internal Python representation
 
@@ -257,8 +262,8 @@ Coordinates:
   - station_code_precipitation(station_precipitation): str
 
 Data variables:
-  - precipitation(time, station_precipitation): float32
-  - temperature_min(time, station_temperature_min): float32
+  - precipitation(time, station_precipitation): float32 [mm/h]
+  - temperature_min(time, station_temperature_min): float32 [°C]
   - ... (one variable per meteorological parameter)
 ```
 
@@ -267,6 +272,7 @@ Data variables:
 - CF-1.12 compliant metadata (standard_name, long_name, units)
 - Zlib compression (default level 4) for efficient storage
 - Custom global attributes supported via `add_metadata`
+- Precipitation stored in mm/h (consistent with raster forcing)
 
 ### Raster data (MeteoRaster)
 
