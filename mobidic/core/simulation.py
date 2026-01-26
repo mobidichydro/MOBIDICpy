@@ -1238,7 +1238,9 @@ class Simulation:
             precip_mm_h = precip * 1000.0 * 3600.0  # m/s -> mm/h
             precip_valid = precip_mm_h[np.isfinite(precip_mm_h)]
             if len(precip_valid) > 0:
-                logger.debug(f"Precipitation: mean={np.mean(precip_valid):.4f} mm/h, max={np.max(precip_valid):.4f} mm/h")
+                logger.debug(
+                    f"Precipitation: mean={np.mean(precip_valid):.4f} mm/h, max={np.max(precip_valid):.4f} mm/h"
+                )
 
             # 2. Calculate PET
             pet = self._calculate_pet(current_time)
