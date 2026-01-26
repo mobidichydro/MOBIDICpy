@@ -51,6 +51,6 @@ def calculate_pet(
     # Create constant PET grid
     pet = np.full(grid_shape, pet_rate_m_s, dtype=np.float64)
 
-    logger.debug(f"Constant PET: {pet_rate_mm_day:.2f} mm/day, {pet[0, 0] * 1000:.4f} mm over {dt / 3600:.2f} hours")
+    logger.debug(f"Constant PET: {pet_rate_mm_day:.2f} mm/day")
 
     return pet
