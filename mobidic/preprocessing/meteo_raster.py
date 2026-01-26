@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from loguru import logger
+from mobidic.utils.crs import crs_equals
 
 
 class MeteoRaster:
@@ -292,8 +293,10 @@ class MeteoRaster:
             )
 
         # Check CRS (warning only, not an error)
-        if self.grid_metadata["crs"] and model_metadata.get("crs"):
-            if self.grid_metadata["crs"] != model_metadata["crs"]:
+        raster_crs = self.grid_metadata["crs"]
+        model_crs = model_metadata.get("crs")
+        if raster_crs and model_crs:
+            if not crs_equals(raster_crs, model_crs):
                 logger.warning(
                     "CRS mismatch (proceeding anyway): "
                     "raster CRS != model CRS. "

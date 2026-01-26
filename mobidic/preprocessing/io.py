@@ -12,6 +12,7 @@ import geopandas as gpd
 import xarray as xr
 from loguru import logger
 from mobidic import __version__
+from mobidic.utils.crs import crs_to_cf_attrs
 
 if TYPE_CHECKING:
     from mobidic.preprocessing.preprocessor import GISData
@@ -72,12 +73,7 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     )
 
     # Add grid mapping variable attributes (CF-1.12 compliance)
-    crs_string = str(gisdata.metadata["crs"])
-    ds["crs"].attrs = {
-        "grid_mapping_name": "spatial_ref",
-        "crs_wkt": crs_string,
-        "spatial_ref": crs_string,
-    }
+    ds["crs"].attrs = crs_to_cf_attrs(gisdata.metadata["crs"])
 
     # Add coordinate variable attributes (CF-1.12 compliance)
     ds["x"].attrs = {

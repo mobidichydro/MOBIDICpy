@@ -12,6 +12,7 @@ import pandas as pd
 import xarray as xr
 from loguru import logger
 from mobidic import __version__
+from mobidic.utils.crs import crs_to_cf_attrs
 
 
 def load_state(
@@ -446,13 +447,8 @@ class StateWriter:
             }
 
         # Add grid mapping variable for CRS (CF-1.12 compliance)
-        crs_string = str(self.grid_metadata.get("crs", ""))
         self.ds["crs"] = ([], 0)
-        self.ds["crs"].attrs = {
-            "grid_mapping_name": "spatial_ref",
-            "crs_wkt": crs_string,
-            "spatial_ref": crs_string,
-        }
+        self.ds["crs"].attrs = crs_to_cf_attrs(self.grid_metadata.get("crs"))
 
         # Add global attributes
         self.ds.attrs["Conventions"] = "CF-1.12"
@@ -691,15 +687,10 @@ class StateWriter:
 
         if is_first_write:
             # First write - add CRS variable and global attributes
-            crs_string = str(self.grid_metadata.get("crs", ""))
             flush_ds["crs"] = xr.DataArray(
                 data=np.int32(0),  # Explicitly use int32 to avoid type issues
                 dims=[],
-                attrs={
-                    "grid_mapping_name": "spatial_ref",
-                    "crs_wkt": crs_string,
-                    "spatial_ref": crs_string,
-                },
+                attrs=crs_to_cf_attrs(self.grid_metadata.get("crs")),
             )
             flush_ds.attrs["Conventions"] = "CF-1.12"
             flush_ds.attrs["title"] = "MOBIDIC simulation states"

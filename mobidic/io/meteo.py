@@ -10,6 +10,7 @@ import numpy as np
 import xarray as xr
 from loguru import logger
 from mobidic import __version__
+from mobidic.utils.crs import crs_to_cf_attrs
 
 
 class MeteoWriter:
@@ -168,17 +169,12 @@ class MeteoWriter:
         )
 
         # Add grid mapping variable for CRS (CF-1.12 compliance)
-        crs_string = str(self.grid_metadata.get("crs", ""))
         ds["crs"] = ([], 0)
-        ds["crs"].attrs = {
-            "grid_mapping_name": "spatial_ref",
-            "crs_wkt": crs_string,
-            "spatial_ref": crs_string,
-        }
+        ds["crs"].attrs = crs_to_cf_attrs(self.grid_metadata.get("crs"))
 
         # Add global attributes
-        ds.attrs["title"] = "MOBIDIC interpolated meteorological data"
-        ds.attrs["source"] = "Spatial interpolation from station observations"
+        ds.attrs["title"] = "MOBIDIC meteorological forcing data"
+        ds.attrs["source"] = "Meteo forcing data used in the simulation"
         ds.attrs["Conventions"] = "CF-1.12"
         ds.attrs["history"] = f"Created by MOBIDICpy v{__version__}"
         ds.attrs["date_created"] = datetime.now().isoformat()
