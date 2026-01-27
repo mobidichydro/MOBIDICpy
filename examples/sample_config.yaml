@@ -35,7 +35,7 @@ paths:
   # OPTIONAL: NetCDF file where the design hyetograph is written.
   # If this path is not empty, the hyetograph generation is enabled, 
   # and the "hyetograph" configuration section must be provided (see below).
-  # [path to .nc file, eg: /blue_nile/meteodata/hyetograph.nc]
+  # [path to .nc file, eg: /blue_nile/hyetograph/hyetograph.nc]
   hyetograph: 
 
   # REQUIRED: Consolidated raster dataset to be created by GIS preprocessing
