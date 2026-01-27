@@ -20,6 +20,8 @@ basin:
 
 
 ######## FILE PATHS
+# One among of 'meteodata', 'meteoraster' or 'hyetograph' must be provided.
+# If more than one is provided or none is provided, an error will be raised.
 
 paths:
   # OPTIONAL: File where the meteo data files are stored
@@ -29,6 +31,12 @@ paths:
   # OPTIONAL: NetCDF file where the meteo data (raster format) are stored (alternative to above)
   # [path to .nc file, eg: /blue_nile/meteodata/meteoraster.nc]
   meteoraster: 
+
+  # OPTIONAL: NetCDF file where the design hyetograph is written.
+  # If this path is not empty, the hyetograph generation is enabled, 
+  # and the "hyetograph" configuration section must be provided (see below).
+  # [path to .nc file, eg: /blue_nile/hyetograph/hyetograph.nc]
+  hyetograph: 
 
   # REQUIRED: Consolidated raster dataset to be created by GIS preprocessing
   # [path to .nc file, eg: /blue_nile/geodat/gisdata.nc]
@@ -272,6 +280,44 @@ parameters:
     # OPTIONAL: Scale factor for fraction of channalized flow, non dimensional
     # [positive value in float or exp notation]
     chan_factor: 0.000e+000
+
+
+####### HYETOGRAPH GENERATION 
+# Configuration for generating synthetic hyetographs from IDF parameters.
+# Used to create design storm precipitation fields for simulation.
+# The IDF formula: h = ka * k * a * t^n
+# where ka is areal reduction factor, k is return period factor,
+# a is scale parameter, n is shape parameter, and t is duration in hours.
+# The "hyetograph" section can be fully omitted if using observed meteo data.
+
+hyetograph:
+  # REQUIRED: Path to GeoTIFF raster with IDF 'a' parameter (scale factor)
+  # [full pathname to .tif file, eg: idf/a.tif]
+  a_raster: idf/a.tif
+
+  # REQUIRED: Path to GeoTIFF raster with IDF 'n' parameter (shape/exponent)
+  # [full pathname to .tif file, eg: idf/n.tif]
+  n_raster: idf/n.tif
+
+  # REQUIRED: Path to GeoTIFF raster with IDF 'k' parameter (return period factor)
+  # [full pathname to .tif file, eg: idf/k30.tif]
+  k_raster: idf/k30.tif
+
+  # REQUIRED: Total duration of the simulation in hours
+  # [positive integer, eg: 48, 96]
+  duration_hours: 96
+
+  # OPTIONAL: Areal reduction factor (ARF) coefficient
+  # [positive number in range (0, 1], default: 1.0]
+  ka: 0.8
+
+  # OPTIONAL: Hyetograph construction method
+  # [currently only 'chicago_decreasing' is implemented, default: chicago_decreasing]
+  hyetograph_type: chicago_decreasing
+
+  # OPTIONAL: Time step for hyetograph in hours
+  # [positive integer, default: 1]
+  timestep_hours: 1
 
 
 ####### INITIAL CONDITIONS

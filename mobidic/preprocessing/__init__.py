@@ -40,6 +40,14 @@ from mobidic.preprocessing.reservoirs import (
     Reservoirs,
     process_reservoirs,
 )
+from mobidic.preprocessing.hyetograph import (
+    IDFParameters,
+    HyetographGenerator,
+    read_idf_parameters,
+    read_idf_parameters_resampled,
+    resample_raster_to_grid,
+    idf_depth,
+)
 
 __all__ = [
     "read_shapefile",
@@ -64,4 +72,10 @@ __all__ = [
     "Reservoir",
     "Reservoirs",
     "process_reservoirs",
+    "IDFParameters",
+    "HyetographGenerator",
+    "read_idf_parameters",
+    "read_idf_parameters_resampled",
+    "resample_raster_to_grid",
+    "idf_depth",
 ]
