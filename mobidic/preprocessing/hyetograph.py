@@ -37,6 +37,7 @@ from rasterio.warp import reproject
 from mobidic.preprocessing.gis_reader import grid_to_matrix
 from mobidic.utils.crs import crs_to_cf_attrs, get_epsg_code
 
+from mobidic import __version__
 
 @dataclass
 class IDFParameters:
@@ -932,7 +933,6 @@ class HyetographGenerator:
                     {
                         "units": "mm h-1",
                         "long_name": "Precipitation rate",
-                        "standard_name": "precipitation_flux",
                         "grid_mapping": "crs",
                     },
                 ),
@@ -945,8 +945,7 @@ class HyetographGenerator:
             attrs={
                 "Conventions": "CF-1.12",
                 "title": "Synthetic hyetograph from IDF parameters",
-                "institution": "MOBIDIC",
-                "source": "HyetographGenerator",
+                "source": f"MOBIDICpy version {__version__}",
                 "history": f"Created {datetime.now().isoformat()}",
                 "hyetograph_method": "chicago_decreasing",
                 "areal_reduction_factor": self.ka,
