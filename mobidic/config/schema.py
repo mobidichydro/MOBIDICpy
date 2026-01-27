@@ -36,6 +36,11 @@ class Paths(BaseModel):
         None, description="File where the meteo data files are stored (time-series format)"
     )
     meteoraster: Optional[PathField] = Field(None, description="File where the meteo data are stored (raster format)")
+    hyetograph: Optional[PathField] = Field(
+        None,
+        description="NetCDF file where the design hyetograph is written. "
+        "If provided, hyetograph generation is enabled and the 'hyetograph' configuration section must be provided.",
+    )
     gisdata: PathField = Field(..., description="Consolidated dataset to be created by GIS preprocessing")
     network: PathField = Field(..., description="Consolidated hydrographic network to be created by GIS preprocessing")
     reservoirs: Optional[PathField] = Field(
@@ -46,9 +51,25 @@ class Paths(BaseModel):
 
     @model_validator(mode="after")
     def check_meteo_paths(self) -> "Paths":
-        """Validate that at least one meteo path is provided."""
-        if self.meteodata is None and self.meteoraster is None:
-            raise ValueError("At least one of 'meteodata' or 'meteoraster' must be provided")
+        """Validate that exactly one among meteodata, meteoraster, or hyetograph is provided."""
+        provided = sum(
+            [
+                self.meteodata is not None,
+                self.meteoraster is not None,
+                self.hyetograph is not None,
+            ]
+        )
+
+        if provided == 0:
+            raise ValueError(
+                "Exactly one among 'meteodata', 'meteoraster', or 'hyetograph' must be provided. None were provided."
+            )
+        elif provided > 1:
+            raise ValueError(
+                "Exactly one among 'meteodata', 'meteoraster', or 'hyetograph' must be provided. "
+                f"Found {provided} provided."
+            )
+
         return self
 
 
@@ -498,6 +519,50 @@ class OutputForcingData(BaseModel):
     meteo_data: Optional[bool] = Field(False, description="Option to save meteorological forcing data to NetCDF")
 
 
+class HyetographConfig(BaseModel):
+    """Hyetograph construction configuration.
+
+    Configuration for generating synthetic hyetographs from IDF (Intensity-Duration-Frequency)
+    parameters. Used to create design storm precipitation fields for simulation.
+
+    The IDF formula used is: h = ka * k * a * t^n
+    where:
+        - h is precipitation depth [mm]
+        - ka is the areal reduction factor (ARF) coefficient
+        - k is the return period factor (spatially distributed raster)
+        - a is the IDF scale parameter (spatially distributed raster)
+        - n is the IDF shape parameter (spatially distributed raster)
+        - t is duration [hours]
+    """
+
+    a_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'a' parameter (scale factor)")
+    n_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'n' parameter (shape/exponent)")
+    k_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'k' parameter (return period factor)")
+    duration_hours: int = Field(..., description="Total duration of the hyetograph in hours")
+    ka: float = Field(1.0, description="Areal reduction factor (ARF) coefficient")
+    hyetograph_type: Literal["chicago_decreasing"] = Field(
+        "chicago_decreasing",
+        description="Hyetograph construction method. Currently only 'chicago_decreasing' is implemented.",
+    )
+    timestep_hours: int = Field(1, description="Time step for hyetograph in hours")
+
+    @field_validator("duration_hours", "timestep_hours")
+    @classmethod
+    def check_positive_int(cls, v: int) -> int:
+        """Validate that duration and timestep are positive."""
+        if v <= 0:
+            raise ValueError("Value must be a positive integer")
+        return v
+
+    @field_validator("ka")
+    @classmethod
+    def check_ka_range(cls, v: float) -> float:
+        """Validate that ka is in valid range (0, 1]."""
+        if v <= 0 or v > 1:
+            raise ValueError("ka (areal reduction factor) must be in range (0, 1]")
+        return v
+
+
 class Advanced(BaseModel):
     """Advanced settings."""
 
@@ -527,4 +592,14 @@ class MOBIDICConfig(BaseModel):
     output_report: Optional[OutputReport] = Field(default_factory=OutputReport)
     output_report_settings: Optional[OutputReportSettings] = Field(default_factory=OutputReportSettings)
     output_forcing_data: Optional[OutputForcingData] = Field(default_factory=OutputForcingData)
+    hyetograph: Optional[HyetographConfig] = Field(None, description="Hyetograph generation configuration (optional)")
     advanced: Optional[Advanced] = Field(default_factory=Advanced)
+
+    @model_validator(mode="after")
+    def check_hyetograph_config_consistency(self) -> "MOBIDICConfig":
+        """Validate that hyetograph config section is provided when paths.hyetograph is specified."""
+        if self.paths.hyetograph is not None and self.hyetograph is None:
+            raise ValueError(
+                "The 'hyetograph' configuration section must be provided when 'paths.hyetograph' is specified."
+            )
+        return self
