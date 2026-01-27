@@ -103,8 +103,8 @@ class MeteoRaster:
         if "x" not in self.ds.dims:
             raise ValueError("NetCDF file must have 'x' dimension")
 
-        # Check that we have at least one data variable (besides crs)
-        data_vars = [v for v in self.ds.data_vars if v != "crs"]
+        # Check that we have at least one data variable (besides crs and z)
+        data_vars = [v for v in self.ds.data_vars if v not in ("crs", "z")]
         if len(data_vars) == 0:
             raise ValueError("NetCDF file must have at least one meteorological variable")
 
@@ -112,8 +112,8 @@ class MeteoRaster:
 
     def _extract_metadata(self) -> None:
         """Extract grid metadata from NetCDF file."""
-        # Extract variables (exclude 'crs' coordinate variable)
-        self.variables = [v for v in self.ds.data_vars if v != "crs"]
+        # Extract variables (exclude 'crs' and optional 'z' coordinate variables)
+        self.variables = [v for v in self.ds.data_vars if v not in ("crs", "z")]
 
         # Extract time range
         times = self.ds.time.values
