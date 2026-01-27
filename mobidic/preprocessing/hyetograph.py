@@ -452,22 +452,39 @@ class HyetographGenerator:
         ka: Areal reduction factor coefficient
 
     Examples:
-        >>> # Create generator from raster files
+        >>> # Simplest workflow: generate from configuration (recommended)
+        >>> from mobidic import load_config, load_gisdata, Simulation
+        >>> config = load_config("basin_hyetograph.yaml")
+        >>> gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+        >>> forcing = HyetographGenerator.from_config(
+        ...     config=config,
+        ...     base_path="basin_dir",
+        ...     start_time=datetime(2000, 1, 1)
+        ... )
+        >>> sim = Simulation(gisdata, forcing, config)
+        >>> results = sim.run(forcing.start_date, forcing.end_date)
+        >>>
+        >>> # Alternative: generate forcing with manual parameters
         >>> generator = HyetographGenerator.from_rasters(
         ...     a_raster="idf/a.tif",
         ...     n_raster="idf/n.tif",
         ...     k_raster="idf/k30.tif",
-        ...     ka=0.8
+        ...     ka=0.8,
+        ...     ref_raster="dem.tif"
+        ... )
+        >>> forcing = generator.generate_forcing(
+        ...     duration_hours=48,
+        ...     start_time=datetime(2023, 11, 1),
+        ...     output_path="design_storm.nc",
+        ...     add_metadata={"return_period": "30 years"}
         ... )
         >>>
-        >>> # Generate 48-hour Chicago hyetograph
+        >>> # Advanced workflow: manual control over generation and export
         >>> times, precip = generator.generate(
         ...     duration_hours=48,
         ...     start_time=datetime(2023, 11, 1),
         ...     method="chicago_decreasing"
         ... )
-        >>>
-        >>> # Export to NetCDF
         >>> generator.to_netcdf(
         ...     "hyetograph.nc",
         ...     times=times,
@@ -538,6 +555,140 @@ class HyetographGenerator:
         else:
             idf_params = read_idf_parameters(a_raster, n_raster, k_raster)
         return cls(idf_params, ka=ka)
+
+    @classmethod
+    def from_config(
+        cls,
+        config,
+        base_path: str | Path,
+        start_time: datetime,
+        preload: bool = True,
+    ):
+        """Create hyetograph forcing from MOBIDIC configuration.
+
+        Convenience method that reads hyetograph parameters from a MOBIDIC
+        configuration object, generates the hyetograph, saves to NetCDF, and
+        returns a MeteoRaster ready for simulation. This is the most streamlined
+        workflow for design storm simulations.
+
+        All parameters (duration, timestep, method, IDF rasters, output path) are
+        read from the configuration file. Only the start time needs to be specified.
+
+        Args:
+            config: MOBIDICConfig object with hyetograph configuration section
+            base_path: Base path for resolving relative paths in config (typically
+                the directory containing the config file)
+            start_time: Start datetime for the hyetograph
+            preload: If True, preload all data into memory for fast access
+                (default: True, recommended for normal use)
+
+        Returns:
+            MeteoRaster object ready for use in Simulation
+
+        Raises:
+            AttributeError: If config does not have a hyetograph section
+            ValueError: If required configuration parameters are missing
+
+        Examples:
+            >>> from mobidic import load_config, load_gisdata, Simulation
+            >>> from mobidic.preprocessing.hyetograph import HyetographGenerator
+            >>> from datetime import datetime
+            >>> from pathlib import Path
+            >>>
+            >>> # Load configuration
+            >>> config_file = Path("basin_hyetograph.yaml")
+            >>> config = load_config(config_file)
+            >>> gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+            >>>
+            >>> # Generate hyetograph
+            >>> forcing = HyetographGenerator.from_config(
+            ...     config=config,
+            ...     base_path=config_file.parent,
+            ...     start_time=datetime(2000, 1, 1)
+            ... )
+            >>>
+            >>> # Run simulation
+            >>> sim = Simulation(gisdata, forcing, config)
+            >>> results = sim.run(forcing.start_date, forcing.end_date)
+
+        Notes:
+            - Automatically resamples IDF parameters to DEM grid
+            - Uses all hyetograph parameters from config (duration, timestep, method, ka)
+            - Output path read from config.paths.hyetograph
+            - Creates metadata from config basin and hyetograph sections
+            - Returns MeteoRaster ready for simulation with proper date range
+        """
+        # Import here to avoid circular dependency
+
+        base_path = Path(base_path)
+
+        # Validate config has hyetograph section
+        if not hasattr(config, "hyetograph"):
+            raise AttributeError("Configuration does not have a 'hyetograph' section")
+
+        # Validate config has paths.hyetograph
+        if not hasattr(config.paths, "hyetograph") or config.paths.hyetograph is None:
+            raise ValueError(
+                "Configuration must specify 'paths.hyetograph' for the output NetCDF file. "
+                "Add 'hyetograph: path/to/output.nc' to the 'paths' section in your config."
+            )
+
+        hyeto_config = config.hyetograph
+
+        # Resolve paths relative to base_path
+        a_raster_path = base_path / hyeto_config.a_raster
+        n_raster_path = base_path / hyeto_config.n_raster
+        k_raster_path = base_path / hyeto_config.k_raster
+        ref_raster_path = base_path / config.raster_files.dtm
+        output_path = base_path / config.paths.hyetograph
+
+        # Ensure output directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        logger.info("Generating hyetograph forcing from configuration")
+        logger.debug(f"  Base path: {base_path}")
+        logger.debug(f"  Duration: {hyeto_config.duration_hours} hours")
+        logger.debug(f"  Timestep: {hyeto_config.timestep_hours} hour(s)")
+        logger.debug(f"  Method: {hyeto_config.hyetograph_type}")
+        logger.debug(f"  Output: {output_path}")
+
+        # Create generator with IDF parameters resampled to DEM grid
+        generator = cls.from_rasters(
+            a_raster=a_raster_path,
+            n_raster=n_raster_path,
+            k_raster=k_raster_path,
+            ka=hyeto_config.ka,
+            ref_raster=ref_raster_path,
+        )
+
+        # Prepare metadata from config
+        add_metadata = {
+            "hyetograph_method": hyeto_config.hyetograph_type,
+            "duration_hours": hyeto_config.duration_hours,
+            "timestep_hours": hyeto_config.timestep_hours,
+            "areal_reduction_factor": hyeto_config.ka,
+            "k_raster": str(hyeto_config.k_raster),
+        }
+
+        # Add basin metadata if available
+        if hasattr(config, "basin"):
+            if hasattr(config.basin, "id") and config.basin.id:
+                add_metadata["basin"] = config.basin.id
+            if hasattr(config.basin, "paramset_id") and config.basin.paramset_id:
+                add_metadata["scenario"] = config.basin.paramset_id
+
+        # Generate forcing using generate_forcing method
+        forcing = generator.generate_forcing(
+            duration_hours=hyeto_config.duration_hours,
+            start_time=start_time,
+            output_path=output_path,
+            method=hyeto_config.hyetograph_type,
+            timestep_hours=hyeto_config.timestep_hours,
+            add_metadata=add_metadata,
+            preload=preload,
+        )
+
+        return forcing
 
     def generate(
         self,
@@ -642,6 +793,89 @@ class HyetographGenerator:
         )
 
         return times, precip_intensity
+
+    def generate_forcing(
+        self,
+        duration_hours: int,
+        start_time: datetime,
+        output_path: str | Path,
+        method: Literal["chicago_decreasing"] = "chicago_decreasing",
+        timestep_hours: int = 1,
+        add_metadata: dict | None = None,
+        preload: bool = True,
+    ):
+        """Generate hyetograph and return as MeteoRaster ready for simulation.
+
+        Convenience method that combines generate(), to_netcdf(), and
+        MeteoRaster.from_netcdf() into a single call. This simplifies the
+        workflow for design storm simulations.
+
+        Args:
+            duration_hours: Total duration of the hyetograph in hours
+            start_time: Start datetime for the hyetograph
+            output_path: Path for output NetCDF file
+            method: Hyetograph construction method (default: "chicago_decreasing")
+            timestep_hours: Time step in hours (default: 1)
+            add_metadata: Optional dictionary of additional global attributes
+            preload: If True, preload all data into memory for fast access
+                (default: True, recommended for normal use)
+
+        Returns:
+            MeteoRaster object ready for use in Simulation
+
+        Examples:
+            >>> # Create generator from IDF rasters
+            >>> generator = HyetographGenerator.from_rasters(
+            ...     a_raster="idf/a.tif",
+            ...     n_raster="idf/n.tif",
+            ...     k_raster="idf/k30.tif",
+            ...     ka=0.8,
+            ...     ref_raster="dem.tif"
+            ... )
+            >>>
+            >>> # Generate forcing and get MeteoRaster in one call
+            >>> forcing = generator.generate_forcing(
+            ...     duration_hours=48,
+            ...     start_time=datetime(2023, 11, 1),
+            ...     output_path="design_hyetograph.nc",
+            ...     add_metadata={"return_period": "30 years"}
+            ... )
+            >>>
+            >>> # Use directly in simulation
+            >>> sim = Simulation(gisdata, forcing, config)
+            >>> results = sim.run(forcing.start_date, forcing.end_date)
+
+        Notes:
+            - This method is equivalent to calling generate(), to_netcdf(),
+              and MeteoRaster.from_netcdf() sequentially
+            - The NetCDF file is still created at output_path for later use
+            - By default, data is preloaded into memory for optimal performance
+        """
+        # Import here to avoid circular dependency
+        from mobidic.preprocessing.meteo_raster import MeteoRaster
+
+        # Generate hyetograph
+        times, precipitation = self.generate(
+            duration_hours=duration_hours,
+            start_time=start_time,
+            method=method,
+            timestep_hours=timestep_hours,
+        )
+
+        # Save to NetCDF
+        self.to_netcdf(
+            output_path=output_path,
+            times=times,
+            precipitation=precipitation,
+            add_metadata=add_metadata,
+        )
+
+        # Load as MeteoRaster
+        forcing = MeteoRaster.from_netcdf(output_path, preload=preload)
+
+        logger.success(f"Forcing data ready for simulation: {forcing.start_date} to {forcing.end_date}")
+
+        return forcing
 
     def to_netcdf(
         self,
