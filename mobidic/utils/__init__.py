@@ -1,7 +1,7 @@
 """Utilities for MOBIDIC package."""
 
 from mobidic.utils.logging import configure_logger, configure_logger_from_config
-from mobidic.utils.crs import crs_to_cf_attrs, parse_crs, crs_equals
+from mobidic.utils.crs import crs_to_cf_attrs, parse_crs, crs_equals, get_epsg_code
 
 __all__ = [
     "configure_logger",
@@ -9,4 +9,5 @@ __all__ = [
     "crs_to_cf_attrs",
     "parse_crs",
     "crs_equals",
+    "get_epsg_code",
 ]
