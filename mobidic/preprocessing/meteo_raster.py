@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from loguru import logger
-from mobidic.utils.crs import crs_equals
+from mobidic.utils.crs import crs_equals, get_epsg_code
 
 
 class MeteoRaster:
@@ -156,12 +156,16 @@ class MeteoRaster:
             elif hasattr(crs_var, "crs_wkt"):
                 crs = crs_var.attrs.get("crs_wkt")
 
+        # Convert CRS to EPSG code for cleaner logging output
+        epsg = get_epsg_code(crs)
+        crs_display = f"EPSG:{epsg}" if epsg else crs
+
         self.grid_metadata = {
             "shape": (nrows, ncols),
             "resolution": resolution,
             "xllcorner": xllcorner,
             "yllcorner": yllcorner,
-            "crs": crs,
+            "crs": crs_display,
         }
 
         logger.debug(f"Grid metadata: {self.grid_metadata}")
