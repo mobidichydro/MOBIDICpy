@@ -53,6 +53,8 @@ The configuration system ensures all required fields are present, validates rang
         - output_states_settings
         - output_report
         - output_report_settings
+        - output_forcing_data
+        - hyetograph
         - advanced
 
 ### Nested models
@@ -95,7 +97,9 @@ The configuration is organized hierarchically (using nested Pydantic models):
 
 ::: mobidic.config.schema.OutputReportSettings
 
-::: mobidic.config.schema.OutputInterpolatedData
+::: mobidic.config.schema.OutputForcingData
+
+::: mobidic.config.schema.HyetographConfig
 
 ::: mobidic.config.schema.Advanced
 
