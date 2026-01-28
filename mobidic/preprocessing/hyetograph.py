@@ -7,18 +7,19 @@ spatially distributed rasters.
 The module supports:
 - Reading IDF parameters (a, n, k) from GeoTIFF raster files
 - Resampling IDF rasters to match a reference grid (e.g., DEM)
-- Generating Chicago-type hyetograph, currently only after-peak curve ('decreasing') only
+- Generating Chicago-type hyetograph, currently after-peak curve ('decreasing') only
 - Outputting CF-1.12 compliant NetCDF files compatible with MeteoRaster
 
-IDF formula: h = a * t^n (precipitation depth as function of duration)
+IDF formula: h = ka * k * a * t^n (precipitation depth as function of duration)
 where:
-- h is precipitation depth [mm]
+- h is precipitation depth (mm)
+- ka is the areal reduction factor (ARF) coefficient
+- k is the return period factor
 - a is the IDF scale parameter
-- n is the IDF shape parameter (typically <= 1)
-- t is duration [hours]
+- t is duration (hours)
+- n is the IDF exponent parameter
 
-The return period information is encoded in the spatially distributed k parameter,
-and the areal reduction factor (ARF) is applied via the ka coefficient.
+The parameters a, n, k are spatially distributed and read from raster files.
 
 """
 
@@ -46,7 +47,7 @@ class IDFParameters:
 
     Attributes:
         a: 2D array of IDF scale parameter (a) values
-        n: 2D array of IDF shape parameter (n) values
+        n: 2D array of IDF exponent parameter (n) values
         k: 2D array of return period factor (k) values
         xllcorner: X coordinate of lower-left corner (cell center)
         yllcorner: Y coordinate of lower-left corner (cell center)
@@ -78,8 +79,6 @@ def resample_raster_to_grid(
     Resamples the input raster to match the extent, resolution, and CRS of a
     reference grid using the specified resampling method. Handles coordinate
     system transformation if the rasters have different CRS.
-
-    This function replicates the behavior of MATLAB's resample_grid.m function.
 
     Args:
         input_path: Path to the input raster file (GeoTIFF)
@@ -189,10 +188,9 @@ def read_idf_parameters_resampled(
 
     Reads the three IDF parameters (a, n, k) from separate raster files and
     resamples them to match the extent, resolution, and CRS of a reference
-    raster (typically the DEM). Uses nearest neighbor interpolation.
+    raster (typically the DEM).
 
-    This function replicates the workflow in MATLAB hyetograph_M.m where IDF
-    parameters are resampled to match the DEM grid using resample_grid.m.
+    Uses nearest neighbor interpolation.
 
     Args:
         a_raster_path: Path to raster file containing IDF 'a' parameter
@@ -460,17 +458,17 @@ def _validate_valid_cells_threshold(
 
 
 def idf_depth(a: np.ndarray, n: np.ndarray, t: float) -> np.ndarray:
-    """Calculate precipitation depth from IDF formula.
+    """Calculate distributed precipitation depth from IDF formula.
 
     Computes h = a * t^n where t is duration in hours.
 
     Args:
         a: 2D array of IDF scale parameter values
-        n: 2D array of IDF shape parameter values
+        n: 2D array of IDF exponent parameter values
         t: Duration in hours
 
     Returns:
-        2D array of precipitation depth [mm]
+        2D array of precipitation depth (mm)
 
     Notes:
         - This is the base IDF formula without return period factor (k) or
@@ -484,8 +482,9 @@ class HyetographGenerator:
     """Generator for synthetic hyetographs from IDF parameters.
 
     This class constructs synthetic rainfall time series (hyetographs) from
-    spatially distributed IDF parameters. Currently implements the Chicago
-    method (decreasing branch only).
+    spatially distributed IDF parameters.
+
+    Currently implements the Chicago method (decreasing after-peak curve only).
 
     The total precipitation depth for a given duration is computed as:
         DDF(t) = ka * k * a * t^n
@@ -494,7 +493,7 @@ class HyetographGenerator:
         - ka is the areal reduction factor (ARF) coefficient
         - k is the return period factor (spatially distributed)
         - a is the IDF scale parameter (spatially distributed)
-        - n is the IDF shape parameter (spatially distributed)
+        - n is the IDF exponent parameter (spatially distributed)
         - t is duration in hours
 
     Attributes:
@@ -614,15 +613,15 @@ class HyetographGenerator:
         start_time: datetime,
         preload: bool = True,
     ):
-        """Create hyetograph forcing from MOBIDIC configuration.
+        """Create hyetograph forcing from parameters specified in configuration file.
 
-        Convenience method that reads hyetograph parameters from a MOBIDIC
+        Convenience method that reads hyetograph parameters from a yaml
         configuration object, generates the hyetograph, saves to NetCDF, and
-        returns a MeteoRaster ready for simulation. This is the most streamlined
-        workflow for design storm simulations.
+        returns a MeteoRaster ready for simulation.
 
         All parameters (duration, timestep, method, IDF rasters, output path) are
         read from the configuration file. Only the start time needs to be specified.
+        The start time is a reference datetime for the hyetograph event.
 
         Args:
             config: MOBIDICConfig object with hyetograph configuration section
@@ -680,7 +679,7 @@ class HyetographGenerator:
         if not hasattr(config.paths, "hyetograph") or config.paths.hyetograph is None:
             raise ValueError(
                 "Configuration must specify 'paths.hyetograph' for the output NetCDF file. "
-                "Add 'hyetograph: path/to/output.nc' to the 'paths' section in your config."
+                "Add 'hyetograph: path/to/output.nc' to the 'paths' section in the config file."
             )
 
         hyeto_config = config.hyetograph
@@ -759,16 +758,18 @@ class HyetographGenerator:
         Returns:
             Tuple of (times, precipitation) where:
                 - times: List of datetime objects for each timestep
-                - precipitation: 3D array (time, y, x) of precipitation [mm/h]
+                - precipitation: 3D array (time, y, x) of precipitation (mm/h)
 
         Raises:
             ValueError: If method is not supported
 
         Notes:
-            - The Chicago decreasing method generates only the falling limb
+            - The Chicago decreasing method generates only the falling part
               of the Chicago hyetograph (after the peak)
-            - Precipitation values are in mm/h (intensity, not depth)
+            - Precipitation values are in mm/h (intensity)
             - NaN values in IDF parameters propagate to output
+            - If NaN values are > 90% in any parameter, a ValueError is raised during
+              initialization of the HyetographGenerator
         """
         if method != "chicago_decreasing":
             raise ValueError(f"Unsupported hyetograph method: {method}. Only 'chicago_decreasing' is implemented.")
@@ -810,8 +811,8 @@ class HyetographGenerator:
         ka = self.ka
 
         # Initialize arrays
-        # DDF: Depth-Duration-Frequency (cumulative depth) [mm]
-        # P: Incremental precipitation [mm per timestep]
+        # DDF: Depth-Duration-Frequency, cumulative depth (mm)
+        # P: Incremental precipitation (mm per timestep)
         ddf = np.zeros((n_steps, nrows, ncols))
         precip = np.zeros((n_steps, nrows, ncols))
 
@@ -819,11 +820,11 @@ class HyetographGenerator:
         times = [start_time + timedelta(hours=i * timestep_hours) for i in range(n_steps)]
 
         # Chicago hyetograph calculation
-        # Note: t is 1-indexed in the formula (t=1 for first hour)
+        # Note: t is 1-indexed (t=1 for first hour)
         for i in range(n_steps):
             t = (i + 1) * timestep_hours  # Duration in hours (1, 2, 3, ...)
 
-            # DDF calculation: h = ka * k * a * t^n [mm]
+            # DDF calculation: h = ka * k * a * t^n (mm)
             ddf[i, :, :] = ka * k * (a * np.power(t, n))
 
             if i > 0:
@@ -899,7 +900,6 @@ class HyetographGenerator:
             - This method is equivalent to calling generate(), to_netcdf(),
               and MeteoRaster.from_netcdf() sequentially
             - The NetCDF file is still created at output_path for later use
-            - By default, data is preloaded into memory for optimal performance
         """
         # Import here to avoid circular dependency
         from mobidic.preprocessing.meteo_raster import MeteoRaster
