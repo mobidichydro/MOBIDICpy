@@ -26,7 +26,7 @@ The parameters a, n, k are spatially distributed and read from raster files.
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import rasterio
@@ -39,6 +39,10 @@ from mobidic.preprocessing.gis_reader import grid_to_matrix
 from mobidic.utils.crs import crs_to_cf_attrs, get_epsg_code
 
 from mobidic import __version__
+
+if TYPE_CHECKING:
+    from mobidic.config.schema import MOBIDICConfig
+    from mobidic.preprocessing.meteo_raster import MeteoRaster
 
 
 @dataclass
@@ -608,11 +612,11 @@ class HyetographGenerator:
     @classmethod
     def from_config(
         cls,
-        config,
+        config: "MOBIDICConfig",
         base_path: str | Path,
         start_time: datetime,
         preload: bool = True,
-    ):
+    ) -> "MeteoRaster":
         """Create hyetograph forcing from parameters specified in configuration file.
 
         Convenience method that reads hyetograph parameters from a yaml
@@ -854,7 +858,7 @@ class HyetographGenerator:
         timestep_hours: int = 1,
         add_metadata: dict | None = None,
         preload: bool = True,
-    ):
+    ) -> "MeteoRaster":
         """Generate hyetograph and return as MeteoRaster ready for simulation.
 
         Convenience method that combines generate(), to_netcdf(), and
