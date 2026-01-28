@@ -42,10 +42,11 @@ Connect hillslope grid cells to river reaches for lateral flow routing.
 - [`map_hillslope_to_reach()`](hillslope_mapping.md#mobidic.preprocessing.hillslope_reach_mapping.map_hillslope_to_reach) - Map cells to reaches
 
 ### [Meteorological preprocessing](meteo.md)
-Convert meteorological data from various formats to CF-compliant NetCDF.
+Convert meteorological data from various formats to CF-compliant NetCDF, and generate synthetic design storm hyetographs.
 
 - [`MeteoData`](meteo.md#mobidic.preprocessing.meteo_preprocessing.MeteoData) - Container for meteorological station data
 - [`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster) - Container for gridded (raster) meteorological forcing
+- [`HyetographGenerator`](meteo.md#mobidic.preprocessing.hyetograph.HyetographGenerator) - Generate synthetic hyetographs from IDF parameters
 - [`convert_mat_to_netcdf()`](meteo.md#mobidic.preprocessing.meteo_preprocessing.convert_mat_to_netcdf) - Convert MATLAB to NetCDF
 
 ### [Data I/O](io.md)
@@ -121,6 +122,7 @@ from mobidic import (
     # Meteorological Data
     MeteoData,
     MeteoRaster,
+    HyetographGenerator,
     convert_mat_to_netcdf,
     # Data I/O
     GISData,
@@ -166,7 +168,7 @@ MOBIDICpy's currently implemented features (v0.0.1):
 - ✅ Grid operations
 - ✅ River network processing
 - ✅ Hillslope-reach mapping
-- ✅ Meteorological preprocessing
+- ✅ Meteorological preprocessing (station data, raster forcing, hyetograph generation)
 - ✅ Data I/O and consolidation
 - ✅ Complete preprocessing workflow
 - ✅ Soil water balance (4 reservoirs: capillary, gravitational, plants, surface)

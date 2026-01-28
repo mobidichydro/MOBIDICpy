@@ -56,6 +56,7 @@ See [examples/run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blo
 - Hillslope-reach mapping
 - Meteorological data preprocessing from MATLAB format (.mat to NetCDF conversion)
 - Meteorological data spatial interpolation (IDW and nearest neighbor)
+- Design storm hyetograph generation from IDF parameters (Chicago method)
 - Soil water balance module (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope and channel)
 - Reservoir module (preprocessing, routing, time-varying regulation)

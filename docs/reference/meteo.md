@@ -1,10 +1,10 @@
 # Meteorological data
 
-The meteorological data module handles both station-based and gridded (raster) meteorological forcing for MOBIDIC simulations.
+The meteorological data module handles both station-based and gridded (raster) meteorological forcing for MOBIDIC simulations. It also includes tools for generating synthetic design storm hyetographs from IDF (Intensity-Duration-Frequency) parameters.
 
 ## Overview
 
-MOBIDICpy supports two modes of meteorological forcing, each suited to different workflows:
+MOBIDICpy supports three modes of meteorological forcing, each suited to different workflows:
 
 ### Station-based forcing (MeteoData)
 
@@ -26,6 +26,31 @@ Use when you have pre-interpolated gridded data or want to reuse previously inte
 - **Best for**: Production runs, scenario analysis, or when using external gridded datasets (e.g., reanalysis products)
 
 
+### Design storm hyetographs (HyetographGenerator)
+
+Use for design storm simulations with synthetic precipitation from IDF curves.
+
+- **IDF-based generation**: Constructs precipitation from spatially distributed IDF parameters (a, n, k)
+- **Chicago method**: Currently implements the Chicago decreasing hyetograph (after-peak curve)
+- **Areal reduction**: Applies areal reduction factor (ARF) coefficient for spatial averaging
+- **Auto-resampling**: IDF parameter rasters are automatically resampled to match the model grid
+- **Best for**: Design flood simulations, flood mapping, infrastructure sizing
+
+!!! info "IDF formula"
+    The total precipitation depth for a given duration is computed using the Depth-Duration-Frequency (DDF) relationship:
+
+    $$DDF(t) = k_a \cdot k \cdot a \cdot t^n$$
+
+    where:
+
+    - $DDF(t)$ is the cumulative precipitation depth (mm) for duration $t$
+    - $k_a$ is the areal reduction factor (ARF) coefficient
+    - $k$ is the return period factor (spatially distributed raster)
+    - $a$ is the IDF scale parameter (spatially distributed raster)
+    - $n$ is the IDF exponent parameter (spatially distributed raster)
+    - $t$ is duration in hours
+
+
 **Workflow recommendation:**
 
 1. **Initial run**: Use station-based forcing with `output_forcing_data.meteo_data = True`
@@ -45,6 +70,11 @@ Container for station-based meteorological data with spatial interpolation capab
 Container for pre-interpolated raster meteorological forcing.
 
 ::: mobidic.preprocessing.meteo_raster.MeteoRaster
+
+#### HyetographGenerator
+Generator for synthetic hyetographs from IDF parameters.
+
+::: mobidic.preprocessing.hyetograph.HyetographGenerator
 
 ### Output classes
 
@@ -190,6 +220,133 @@ results = sim.run("2023-01-01", "2023-12-31")
 
 # Forcing data saved to: {output_dir}/meteo_forcing.nc
 # Use this file as raster forcing in subsequent runs for faster performance
+```
+
+### Example 6: Generate design storm hyetograph from configuration
+
+The simplest workflow for design storm simulations reads all parameters from the YAML configuration:
+
+```python
+from datetime import datetime
+from pathlib import Path
+from mobidic import load_config, load_gisdata, Simulation
+from mobidic.preprocessing.hyetograph import HyetographGenerator
+
+# Load configuration with hyetograph section
+config_file = Path("basin_hyetograph.yaml")
+config = load_config(config_file)
+gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+
+# Generate forcing from config - only start_time needed!
+# All parameters (IDF rasters, duration, timestep, output path) read from config
+forcing = HyetographGenerator.from_config(
+    config=config,
+    base_path=config_file.parent,
+    start_time=datetime(2000, 1, 1)
+)
+
+# Run simulation
+sim = Simulation(gisdata, forcing, config)
+results = sim.run(forcing.start_date, forcing.end_date)
+```
+
+**Required configuration** (`basin_hyetograph.yaml`):
+
+```yaml
+paths:
+  hyetograph: output/design_storm.nc  # Output NetCDF path
+
+hyetograph:
+  a_raster: idf/a.tif        # IDF 'a' parameter raster
+  n_raster: idf/n.tif        # IDF 'n' parameter raster
+  k_raster: idf/k30.tif      # Return period factor raster (e.g., 30-year)
+  duration_hours: 48         # Storm duration
+  timestep_hours: 1          # Time step
+  hyetograph_type: chicago_decreasing  # Hyetograph method
+  ka: 0.8                    # Areal reduction factor
+```
+
+### Example 7: Generate hyetograph with manual parameters
+
+For more control over the hyetograph generation process:
+
+```python
+from datetime import datetime
+from mobidic import Simulation, load_gisdata, load_config
+from mobidic.preprocessing.hyetograph import HyetographGenerator
+
+# Create generator from IDF rasters
+generator = HyetographGenerator.from_rasters(
+    a_raster="idf/a.tif",
+    n_raster="idf/n.tif",
+    k_raster="idf/k30.tif",
+    ka=0.8,                    # Areal reduction factor
+    ref_raster="dem.tif"       # Reference grid for resampling
+)
+
+# Generate forcing and get MeteoRaster in one call
+forcing = generator.generate_forcing(
+    duration_hours=48,
+    start_time=datetime(2023, 11, 1),
+    output_path="design_storm.nc",
+    method="chicago_decreasing",
+    timestep_hours=1,
+    add_metadata={"return_period": "30 years"}
+)
+
+# Use directly in simulation
+config = load_config("basin.yaml")
+gisdata = load_gisdata("gisdata.nc", "network.parquet")
+sim = Simulation(gisdata, forcing, config)
+results = sim.run(forcing.start_date, forcing.end_date)
+```
+
+### Example 8: Advanced hyetograph workflow (full control)
+
+For complete control over generation and export:
+
+```python
+from datetime import datetime
+from mobidic import MeteoRaster
+from mobidic.preprocessing.hyetograph import HyetographGenerator
+
+# Create generator
+generator = HyetographGenerator.from_rasters(
+    a_raster="idf/a.tif",
+    n_raster="idf/n.tif",
+    k_raster="idf/k30.tif",
+    ka=0.8,
+    ref_raster="dem.tif"
+)
+
+# Generate time series (returns times and precipitation arrays)
+times, precipitation = generator.generate(
+    duration_hours=48,
+    start_time=datetime(2023, 11, 1),
+    method="chicago_decreasing",
+    timestep_hours=1,
+)
+
+# Inspect generated data
+print(f"Time steps: {len(times)}")
+print(f"Precipitation shape: {precipitation.shape}")  # (time, y, x)
+print(f"Peak intensity: {precipitation[0].max():.2f} mm/h")
+print(f"Total depth: {precipitation.sum(axis=0).max():.1f} mm")
+
+# Save to NetCDF with custom metadata
+generator.to_netcdf(
+    "design_storm.nc",
+    times=times,
+    precipitation=precipitation,
+    add_metadata={
+        "return_period": "30 years",
+        "event_type": "design_storm",
+        "basin": "Arno"
+    }
+)
+
+# Load as MeteoRaster for simulation
+forcing = MeteoRaster.from_netcdf("design_storm.nc")
 ```
 
 
