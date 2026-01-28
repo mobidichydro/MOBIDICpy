@@ -509,6 +509,91 @@ output_states:
 
 ---
 
+## Design storm simulation with hyetograph generation
+
+This example demonstrates how to generate synthetic design storm hyetographs from IDF (Intensity-Duration-Frequency) parameters and run a design flood simulation.
+
+```python
+from datetime import datetime
+from pathlib import Path
+from mobidic import load_config, load_gisdata, Simulation
+from mobidic.preprocessing.hyetograph import HyetographGenerator
+
+# Load hyetograph-enabled configuration
+config_file = Path("Arno_hyetograph.yaml")
+config = load_config(config_file)
+
+# Load preprocessed GIS data
+gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+
+# Generate hyetograph forcing from configuration
+# All parameters (IDF rasters, duration, timestep, method) are read from config
+forcing = HyetographGenerator.from_config(
+    config=config,
+    base_path=config_file.parent,
+    start_time=datetime(2000, 1, 1)  # Reference start time
+)
+
+# Inspect generated forcing
+print(f"Forcing date range: {forcing.start_date} to {forcing.end_date}")
+print(f"Variables: {forcing.variables}")
+print(f"Grid shape: {forcing.grid_metadata['shape']}")
+
+# Run simulation
+sim = Simulation(gisdata, forcing, config)
+results = sim.run(forcing.start_date, forcing.end_date)
+
+# Results are saved automatically to output directory
+```
+
+**Configuration example** (`Arno_hyetograph.yaml`):
+
+```yaml
+paths:
+  gisdata: gisdata/Arno_gisdata.nc
+  network: gisdata/Arno_net.parquet
+  hyetograph: output/design_storm.nc  # Output path for generated hyetograph
+  states: states/
+  output: output/
+
+raster_files:
+  dtm: raster/dtm.tif  # Reference grid for IDF resampling
+  # ... other rasters
+
+hyetograph:
+  a_raster: idf/a.tif        # IDF 'a' parameter (scale)
+  n_raster: idf/n.tif        # IDF 'n' parameter (exponent)
+  k_raster: idf/k30.tif      # Return period factor (30-year event)
+  duration_hours: 48         # Storm duration
+  timestep_hours: 1          # Time step
+  hyetograph_type: chicago_decreasing  # Chicago method (after-peak)
+  ka: 0.8                    # Areal reduction factor
+```
+
+**What it demonstrates:**
+
+- Generating synthetic design storm hyetographs from IDF parameters
+- Using spatially distributed IDF rasters (a, n, k)
+- Automatic resampling of IDF parameters to match model grid
+- Chicago decreasing hyetograph method
+
+**IDF formula:**
+
+The Depth-Duration-Frequency (DDF) relationship is:
+
+$$DDF(t) = k_a \cdot k \cdot a \cdot t^n$$
+
+where:
+
+- $DDF(t)$ is cumulative precipitation depth (mm) for duration $t$
+- $k_a$ is areal reduction factor
+- $k$ is return period factor (from raster)
+- $a$ is IDF scale parameter (from raster)
+- $n$ is IDF exponent (from raster)
+- $t$ is duration in hours
+
+---
+
 ## Sample Configuration
 
 A sample configuration file is provided at `examples/sample_config.yaml`. This file includes:
