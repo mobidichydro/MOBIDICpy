@@ -39,6 +39,7 @@ from mobidic.utils.crs import crs_to_cf_attrs, get_epsg_code
 
 from mobidic import __version__
 
+
 @dataclass
 class IDFParameters:
     """Container for IDF (Intensity-Duration-Frequency) raster parameters.
@@ -269,6 +270,9 @@ def read_idf_parameters_resampled(
         n_resampled[~ref_mask] = np.nan
         k_resampled[~ref_mask] = np.nan
 
+    # Validate sufficient valid cells (minimum 10%)
+    _validate_valid_cells_threshold(a_resampled, n_resampled, k_resampled)
+
     # Calculate corner coordinates (cell center) matching grid_to_matrix convention
     xllcorner = ref_bounds.left + 0.5 * cellsize
     yllcorner = ref_bounds.bottom + 0.5 * cellsize
@@ -342,6 +346,9 @@ def read_idf_parameters(
     # Validate spatial consistency
     _validate_raster_consistency(a_data, n_data, k_data)
 
+    # Validate sufficient valid cells (minimum 10%)
+    _validate_valid_cells_threshold(a_data["data"], n_data["data"], k_data["data"])
+
     # Extract common metadata from 'a' raster (already validated to be consistent)
     params = IDFParameters(
         a=a_data["data"],
@@ -408,6 +415,48 @@ def _validate_raster_consistency(
         raise ValueError(error_msg)
 
     logger.debug("IDF rasters validated: consistent spatial properties")
+
+
+def _validate_valid_cells_threshold(
+    a: np.ndarray,
+    n: np.ndarray,
+    k: np.ndarray,
+    min_valid_fraction: float = 0.1,
+) -> None:
+    """Validate that IDF rasters have sufficient valid (non-NaN) cells.
+
+    Args:
+        a: 2D array of IDF 'a' parameter
+        n: 2D array of IDF 'n' parameter
+        k: 2D array of IDF 'k' parameter
+        min_valid_fraction: Minimum required fraction of valid cells (default: 0.1 = 10%)
+
+    Raises:
+        ValueError: If any raster has less than the minimum fraction of valid cells
+    """
+    total_cells = a.size
+    errors = []
+
+    # Check each parameter
+    for param_name, param_data in [("a", a), ("n", n), ("k", k)]:
+        valid_cells = np.sum(~np.isnan(param_data))
+        valid_fraction = valid_cells / total_cells
+
+        if valid_fraction < min_valid_fraction:
+            errors.append(
+                f"Parameter '{param_name}': {valid_fraction * 100:.1f}% valid cells "
+                f"({valid_cells}/{total_cells}), minimum required: {min_valid_fraction * 100:.0f}%"
+            )
+
+    if errors:
+        error_msg = (
+            f"IDF rasters have insufficient valid cells (minimum {min_valid_fraction * 100:.0f}% required):\n  - "
+            + "\n  - ".join(errors)
+        )
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+    logger.debug(f"IDF rasters validated: sufficient valid cells (minimum {min_valid_fraction * 100:.0f}% required)")
 
 
 def idf_depth(a: np.ndarray, n: np.ndarray, t: float) -> np.ndarray:
