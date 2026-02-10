@@ -11,6 +11,22 @@ import geopandas as gpd
 from loguru import logger
 from pathlib import Path
 
+# MOBIDIC-specific field names reserved for internal use.
+# Original shapefile fields with these names are renamed to "orig_<name>" to avoid conflicts.
+MOBIDIC_FIELDS = {
+    "mobidic_id",
+    "upstream_1",
+    "upstream_2",
+    "downstream",
+    "strahler_order",
+    "calc_order",
+    "length_m",
+    "width_m",
+    "lag_time_s",
+    "storage_coeff",
+    "n_manning",
+}
+
 
 def process_river_network(
     shapefile_path: str | Path,
@@ -95,6 +111,16 @@ def _build_network_topology(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     # Create a copy to avoid modifying original (preserves all original fields)
     network = gdf.copy()
+
+    # Detect and rename original shapefile fields that conflict with MOBIDIC reserved names
+    conflicting = [col for col in network.columns if col in MOBIDIC_FIELDS]
+    if conflicting:
+        rename_map = {col: f"orig_{col}" for col in conflicting}
+        network = network.rename(columns=rename_map)
+        logger.warning(
+            f"Renamed {len(conflicting)} original shapefile field(s) to avoid conflicts "
+            f"with MOBIDIC reserved names: {rename_map}"
+        )
 
     # Create internal MOBIDIC ID (0-indexed) for topology mapping
     # All original shapefile fields are preserved in the network
