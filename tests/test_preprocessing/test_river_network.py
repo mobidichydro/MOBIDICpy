@@ -383,6 +383,51 @@ def test_load_nonexistent_network():
         load_network("nonexistent.parquet")
 
 
+def test_conflict_field_renaming(tmp_path):
+    """Test that original shapefile fields conflicting with MOBIDIC names are renamed."""
+    # Create a network with fields that conflict with MOBIDIC reserved names
+    reaches = {
+        "REACH_ID": [1, 2, 3],
+        "downstream": ["node_A", "node_B", "node_C"],  # conflicts with MOBIDIC 'downstream'
+        "length_m": [10.5, 8.2, 15.3],  # conflicts with MOBIDIC 'length_m'
+        "geometry": [
+            LineString([(0, 0), (1, 0)]),
+            LineString([(1, 0), (2, 0)]),
+            LineString([(2, 0), (3, 0)]),
+        ],
+    }
+    gdf = gpd.GeoDataFrame(reaches, crs="EPSG:3003")
+
+    # Save to shapefile
+    shp_path = tmp_path / "test_conflict.shp"
+    gdf.to_file(shp_path)
+
+    # Process network
+    network = process_river_network(shp_path, join_single_tributaries=False)
+
+    # Original conflicting fields should be renamed with 'orig_' prefix
+    assert "orig_downstream" in network.columns, "Conflicting 'downstream' should be renamed to 'orig_downstream'"
+    assert "orig_length_m" in network.columns, "Conflicting 'length_m' should be renamed to 'orig_length_m'"
+
+    # MOBIDIC fields should exist with correct MOBIDIC values
+    assert "downstream" in network.columns
+    assert "length_m" in network.columns
+
+    # Original values should be preserved under renamed columns
+    for i, reach_id in enumerate([1, 2, 3]):
+        reach = network[network["REACH_ID"] == reach_id]
+        assert len(reach) == 1
+        assert reach["orig_downstream"].values[0] == gdf.at[i, "downstream"]
+        assert reach["orig_length_m"].values[0] == gdf.at[i, "length_m"]
+
+    # MOBIDIC 'downstream' should contain integer topology values (not the original strings)
+    assert network["downstream"].dtype in [np.int64, np.int32, np.float64]
+
+    # MOBIDIC 'length_m' should be computed from geometry (not the original values)
+    for idx in network.index:
+        assert np.isclose(network.at[idx, "length_m"], network.geometry[idx].length)
+
+
 def test_save_invalid_format(simple_network_gdf, tmp_path):
     """Test that invalid save format raises ValueError."""
     shp_path = tmp_path / "test_network.shp"
