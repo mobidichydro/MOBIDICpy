@@ -98,6 +98,10 @@ MOBIDIC has been successfully applied to:
 - **Research applications**: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025)
 
 
+## Time convention
+
+All datetimes in MOBIDICpy are **timezone-naive**. No timezone information is attached to any timestamp — input data, simulation times, state files, and output reports all use naive datetimes. Users must ensure that all input data (meteorological forcing, reservoir schedules, simulation start/end dates) refers to the same time reference (e.g., UTC or local time).
+
 ## Translation from MATLAB
 
 MOBIDICpy is an ongoing translation effort focusing on:
