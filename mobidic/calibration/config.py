@@ -110,7 +110,11 @@ class CalibrationPeriod(BaseModel):
     @field_validator("start_date", "end_date")
     @classmethod
     def check_date_format(cls, v: str) -> str:
-        """Validate that date strings are parseable."""
+        """Validate that date strings are parseable as YYYY-MM-DD or YYYY-MM-DD HH:MM:SS."""
+        import re
+
+        if not re.match(r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$", v):
+            raise ValueError(f"Invalid date format: '{v}'. Expected 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'.")
         try:
             pd.Timestamp(v)
         except ValueError as e:
