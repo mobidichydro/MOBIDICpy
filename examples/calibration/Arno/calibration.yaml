@@ -1,0 +1,104 @@
+# Calibration configuration for Arno River Basin
+# PEST++ integration with MOBIDICpy
+
+# Path to MOBIDIC simulation configuration
+mobidic_config: "Arno.yaml"
+
+# Simulation period: the full time window the forward model runs.
+# Format: "YYYY-MM-DD HH:MM:SS"
+simulation_period:
+  start_date: "2023-10-31 00:15:00"
+  end_date: "2023-11-04 23:45:00"
+
+# Calibration period.
+# Observations outside this window (e.g. during warm-up) are ignored.
+calibration_period:
+  start_date: "2023-11-01 00:00:00"
+  end_date: "2023-11-04 23:45:00"
+
+# If true, the raster is produced on the first run (if not already present)
+# and then reused in subsequent runs.
+use_raster_forcing: true
+
+# Parameters to be calibrated by PEST++.
+# parameter_key: parameter key in the MOBIDIC configuration (dot notation)
+# transform: log | none | fixed 
+parameters:
+  - name: alpha
+    parameter_key: parameters.soil.alpha
+    initial_value: 8.0e-06
+    lower_bound: 1.0e-08
+    upper_bound: 1.0e-04
+    transform: log
+    # scale: 1.0    # Optional: multiplication factor applied by PEST++ (default: 1.0)
+    # offset: 0.0   # Optional: additive offset applied by PEST++ (default: 0.0)
+    par_group: soil
+
+  - name: beta
+    parameter_key: parameters.soil.beta
+    initial_value: 5.0e-05
+    lower_bound: 1.0e-08
+    upper_bound: 1.0e-04
+    transform: log
+    # scale: 1.0
+    # offset: 0.0
+    par_group: soil
+
+  - name: gamma
+    parameter_key: parameters.soil.gamma
+    initial_value: 5.0e-04
+    lower_bound: 1.0e-09
+    upper_bound: 1.0e-03
+    transform: log
+    # scale: 1.0
+    # offset: 0.0
+    par_group: soil
+
+  - name: kappa
+    parameter_key: parameters.soil.kappa
+    initial_value: 1.0e-04
+    lower_bound: 1.0e-09
+    upper_bound: 1.0e-03
+    transform: log
+    # scale: 1.0
+    # offset: 0.0
+    par_group: soil
+
+# Observations
+observations:
+  - name: Q_292
+    obs_file: "observations/Q_Nave_di_Rosano_2023.csv"
+    reach_id: 292
+    weight: 1.0
+    time_column: time
+    value_column: Q_292
+    # Optional: derived metrics as pseudo-observations
+    metrics:
+      - metric: nse
+        target: 1.0
+        weight: 10.0
+      - metric: peak_error
+        target: 0.0
+        weight: 8.0
+
+# PEST++ tool
+# glm (Gauss-Levenberg-Marquardt), ies (ensemble smoother), sen (sensitivity)
+pest_tool: glm
+
+# PEST++ options (global)
+pest_options:
+  noptmax: 3
+  pst_version: 2       # PST control file version: 1 = PEST, 2 = PEST++ (default: 2)
+  relparmax: 10.0      # Max relative parameter change per iteration (default: 10.0, PEST++ Users Guide p. 47)
+  facparmax: 10.0      # Max factor parameter change per iteration (default: 10.0, PEST++ Users Guide p. 47)
+
+# Working directory for PEST++ files
+working_dir: "pest_run"
+
+# Parallel execution
+# Local mode (default): manager_ip is null -> starts manager + agents on this machine
+# Cluster mode: set manager_ip to the manager's IP address -> starts agents only
+parallel:
+  num_workers: 4
+  port: 4004
+  manager_ip: null
