@@ -106,3 +106,21 @@ __all__ = [
     "save_lateral_inflow_report",
     "load_discharge_report",
 ]
+
+# Calibration module (optional dependency: pyemu)
+try:
+    from mobidic.calibration import (
+        CalibrationConfig,
+        CalibrationResults,
+        PestSetup,
+        load_calibration_config,
+    )
+
+    __all__ += [
+        "CalibrationConfig",
+        "CalibrationResults",
+        "PestSetup",
+        "load_calibration_config",
+    ]
+except ImportError:
+    pass
