@@ -307,12 +307,12 @@ output_report_settings:
 
   # OPTIONAL: List of reach IDs to output
   # [list of integers, e.g. [1234, 5678]. Used if reach_selection=list]
-  sel_list: [292, 313, 329, 514]
+  sel_list: [292]
 
 output_forcing_data:
   # OPTIONAL: Save meteorological forcing data to NetCDF. Default: false
   # [boolean]
-  meteo_data: true
+  meteo_data: false
 
 ####### ADVANCED SETTINGS
 
