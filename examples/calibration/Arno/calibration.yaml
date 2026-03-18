@@ -87,7 +87,7 @@ pest_tool: glm
 
 # PEST++ options (global)
 pest_options:
-  noptmax: 3
+  noptmax: 10
   pst_version: 2       # PST control file version: 1 = PEST, 2 = PEST++ (default: 2)
   relparmax: 10.0      # Max relative parameter change per iteration (default: 10.0, PEST++ Users Guide p. 47)
   facparmax: 10.0      # Max factor parameter change per iteration (default: 10.0, PEST++ Users Guide p. 47)
