@@ -112,6 +112,29 @@ class CalibrationResults:
         logger.info(f"Reading residuals from: {rei_file}")
         return self._parse_rei_file(rei_file)
 
+    def get_ies_phi_history(self) -> pd.DataFrame | None:
+        """Get IES ensemble phi history from calibration.phi.actual.csv.
+
+        Returns:
+            DataFrame with columns 'iteration', 'mean', 'std', and one column per
+            ensemble member, or None if the file is not found.
+        """
+        phi_path = self.master_dir / "calibration.phi.actual.csv"
+        if not phi_path.exists():
+            logger.warning(f"IES phi file not found: {phi_path}")
+            return None
+
+        df = pd.read_csv(phi_path, index_col=0)
+        df.index.name = "iteration"
+        df = df.reset_index()
+
+        member_cols = [c for c in df.columns if c != "iteration"]
+        df["mean"] = df[member_cols].mean(axis=1)
+        df["std"] = df[member_cols].std(axis=1)
+
+        logger.info(f"Read IES phi history: {len(df)} iterations, {len(member_cols)} ensemble members")
+        return df
+
     def get_parameter_sensitivities(self) -> pd.DataFrame | None:
         """Get parameter sensitivities (from pestpp-sen or GLM Jacobian).
 
