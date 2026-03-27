@@ -16,7 +16,7 @@ The workflow is as follows:
 The forcing raster input data has the same format as the exported interpolated meteorological data.
 
 Usage:
-    python examples/run_example_Arno_raster_forcing.py
+    python examples/01-event-Arno-basin/02_run_example_Arno_raster_forcing.py
 """
 
 from pathlib import Path
@@ -39,10 +39,8 @@ from mobidic import (
 # Configuration
 force_preprocessing = False  # Set to True to force re-running preprocessing
 
-example_dir = Path(__file__).parent / "Arno"
-config_file = example_dir / "Arno.yaml"
-
-meteodata_mat_path = example_dir / "meteodata/meteodata.mat"
+config_file = Path(__file__).parent / "Arno.yaml"
+meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
 
 print("=" * 80)
 print("MOBIDIC - Arno Basin: station vs raster forcing comparison")
@@ -92,6 +90,9 @@ if force_preprocessing or not config.paths.meteodata.exists():
 
     # Load and convert meteorological data
     meteo_data = MeteoData.from_mat(meteodata_mat_path)
+
+    # Create meteodata folder if it doesn't exist
+    config.paths.meteodata.parent.mkdir(parents=True, exist_ok=True)
 
     # Save to NetCDF format
     meteo_data.to_netcdf(

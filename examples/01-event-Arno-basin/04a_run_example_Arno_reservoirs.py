@@ -12,7 +12,7 @@ This script demonstrates the complete MOBIDIC workflow:
 The example uses data from the Arno River basin in Tuscany, Italy.
 
 Usage:
-    python examples/run_example_Arno_reservoirs.py
+    python examples/01-event-Arno-basin/04a_run_example_Arno_reservoirs.py
 
     Options (modify script directly):
     - force_preprocessing: Set to True to rerun preprocessing (e.g., when changing soil parameters)
@@ -35,10 +35,8 @@ from mobidic import (
 # Configuration
 force_preprocessing = True  # Set to True to force re-running preprocessing
 
-example_dir = Path(__file__).parent / "Arno"
-config_file = example_dir / "Arno.reservoirs.yaml"
-
-meteodata_mat_path = example_dir / "meteodata/meteodata.mat"
+config_file = Path(__file__).parent / "Arno.reservoirs.yaml"
+meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
 
 
 """Run complete MOBIDIC workflow for Arno basin."""
@@ -112,6 +110,9 @@ if force_preprocessing or not config.paths.meteodata.exists():
 
     # Load and convert meteorological data
     meteo_data = MeteoData.from_mat(meteodata_mat_path)
+
+    # Create meteodata folder if it doesn't exist
+    config.paths.meteodata.parent.mkdir(parents=True, exist_ok=True)
 
     # Save to NetCDF format
     meteo_data.to_netcdf(

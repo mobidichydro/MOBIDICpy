@@ -14,7 +14,7 @@ The example shows how to:
 - Verify that restarted simulations produce identical results to continuous runs
 
 Usage:
-    python examples/run_example_Arno_restart.py
+    python examples/01-event-Arno-basin/03_run_example_Arno_restart.py
 
     Options (modify script directly):
     - restart_fraction: Fraction of simulation period for first run (default: 0.5)
@@ -40,11 +40,8 @@ from mobidic import (
 force_preprocessing = False  # Set to True to force re-running preprocessing
 restart_fraction = 0.5  # Run first simulation to a portion of period, then restart
 
-example_dir = Path(__file__).parent / "Arno"
-config_file = example_dir / "Arno.yaml"
-
-meteodata_mat_path = example_dir / "meteodata/meteodata.mat"
-
+config_file = Path(__file__).parent / "Arno.yaml"
+meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
 
 """Run MOBIDIC with restart demonstration for Arno basin."""
 
@@ -106,6 +103,9 @@ if force_preprocessing or not config.paths.meteodata.exists():
 
     # Load and convert meteorological data
     meteo_data = MeteoData.from_mat(meteodata_mat_path)
+
+    # Create meteodata folder if it doesn't exist
+    config.paths.meteodata.parent.mkdir(parents=True, exist_ok=True)
 
     # Save to NetCDF format
     meteo_data.to_netcdf(
