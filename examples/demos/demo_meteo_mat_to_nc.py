@@ -4,7 +4,6 @@ This script shows how to convert MATLAB .mat meteorological data file to
 CF-compliant NetCDF format for use in MOBIDIC simulations.
 """
 
-import sys
 from pathlib import Path
 
 from mobidic import MeteoData, convert_mat_to_netcdf
