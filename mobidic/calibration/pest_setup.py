@@ -185,7 +185,7 @@ class PestSetup:
         pst = self._build_pst(obs_names, wd)
 
         # Write .pst file
-        pst_path = wd / "calibration.pst"
+        pst_path = wd / f"{self.calib_config.case_name}.pst"
         pst_version = self.calib_config.pest_options.get("pst_version", 2)
         pst.write(str(pst_path), version=pst_version)
         logger.info(f"PEST control file written: {pst_path} (version={pst_version})")
@@ -223,12 +223,14 @@ class PestSetup:
             if f.is_file():
                 shutil.copy2(f, template_dir / f.name)
 
+        pst_rel_path = f"{self.calib_config.case_name}.pst"
+
         if is_cluster:
             logger.info(f"Starting {n_workers} PEST++ agents connecting to {cfg.manager_ip}:{cfg.port}")
             pyemu.os_utils.start_workers(
                 worker_dir=str(template_dir),
                 exe_rel_path=self._pest_exe,
-                pst_rel_path="calibration.pst",
+                pst_rel_path=pst_rel_path,
                 num_workers=n_workers,
                 worker_root=str(wd),
                 port=cfg.port,
@@ -240,7 +242,7 @@ class PestSetup:
             pyemu.os_utils.start_workers(
                 worker_dir=str(template_dir),
                 exe_rel_path=self._pest_exe,
-                pst_rel_path="calibration.pst",
+                pst_rel_path=pst_rel_path,
                 num_workers=n_workers,
                 worker_root=str(wd),
                 port=cfg.port,

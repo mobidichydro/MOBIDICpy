@@ -49,7 +49,7 @@ class CalibrationResults:
         if self._pst is None:
             import pyemu
 
-            pst_path = self.master_dir / "calibration.pst"
+            pst_path = self.master_dir / f"{self.calib_config.case_name}.pst"
             if pst_path.exists():
                 self._pst = pyemu.Pst(str(pst_path))
             else:
@@ -63,7 +63,7 @@ class CalibrationResults:
             Dict mapping parameter name to optimal value.
         """
         # Try to read from .par file (final parameter values)
-        par_files = sorted(self.master_dir.glob("calibration.*.par"))
+        par_files = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.par"))
         if not par_files:
             par_files = sorted(self.master_dir.glob("*.par"))
 
@@ -98,21 +98,21 @@ class CalibrationResults:
         """
         match self.calib_config.pest_tool:
             case "glm":
-                iobj_path = self.master_dir / "calibration.iobj"
+                iobj_path = self.master_dir / f"{self.calib_config.case_name}.iobj"
                 if not iobj_path.exists():
                     logger.warning(f"iobj file not found: {iobj_path}")
                     return None
                 return self._parse_iobj_phi(iobj_path)
 
             case "ies":
-                phi_path = self.master_dir / "calibration.phi.actual.csv"
+                phi_path = self.master_dir / f"{self.calib_config.case_name}.phi.actual.csv"
                 if not phi_path.exists():
                     logger.warning(f"IES phi file not found: {phi_path}")
                     return None
                 return self._parse_ies_phi(phi_path)
 
             case _:
-                rec_path = self.master_dir / "calibration.rec"
+                rec_path = self.master_dir / f"{self.calib_config.case_name}.rec"
                 if not rec_path.exists():
                     logger.warning(f"Record file not found: {rec_path}")
                     return None
@@ -125,7 +125,7 @@ class CalibrationResults:
             DataFrame with obs_name, observed, simulated, residual, weight columns,
             or None if .rei file not found.
         """
-        rei_files = sorted(self.master_dir.glob("calibration.*.rei"))
+        rei_files = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.rei"))
         if not rei_files:
             rei_files = sorted(self.master_dir.glob("*.rei"))
 
@@ -138,35 +138,48 @@ class CalibrationResults:
         return self._parse_rei_file(rei_file)
 
     def get_parameter_sensitivities(self) -> pd.DataFrame | None:
-        """Get parameter sensitivities (from pestpp-sen or GLM Jacobian).
+        """Get parameter sensitivities.
+
+        - ``sen``: reads ``{case}.msn`` (Morris sensitivity); returns all columns
+          (par_name, n_samples, sen_mean, sen_mean_abs, sen_std_dev).
+        - ``glm``: loads the Jacobian (``.jcb`` / ``.jco``) via pyemu and computes
+          composite sensitivity (column-wise L2 norm).
 
         Returns:
             DataFrame with sensitivity information, or None if not available.
         """
-        # pestpp-sen output
-        sen_file = self.master_dir / "calibration.sn"
-        if sen_file.exists():
-            return pd.read_csv(sen_file)
+        match self.calib_config.pest_tool:
+            case "sen":
+                msn_path = self.master_dir / f"{self.calib_config.case_name}.msn"
+                if not msn_path.exists():
+                    logger.warning(f"Morris sensitivity file not found: {msn_path}")
+                    return None
+                df = pd.read_csv(msn_path)
+                logger.info(f"Read Morris sensitivities from {msn_path}: {len(df)} parameters")
+                return df
 
-        # GLM: try to load Jacobian via pyemu
-        jco_path = self.master_dir / "calibration.jcb"
-        if not jco_path.exists():
-            jco_path = self.master_dir / "calibration.jco"
+            case "glm":
+                jco_path = self.master_dir / f"{self.calib_config.case_name}.jcb"
+                if not jco_path.exists():
+                    jco_path = self.master_dir / f"{self.calib_config.case_name}.jco"
+                if not jco_path.exists():
+                    logger.warning(f"Jacobian file not found in {self.master_dir}")
+                    return None
+                import pyemu
 
-        if jco_path.exists():
-            import pyemu
+                jco = pyemu.Jco.from_binary(str(jco_path))
+                sens = pd.DataFrame(
+                    {
+                        "parameter": jco.col_names,
+                        "sensitivity": np.sqrt(np.asarray((jco.x**2).sum(axis=0)).ravel()),
+                    }
+                )
+                logger.info(f"Computed GLM composite sensitivities from {jco_path}: {len(sens)} parameters")
+                return sens.sort_values("sensitivity", ascending=False).reset_index(drop=True)
 
-            jco = pyemu.Jco.from_binary(str(jco_path))
-            # Composite sensitivity: column-wise L2 norm
-            sens = pd.DataFrame(
-                {
-                    "parameter": jco.col_names,
-                    "sensitivity": np.sqrt(np.asarray((jco.x**2).sum(axis=0)).ravel()),
-                }
-            )
-            return sens.sort_values("sensitivity", ascending=False).reset_index(drop=True)
-
-        return None
+            case _:
+                logger.warning(f"Sensitivity output not supported for pest_tool='{self.calib_config.pest_tool}'")
+                return None
 
     def get_ensemble_results(self) -> dict | None:
         """Get IES ensemble results (prior and posterior).
@@ -180,22 +193,22 @@ class CalibrationResults:
         results = {}
 
         # Parameter ensembles
-        prior_par = self.master_dir / "calibration.0.par.csv"
+        prior_par = self.master_dir / f"{self.calib_config.case_name}.0.par.csv"
         if prior_par.exists():
             results["prior_parameters"] = pd.read_csv(prior_par, index_col=0)
 
         # Find last iteration's parameter ensemble
-        par_csvs = sorted(self.master_dir.glob("calibration.*.par.csv"))
+        par_csvs = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.par.csv"))
         if par_csvs:
             last_par = par_csvs[-1]
             results["posterior_parameters"] = pd.read_csv(last_par, index_col=0)
 
         # Observation ensembles
-        prior_obs = self.master_dir / "calibration.0.obs.csv"
+        prior_obs = self.master_dir / f"{self.calib_config.case_name}.0.obs.csv"
         if prior_obs.exists():
             results["prior_observations"] = pd.read_csv(prior_obs, index_col=0)
 
-        obs_csvs = sorted(self.master_dir.glob("calibration.*.obs.csv"))
+        obs_csvs = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.obs.csv"))
         if obs_csvs:
             last_obs = obs_csvs[-1]
             results["posterior_observations"] = pd.read_csv(last_obs, index_col=0)

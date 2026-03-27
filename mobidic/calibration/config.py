@@ -193,6 +193,12 @@ class CalibrationConfig(BaseModel):
 
     pest_tool: Literal["glm", "ies", "sen", "da", "opt", "mou", "sqp"] = Field("glm", description="PEST++ tool to use")
 
+    case_name: Optional[str] = Field(
+        None,
+        description="File name prefix for PEST++ output files (e.g. 'calibration', 'sensitivity'). "
+        "Defaults to 'sensitivity' when pest_tool='sen', 'calibration' otherwise.",
+    )
+
     pest_options: Optional[dict] = Field(
         default_factory=dict,
         description="PEST++ and tool-specific options (e.g., noptmax, "
@@ -202,6 +208,13 @@ class CalibrationConfig(BaseModel):
     working_dir: str = Field("pest_run", description="Working directory for PEST++ files")
 
     parallel: Optional[ParallelConfig] = Field(default_factory=ParallelConfig)
+
+    @model_validator(mode="after")
+    def set_case_name_default(self) -> "CalibrationConfig":
+        """Default case_name to 'sensitivity' for pestpp-sen, 'calibration' otherwise."""
+        if self.case_name is None:
+            self.case_name = "sensitivity" if self.pest_tool == "sen" else "calibration"
+        return self
 
     @model_validator(mode="after")
     def check_parameter_names_unique(self) -> "CalibrationConfig":
