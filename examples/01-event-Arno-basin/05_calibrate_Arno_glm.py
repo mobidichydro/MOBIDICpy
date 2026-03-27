@@ -91,7 +91,7 @@ for f in sorted(working_dir.iterdir()):
     print(f"  {f.name}")
 
 # Run pestpp-glm
-results = pest.run(num_workers=4)
+results = pest.run()
 
 # Get optimal parameters
 optimal = results.get_optimal_parameters()
