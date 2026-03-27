@@ -317,6 +317,21 @@ class TestParallelConfig:
         with pytest.raises(ValidationError, match="Port"):
             ParallelConfig(port=80)
 
+    def test_invalid_num_workers_rejected(self):
+        with pytest.raises(ValidationError, match="num_workers"):
+            ParallelConfig(num_workers=-1)
+
+        with pytest.raises(ValidationError, match="num_workers"):
+            ParallelConfig(num_workers=0)
+
+    def test_num_workers_exceeding_cpus_warns(self, recwarn):
+        import os
+
+        available = os.cpu_count() or 1
+        # Should not raise, but a loguru warning is emitted (not captured by recwarn)
+        pc = ParallelConfig(num_workers=available + 1000)
+        assert pc.num_workers == available + 1000
+
     def test_cluster_mode(self):
-        pc = ParallelConfig(manager_ip="192.168.1.100", port=5000, num_workers=16)
+        pc = ParallelConfig(manager_ip="192.168.1.100", port=5000, num_workers=1)
         assert pc.manager_ip == "192.168.1.100"
