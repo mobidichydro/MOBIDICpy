@@ -87,7 +87,7 @@ pest_tool: glm
 
 # PEST++ options (global)
 pest_options:
-  noptmax: 10
+  noptmax: 10          # Maximum number of optimization iterations (default: 10)
   pst_version: 2       # PST control file version: 1 = PEST, 2 = PEST++ (default: 2)
   relparmax: 10.0      # Max relative parameter change per iteration (default: 10.0, PEST++ Users Guide p. 47)
   facparmax: 10.0      # Max factor parameter change per iteration (default: 10.0, PEST++ Users Guide p. 47)
@@ -98,7 +98,8 @@ working_dir: "pest_run"
 # Parallel execution
 # Local mode (default): manager_ip is null -> starts manager + agents on this machine
 # Cluster mode: set manager_ip to the manager's IP address -> starts agents only
+# num_workers: null = use all available CPUs, N = use N workers (warns if N > available)
 parallel:
-  num_workers: 4
+  num_workers: 8
   port: 4004
   manager_ip: null
