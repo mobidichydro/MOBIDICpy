@@ -1,9 +1,11 @@
 """Pydantic models for PEST++ calibration configuration."""
 
+import os
 from pathlib import Path
 from typing import Literal, Optional
 
 import pandas as pd
+from loguru import logger
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -134,9 +136,22 @@ class CalibrationPeriod(BaseModel):
 class ParallelConfig(BaseModel):
     """Configuration for parallel PEST++ execution."""
 
-    num_workers: Optional[int] = Field(None, description="Workers per node (default: all available CPUs)")
+    num_workers: Optional[int] = Field(None, description="Workers per node (null = all available CPUs)")
     port: int = Field(4004, description="TCP port for manager-agent communication")
     manager_ip: Optional[str] = Field(None, description="Manager IP for cluster mode (None = local mode)")
+
+    @field_validator("num_workers")
+    @classmethod
+    def check_num_workers(cls, v: int | None) -> int | None:
+        """Validate num_workers is positive and does not exceed available CPUs."""
+        if v is None:
+            return v
+        if v <= 0:
+            raise ValueError("num_workers must be a positive integer or null (all CPUs)")
+        available = os.cpu_count()
+        if available is not None and v > available:
+            logger.warning(f"num_workers={v} exceeds available CPUs ({available}). Consider reducing it.")
+        return v
 
     @field_validator("port")
     @classmethod
