@@ -67,7 +67,7 @@ parameters:
 # Observations
 observations:
   - name: Q_292
-    obs_file: "observations/Q_Nave_di_Rosano_2023.csv"
+    obs_file: "../datasets/Arno_event_Nov_2023/data/Q_Nave_di_Rosano_2023.csv"
     reach_id: 292
     weight: 1.0
     time_column: time
