@@ -1,7 +1,7 @@
 """Example: Gradient-based calibration of Arno basin using pestpp-glm (Gauss-Levenberg-Marquardt).
 
 This script demonstrates the GLM calibration workflow:
-1. Load calibration configuration
+1. Preprocess data, and convert meteorological forcing to NetCDF format
 2. Set up PEST++ working directory
 3. Run pestpp-glm
 4. Plot results
@@ -11,7 +11,11 @@ Prerequisites:
         make install-calib
             or (manually)
         pip install mobidicpy[calibration] && get-pestpp :pyemu
-    - Ensure preprocessed simulation data is available (gisdata.nc, network.parquet)
+    - Ensure pestpp-glm executable is added to PATH
+
+Usage:
+    python examples/01-event-Arno-basin/05_calibrate_Arno_glm.py
+
 """
 
 from pathlib import Path
@@ -20,9 +24,13 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 from mobidic.calibration import PestSetup, kge, nse
+from mobidic.calibration.config import load_calibration_config
 from mobidic import (
     load_config,
+    save_gisdata,
+    save_network,
     run_preprocessing,
+    MeteoData,
     MeteoRaster,
     Simulation,
     configure_logger_from_config,
@@ -30,9 +38,50 @@ from mobidic import (
 
 
 # Path to calibration configuration
-calib_config_path = Path(__file__).parent / "calibration.yaml"
+calib_config_path = Path(__file__).parent / "Arno.calibration.yaml"
 
-# Create PestSetup and generate all PEST++ files
+# Path to meteorological data in .mat format
+meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+
+# Read calibration configuration
+calib_config = load_calibration_config(calib_config_path)
+
+# Path to main MOBIDIC config file
+mobidic_config = Path(calib_config.mobidic_config)
+config_file = mobidic_config if mobidic_config.is_absolute() else Path(__file__).parent / mobidic_config
+
+
+# =========================================================================
+# Step 1: Run preprocessing and convert meteo forcing to .nc
+# =========================================================================
+config = load_config(config_file)
+gisdata = run_preprocessing(config)
+
+# Save preprocessed data
+print("  Saving preprocessed GIS data...")
+save_gisdata(gisdata, config.paths.gisdata)
+save_network(gisdata.network, config.paths.network, format="parquet")
+
+# Load and convert meteorological data
+meteo_data = MeteoData.from_mat(meteodata_mat_path)
+
+# Create meteodata folder if it doesn't exist
+config.paths.meteodata.parent.mkdir(parents=True, exist_ok=True)
+
+# Save to NetCDF format
+meteo_data.to_netcdf(
+    config.paths.meteodata,
+    add_metadata={
+        "basin": config.basin.id,
+        "description": "Arno basin meteorological data",
+    },
+)
+
+# =========================================================================
+# Step 2: Run PEST++ GLM calibration
+# =========================================================================
+
+# Initialize PestSetup and generate all PEST++ files
 pest = PestSetup(calib_config_path)
 working_dir = pest.setup()
 
@@ -62,11 +111,11 @@ if sens is not None:
     print("\nParameter sensitivities:")
     print(sens.to_string(index=False))
 
-# --- Run validation simulation with optimal parameters ---
+# =========================================================================
+# Step 3: Run validation simulation with optimal parameters and plot results
+# =========================================================================
 print("\nRunning validation simulation with optimal parameters...")
 
-current_dir = Path(__file__).parent
-config_file = current_dir / "Arno.yaml"
 config = load_config(config_file)
 
 # Map PEST parameter names to YAML dot-paths
