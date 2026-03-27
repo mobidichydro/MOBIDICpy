@@ -82,16 +82,41 @@ class CalibrationResults:
     def get_objective_function_history(self) -> pd.DataFrame | None:
         """Get objective function values across iterations.
 
+        Returns a DataFrame with at minimum ``iteration`` and ``phi`` columns.
+        The source file and meaning of ``phi`` depend on the PEST++ tool:
+
+        - ``glm``: reads ``calibration.iobj`` (CSV); ``phi`` = ``total_phi``.
+        - ``ies``: reads ``calibration.phi.actual.csv``; ``phi`` = mean across
+          ensemble members. Extra columns ``std`` and one column per member are
+          also included.
+        - other tools: reads ``calibration.rec``; ``phi`` = total phi extracted
+          from the record file.
+
         Returns:
             DataFrame with iteration number and phi (objective function value),
-            or None if record file not found.
+            or None if the expected file is not found.
         """
-        rec_path = self.master_dir / "calibration.rec"
-        if not rec_path.exists():
-            logger.warning(f"Record file not found: {rec_path}")
-            return None
+        match self.calib_config.pest_tool:
+            case "glm":
+                iobj_path = self.master_dir / "calibration.iobj"
+                if not iobj_path.exists():
+                    logger.warning(f"iobj file not found: {iobj_path}")
+                    return None
+                return self._parse_iobj_phi(iobj_path)
 
-        return self._parse_rec_phi(rec_path)
+            case "ies":
+                phi_path = self.master_dir / "calibration.phi.actual.csv"
+                if not phi_path.exists():
+                    logger.warning(f"IES phi file not found: {phi_path}")
+                    return None
+                return self._parse_ies_phi(phi_path)
+
+            case _:
+                rec_path = self.master_dir / "calibration.rec"
+                if not rec_path.exists():
+                    logger.warning(f"Record file not found: {rec_path}")
+                    return None
+                return self._parse_rec_phi(rec_path)
 
     def get_residuals(self) -> pd.DataFrame | None:
         """Get observation residuals (simulated - observed) from the final iteration.
@@ -111,29 +136,6 @@ class CalibrationResults:
         rei_file = rei_files[-1]
         logger.info(f"Reading residuals from: {rei_file}")
         return self._parse_rei_file(rei_file)
-
-    def get_ies_phi_history(self) -> pd.DataFrame | None:
-        """Get IES ensemble phi history from calibration.phi.actual.csv.
-
-        Returns:
-            DataFrame with columns 'iteration', 'mean', 'std', and one column per
-            ensemble member, or None if the file is not found.
-        """
-        phi_path = self.master_dir / "calibration.phi.actual.csv"
-        if not phi_path.exists():
-            logger.warning(f"IES phi file not found: {phi_path}")
-            return None
-
-        df = pd.read_csv(phi_path, index_col=0)
-        df.index.name = "iteration"
-        df = df.reset_index()
-
-        member_cols = [c for c in df.columns if c != "iteration"]
-        df["mean"] = df[member_cols].mean(axis=1)
-        df["std"] = df[member_cols].std(axis=1)
-
-        logger.info(f"Read IES phi history: {len(df)} iterations, {len(member_cols)} ensemble members")
-        return df
 
     def get_parameter_sensitivities(self) -> pd.DataFrame | None:
         """Get parameter sensitivities (from pestpp-sen or GLM Jacobian).
@@ -215,6 +217,24 @@ class CalibrationResults:
                 value = float(parts[1])
                 params[name] = value
         return params
+
+    def _parse_ies_phi(self, phi_path: Path) -> pd.DataFrame:
+        """Parse objective function history from IES calibration.phi.actual.csv."""
+        df = pd.read_csv(phi_path, index_col=0)
+        df.index.name = "iteration"
+        df = df.reset_index()
+        member_cols = [c for c in df.columns if c != "iteration"]
+        df["phi"] = df[member_cols].mean(axis=1)
+        df["std"] = df[member_cols].std(axis=1)
+        logger.info(f"Read IES phi history from {phi_path}: {len(df)} iterations, {len(member_cols)} ensemble members")
+        return df
+
+    def _parse_iobj_phi(self, iobj_path: Path) -> pd.DataFrame:
+        """Parse objective function history from GLM .iobj CSV file."""
+        df = pd.read_csv(iobj_path)
+        result = df[["iteration", "total_phi"]].rename(columns={"total_phi": "phi"})
+        logger.info(f"Read GLM phi history from {iobj_path}: {len(result)} iterations")
+        return result
 
     def _parse_rec_phi(self, rec_path: Path) -> pd.DataFrame:
         """Parse objective function history from .rec file."""
