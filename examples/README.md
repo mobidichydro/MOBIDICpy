@@ -147,22 +147,14 @@ gsa_morris_r = 10    # Number of Morris trajectories (samples)
 
 ### Prerequisites
 
-1. Install MOBIDICpy in development mode:
+1. Install MOBIDICpy with all dependencies:
    ```bash
+   # Base package
    pip install -e .
-   ```
 
-2. Ensure you have the required dependencies:
-   ```bash
-   pip install matplotlib
-   ```
-
-3. For calibration and sensitivity analysis examples (05–07), install PEST++ dependencies:
-   ```bash
+   # For calibration and sensitivity analysis examples (05–07)
    make install-calib
-   ```
-   or manually:
-   ```bash
+   # or manually:
    pip install "mobidicpy[calibration]" && get-pestpp :pyemu
    ```
    Make sure the `pestpp-glm`, `pestpp-ies`, and `pestpp-sen` executables are on the `PATH` of the system.
