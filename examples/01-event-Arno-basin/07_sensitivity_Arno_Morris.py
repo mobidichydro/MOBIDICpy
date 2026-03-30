@@ -1,11 +1,11 @@
-"""Example: Morris globalsensitivity analysis of Arno basin using pestpp-sen.
+"""Example: Morris global sensitivity analysis of Arno basin using pestpp-sen.
 
 This script demonstrates the sensitivity analysis workflow:
 1. Preprocess data, and convert meteorological forcing to NetCDF format
-2. Load calibration configuration
+2. Load configuration
 3. Set up PEST++ for sensitivity analysis
 4. Run pestpp-sen with Morris method
-5. Analyze parameter rankings
+5. Analyze parameter sensitivities
 
 Prerequisites:
     - Install calibration dependencies and PEST++ binaries:
@@ -100,5 +100,5 @@ results = pest.run()
 # Get parameter sensitivities
 sens = results.get_parameter_sensitivities()
 if sens is not None:
-    print("\nParameter sensitivity ranking:")
+    print("\nParameter sensitivity:")
     print(sens.to_string(index=False))
