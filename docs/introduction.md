@@ -85,6 +85,24 @@ Several groundwater models are available:
 - **MODFLOW**: Coupling with USGS MODFLOW
 
 
+
+## Calibration and sensitivity analysis
+
+MOBIDICpy includes an integrated interface to [PEST++](https://github.com/usgs/pestpp) by USGS for automated parameter estimation, global sensitivity analysis, and uncertainty quantification without requiring manual PEST++ file management.
+
+The integration is built on [pyEMU](https://github.com/pypest/pyemu) and (currently) supports the following [PEST++](https://github.com/usgs/pestpp) tools:
+
+- **pestpp-glm**: Gradient-based calibration using the Gauss-Levenberg-Marquardt algorithm
+- **pestpp-ies**: Ensemble-based calibration and uncertainty quantification using an Iterative Ensemble Smoother
+- **pestpp-sen**: Global sensitivity analysis using the Morris one-at-a-time (OAT) method or Sobol method.
+
+The calibration workflow is driven by a dedicated YAML configuration file that specifies the parameters to estimate, the observation time series, the objective function, the simulation and calibration periods, and options for parallel model execution. The `PestSetup` class generates all necessary PEST++ files, runs the forward model in parallel, and parses the results.
+
+Metric-based pseudo-observations (NSE, KGE, PBIAS, RMSE, peak error) can be included directly in the objective function alongside raw discharge residuals, allowing multi-criteria calibration in a single PEST++ run.
+
+See the [Calibration API reference](reference/calibration.md) and [Examples](examples.md) for usage.
+
+
 ## Applications
 
 MOBIDIC has been successfully applied to:

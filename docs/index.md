@@ -17,8 +17,13 @@ MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a physically-
 git clone https://github.com/mobidichydro/mobidicpy.git
 cd mobidicpy
 
-# Install the package
+# Install the base package
 pip install .
+
+# For calibration and sensitivity analysis (PEST++)
+make install-calib
+# or manually:
+pip install .[calibration] && get-pestpp :pyemu
 
 # For development with all dependencies
 pip install --no-cache-dir --editable .[dev]
@@ -43,7 +48,7 @@ sim = mobidic.Simulation(gisdata, forcing, config)
 results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
 ```
 
-See [examples/run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blob/main/examples/run_example_Arno.py) for a complete working example with visualization.
+See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blob/main/examples/01-event-Arno-basin/01a_run_example_Arno.py) for a complete working example with visualization.
 
 ## Features
 
@@ -62,9 +67,10 @@ See [examples/run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blo
 - Reservoir module (preprocessing, routing, time-varying regulation)
 - Basic I/O (NetCDF states, Parquet time series, export of interpolated meteorological data)
 
+- Calibration, sensitivity, and uncertainty analysis ([PEST++](https://github.com/usgs/pestpp) coupling via [pyEMU](https://github.com/pypest/pyemu))
+
 **To be implemented**
 
-- Calibration, sensitivity, and uncertainty analysis tools
 - Meteorological data gap filling and quality control
 - Energy balance schemes
 - Groundwater models

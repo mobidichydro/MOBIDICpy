@@ -95,9 +95,21 @@ Export discharge and lateral inflow time series.
 - [`save_lateral_inflow_report()`](report.md#mobidic.io.report.save_lateral_inflow_report) - Export lateral inflow time series
 - [`load_discharge_report()`](report.md#mobidic.io.report.load_discharge_report) - Load discharge time series
 
+### [Calibration](calibration.md)
+Model calibration, global sensitivity analysis, and uncertainty quantification using PEST++.
+
+Requires optional dependencies: `pip install "mobidicpy[calibration]" && get-pestpp :pyemu`
+
+- [`PestSetup`](calibration.md#mobidic.calibration.pest_setup.PestSetup) - Orchestrates the complete PEST++ workflow (setup, run, results)
+- [`CalibrationResults`](calibration.md#mobidic.calibration.results.CalibrationResults) - Parses PEST++ output files (parameters, objective function, sensitivities)
+- [`CalibrationConfig`](calibration.md#mobidic.calibration.config.CalibrationConfig) - Pydantic model for calibration configuration
+- [`load_calibration_config()`](calibration.md#mobidic.calibration.config.load_calibration_config) - Load calibration configuration from YAML
+- [`nse()`](calibration.md#mobidic.calibration.metrics.nse), [`kge()`](calibration.md#mobidic.calibration.metrics.kge), [`pbias()`](calibration.md#mobidic.calibration.metrics.pbias), [`rmse()`](calibration.md#mobidic.calibration.metrics.rmse) - Hydrological performance metrics
+- [`load_observations()`](calibration.md#mobidic.calibration.observation.load_observations) - Load observation time series from CSV
+
 ## Quick import
 
-All public APIs are available from the top-level `mobidic` package:
+All core APIs are available from the top-level `mobidic` package. The calibration module is under `mobidic.calibration`:
 
 ```python
 from mobidic import (
@@ -177,9 +189,12 @@ MOBIDICpy's currently implemented features (v0.0.1):
 - ✅ Simulation engine (basic)
 - ✅ State I/O (NetCDF)
 - ✅ Report I/O (CSV/Parquet discharge time series)
+- ✅ Calibration and sensitivity analysis (PEST++ coupling via pyemu)
 
 Coming soon:
 
 - ⏳ Energy balance module (1L, 5L schemes, Snow)
 - ⏳ Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
 - ⏳ Advanced routing (Muskingum-Cunge)
+- ⏳ Meteorological data gap filling and quality control
+- ⏳ CLI interface
