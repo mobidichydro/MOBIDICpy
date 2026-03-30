@@ -27,6 +27,7 @@ nav:
     - Simulation: reference/simulation.md
     - State I/O: reference/state.md
     - Report I/O: reference/report.md
+    - Calibration: reference/calibration.md
 
 theme:
   name: "material"
