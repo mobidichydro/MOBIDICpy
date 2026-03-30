@@ -1,0 +1,131 @@
+# Calibration configuration for Arno River Basin
+# PEST++ integration with MOBIDICpy
+
+
+######## CASE SETTINGS
+
+# OPTIONAL: File name prefix for PEST++ output files.
+# [Any string. Default: "sensitivity" when pest_tool=sen, "calibration" otherwise]
+case_name: calibration
+
+# REQUIRED: Path to MOBIDIC simulation configuration
+# [path to .yaml file, e.g.: Arno.yaml]
+mobidic_config: "Arno.yaml"
+
+
+######## SIMULATION PERIOD
+
+# REQUIRED: Full time window the forward model runs.
+# [Format: "YYYY-MM-DD HH:MM:SS"]
+simulation_period:
+  start_date: "2023-10-31 00:15:00"
+  end_date: "2023-11-04 23:45:00"
+
+# OPTIONAL: Calibration period.
+# [Format: "YYYY-MM-DD HH:MM:SS". Observations outside this window (e.g. during warm-up) are ignored]
+calibration_period:
+  start_date: "2023-11-01 00:00:00"
+  end_date: "2023-11-04 23:45:00"
+
+# OPTIONAL: If true, the meteorological raster is produced on the first run and reused in subsequent runs.
+# [boolean, default: false]
+use_raster_forcing: true
+
+
+######## CALIBRATION PARAMETERS
+
+# REQUIRED: Parameters to be calibrated by PEST++.
+# [parameter_key uses dot notation for MOBIDIC configuration keys; transform: log | none | fixed]
+parameters:
+  - name: alpha
+    parameter_key: parameters.soil.alpha # REQUIRED: Parameter key in the MOBIDIC configuration [dot notation, e.g.: parameters.soil.alpha]
+    initial_value: 8.0e-06  # REQUIRED: Initial parameter value
+    lower_bound: 1.0e-08    # REQUIRED: Lower bound for parameter estimation
+    upper_bound: 1.0e-04    # REQUIRED: Upper bound for parameter estimation
+    transform: log          # REQUIRED: Parameter transformation [log | none | fixed]
+    scale: 1.0              # OPTIONAL: Multiplication factor applied by PEST++ [positive float, default: 1.0]
+    offset: 0.0             # OPTIONAL: Additive offset applied by PEST++ [float, default: 0.0]
+    par_group: soil         # OPTIONAL: Parameter group name for PEST++ [Any string with no blank characters]
+
+  - name: beta
+    parameter_key: parameters.soil.beta
+    initial_value: 5.0e-05
+    lower_bound: 1.0e-08
+    upper_bound: 1.0e-04
+    transform: log
+    par_group: soil
+
+  - name: gamma
+    parameter_key: parameters.soil.gamma
+    initial_value: 5.0e-04
+    lower_bound: 1.0e-09
+    upper_bound: 1.0e-03
+    transform: log
+    par_group: soil
+
+  - name: kappa
+    parameter_key: parameters.soil.kappa
+    initial_value: 1.0e-04
+    lower_bound: 1.0e-09
+    upper_bound: 1.0e-03
+    transform: log
+    par_group: soil
+
+
+######## OBSERVATIONS
+
+# REQUIRED: Observation time series for PEST++ calibration.
+observations:
+  - name: Q_292
+    obs_file: "../datasets/Arno_event_Nov_2023/data/Q_Nave_di_Rosano_2023.csv" # REQUIRED: Path to observation data file [path to .csv file]
+    reach_id: 292 # REQUIRED: River reach ID to compare with observations [positive integer matching a reach ID in the network]
+    weight: 1.0 # OPTIONAL: Weight for this observation group [positive float, default: 1.0]
+    time_column: time # REQUIRED: Name of the time column in the observation file [string matching a column name in obs_file]
+    value_column: Q_292 # REQUIRED: Name of the value column in the observation file [string matching a column name in obs_file]
+    
+    # OPTIONAL: Derived metrics as pseudo-observations
+    metrics:
+      - metric: nse   # REQUIRED: Metric type (HydroErr package metric names) [nse | peak_error | ...]
+        target: 1.0   # REQUIRED: Target value for this metric pseudo-observation [float]
+        weight: 10.0  # REQUIRED: Weight for this metric pseudo-observation [positive float]
+      - metric: peak_error
+        target: 0.0
+        weight: 8.0
+
+
+######## PEST++ SETTINGS
+
+# OPTIONAL: PEST++ tool for parameter estimation.
+# [glm (Gauss-Levenberg-Marquardt) | ies (ensemble smoother) | sen (sensitivity), default: glm]
+pest_tool: glm
+
+# OPTIONAL: PEST++ global options.
+pest_options:
+  noptmax: 10     # OPTIONAL: Maximum number of optimization iterations [positive integer, default: 10]
+  pst_version: 2  # OPTIONAL: PST control file version [1 = PEST, 2 = PEST++, default: 2]
+  relparmax: 10.0 # OPTIONAL: Maximum relative parameter change per iteration [positive float, default: 10.0. See PEST++ Users Guide p. 47]
+  facparmax: 10.0 # OPTIONAL: Maximum factor parameter change per iterationpositive float, default: 10.0]
+
+
+######## WORKING DIRECTORY
+
+# OPTIONAL: Working directory for PEST++ files.
+# [path to directory, default: "pest_run"]
+working_dir: "pest_run"
+
+
+######## PARALLEL EXECUTION
+
+# OPTIONAL: Parallel execution configuration.
+# [Local mode: manager_ip is null (starts manager + agents on this machine);
+#  Cluster mode: manager_ip set to the manager IP address (starts agents only)]
+parallel:
+  # OPTIONAL: Number of worker agents for parallel runs.
+  # [null = use all available CPUs, positive integer N = use N workers (warns if N > available)]
+  num_workers: 8
+  # OPTIONAL: Port for PEST++ manager-worker communication.
+  # [positive integer, default: 4004]
+  port: 4004
+  # OPTIONAL: IP address of the PEST++ manager for cluster mode.
+  # [null = local mode, string IP address = cluster mode]
+  manager_ip: null

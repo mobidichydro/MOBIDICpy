@@ -4,11 +4,7 @@ This script shows how to convert MATLAB .mat meteorological data file to
 CF-compliant NetCDF format for use in MOBIDIC simulations.
 """
 
-import sys
 from pathlib import Path
-
-# Add parent directory to path for development (no install needed)
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from mobidic import MeteoData, convert_mat_to_netcdf
 from mobidic.utils import configure_logger
@@ -21,8 +17,8 @@ print("=" * 80)
 print("Example 1: Direct MAT to NetCDF conversion")
 print("=" * 80)
 
-mat_file = Path(__file__).parent / "Arno/meteodata/meteodata.mat"
-output_file = Path(__file__).parent / "Arno/meteodata/meteodata.nc"
+mat_file = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+output_file = Path(__file__).parent / "meteodata.nc"
 
 convert_mat_to_netcdf(
     mat_file,

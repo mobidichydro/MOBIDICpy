@@ -15,7 +15,7 @@ from mobidic.utils import configure_logger
 configure_logger(level="INFO")
 
 # Path to sample configuration
-config_path = Path(__file__).parent / "sample_config.yaml"
+config_path = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Load and validate configuration
 try:
@@ -185,18 +185,25 @@ logger.info(f"Discharge: {config.output_states.discharge}")
 logger.info(f"Reservoir States: {config.output_states.reservoir_states}")
 logger.info(f"Soil Capillary: {config.output_states.soil_capillary}")
 logger.info(f"Soil Gravitational: {config.output_states.soil_gravitational}")
+logger.info(f"Soil Plant: {config.output_states.soil_plant}")
+logger.info(f"Soil Surface: {config.output_states.soil_surface}")
 logger.info(f"Surface Temperature: {config.output_states.surface_temperature}")
 logger.info(f"Ground Temperature: {config.output_states.ground_temperature}")
 logger.info(f"Aquifer Head: {config.output_states.aquifer_head}")
-logger.info(f"ET/Precip: {config.output_states.et_prec}")
+logger.info(f"Evapotranspiration: {config.output_states.evapotranspiration}")
 
 logger.info("")
 logger.info("=" * 60)
 logger.info("Output States Settings:")
 logger.info("=" * 60)
 logger.info(f"Output Format: {config.output_states_settings.output_format}")
-if hasattr(config.output_states_settings, "output_interval") and config.output_states_settings.output_interval:
+logger.info(f"Output States: {config.output_states_settings.output_states}")
+if config.output_states_settings.output_interval:
     logger.info(f"Output Interval: {config.output_states_settings.output_interval} seconds")
+if config.output_states_settings.output_list:
+    logger.info(f"Output List: {config.output_states_settings.output_list}")
+logger.info(f"Flushing: {config.output_states_settings.flushing}")
+logger.info(f"Max File Size: {config.output_states_settings.max_file_size} MB")
 
 if hasattr(config, "output_report"):
     logger.info("")
@@ -207,6 +214,12 @@ if hasattr(config, "output_report"):
         logger.info(f"Discharge: {config.output_report.discharge}")
     if hasattr(config.output_report, "lateral_inflow"):
         logger.info(f"Lateral Inflow: {config.output_report.lateral_inflow}")
+
+logger.info("")
+logger.info("=" * 60)
+logger.info("Output Forcing Data:")
+logger.info("=" * 60)
+logger.info(f"Meteo Data: {config.output_forcing_data.meteo_data}")
 
 logger.info("")
 logger.info("=" * 60)

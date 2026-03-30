@@ -19,8 +19,7 @@ from mobidic import (
 )
 
 # Get directory containing this script
-SCRIPT_DIR = Path(__file__).parent
-EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+EXAMPLE_DIR = Path(__file__).parent.parent / "01-event-Arno-basin"
 
 # Configuration
 config = load_config(EXAMPLE_DIR / "Arno.yaml")
@@ -75,7 +74,7 @@ print("\n" + "=" * 60)
 print("STEP 4: Exporting results")
 print("=" * 60)
 
-reach_map_output_path = EXAMPLE_DIR / "output" / "reach_map.tif"
+reach_map_output_path = Path(__file__).parent / "reach_map.tif"
 
 with rasterio.open(config.raster_files.flow_dir) as src:
     profile = src.profile

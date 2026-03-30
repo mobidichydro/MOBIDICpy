@@ -21,8 +21,11 @@ cd mobidicpy
 python -m venv venv
 source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 
-# Install the package
+# Install the base package
 pip install .
+
+# For calibration and sensitivity analysis (PEST++)
+pip install .[calibration] && get-pestpp :pyemu
 
 # For development with all dependencies
 pip install --no-cache-dir --editable .[dev]

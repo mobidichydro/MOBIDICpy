@@ -4,8 +4,11 @@ MOBIDIC Validation Python vs MATLAB discharge and lateral inflow results
 This script compares discharge and lateral inflow outputs from the Python
 implementation against the MATLAB reference implementation for the Arno River basin.
 
+It is required to run 04a_run_example_Arno_reservoirs.py first to generate the output files.
+
 Usage:
-    python examples/run_example_Arno_reservoirs_plots.py
+    python examples/01-event-Arno-basin/04a_run_example_Arno_reservoirs.py
+    python examples/01-event-Arno-basin/04b_run_example_Arno_reservoirs_plots.py
 
 The script will:
 1. Load Python output files (Parquet format)
@@ -385,10 +388,10 @@ def main():
     """Main function to compare Python and MATLAB outputs."""
 
     # Define paths
-    example_dir = Path(__file__).parent / "Arno"
+    example_dir = Path(__file__).parent
     output_dir = example_dir / "output"
-    matlab_dir = output_dir / "matlab"
-    data_dir = example_dir / "data"
+    matlab_dir = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "output" / "matlab"
+    data_dir = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "data"
 
     # Compare discharge
     discharge_results = compare_variable(

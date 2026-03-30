@@ -18,7 +18,17 @@ help:  ## Show this help message
 # Setup and Installation
 .PHONY: install-dev
 install-dev:  ## Install package in development mode with dev dependencies
-	$(PIP) install --no-cache-dir --editable .[dev]
+	$(PIP) install --no-cache-dir --editable ".[dev,doc,calibration]"
+	$(PYTHON) -W ignore::UserWarning -c "from pyemu.utils import get_pestpp; get_pestpp(':pyemu')"
+
+.PHONY: install
+install:  ## Install package with core dependencies
+	$(PIP) install .
+
+.PHONY: install-calib
+install-calib:  ## Install calibration dependencies
+	$(PIP) install .[calibration]
+	$(PYTHON) -W ignore::UserWarning -c "from pyemu.utils import get_pestpp; get_pestpp(':pyemu')"
 
 .PHONY: install-doc
 install-doc:  ## Install documentation dependencies

@@ -2,292 +2,196 @@
 
 This directory contains example scripts and data for running MOBIDIC hydrological simulations.
 
+The example folder is organised as follows:
+
+
+- `00-numerical_validation/`: Scripts and data for validating MOBIDICpy numerical implementation against original MATLAB implementation.
+
+- `01-event-Arno-basin/`: A complete workflow for a flood event in the Arno River basin, including calibration and sensitivity analysis examples
+
+- `datasets/`: Example input data, including GIS rasters, river network shapefile, meteorological data, observed discharge, and reservoir information.
+
+- `demos/`: Python scripts demonstrating specific features of MOBIDICpy, such as parser usage, hillslope to reach mapping, river network processing, and a complete pre-processing workflow.
+
+
 ## Available examples
 
-### Arno River basin example
+### 01a — Basic simulation
 
-The `run_example_Arno.py` script demonstrates the complete MOBIDICpy workflow using data from the Arno River basin in Tuscany, Italy.
+The `01a_run_example_Arno.py` script demonstrates the complete MOBIDICpy workflow using data from the Arno River basin in Italy, for a flood event occurred in November 2023. It serves as a comprehensive example of how to set up and run a simulation from raw data to final outputs.
 
-**Location:** `examples/run_example_Arno.py`
+**Location:** `examples/01-event-Arno-basin/01a_run_example_Arno.py`
 
-**Data:** `examples/Arno/`
+**What it does:**
 
-### Validation: Python vs MATLAB
+1. Loads configuration from `Arno.yaml`
+2. Preprocesses GIS data (DEM, flow direction, soil parameters, river network)
+3. Converts meteorological data from MATLAB `.mat` to CF-compliant NetCDF
+4. Runs simulation over the forcing period
+5. Saves final model state and discharge time series
+6. Plots an example discharge hydrograph
 
-The `run_example_Arno_plots.py` script validates the Python implementation against MATLAB reference outputs by comparing discharge time series.
+### 01b — Validation: Python vs MATLAB
 
-**Location:** `examples/run_example_Arno_plots.py`
+The `01b_run_example_Arno_plots.py` script validates the Python implementation against MATLAB reference outputs by comparing discharge time series.
+
+**Location:** `examples/01-event-Arno-basin/01b_run_example_Arno_plots.py`
 
 **Requirements:**
-- Python discharge output from `run_example_Arno.py`
-- MATLAB reference discharge output (CSV format) in `Arno/output/matlab/discharge.csv`
+- Python discharge output from `01a_run_example_Arno.py`
+- MATLAB reference discharge output in `datasets/Arno_event_Nov_2023/output/matlab/discharge.csv`
 
-**Purpose:** Regression testing to ensure the Python implementation produces results equivalent to the original MATLAB code.
+### 02 — Raster forcing comparison
 
-### Restart capability demonstration
+The `02_run_example_Arno_raster_forcing.py` script demonstrates the raster-based meteorological forcing workflow and validates that it produces identical results to station-based forcing.
 
-The `run_example_Arno_restart.py` script demonstrates the simulation restart capability by running a simulation in two stages and comparing against a continuous run.
+**Location:** `examples/01-event-Arno-basin/02_run_example_Arno_raster_forcing.py`
 
-**Location:** `examples/run_example_Arno_restart.py`
+### 03 — Restart capability
+
+The `03_run_example_Arno_restart.py` script demonstrates the simulation restart capability by running a simulation in two stages and comparing against a continuous run.
+
+**Location:** `examples/01-event-Arno-basin/03_run_example_Arno_restart.py`
 
 **Purpose:**
+
 - Demonstrates how to save and load intermediate simulation states
-- Shows how to continue simulations after interruption
 - Validates that restarted simulations produce identical results to continuous runs
 - Illustrates multi-stage modeling workflows
 
-## Quick Start
+### 04a — Reservoir model
+
+The `04a_run_example_Arno_reservoirs.py` script demonstrates reservoir modeling capabilities.
+
+**Location:** `examples/01-event-Arno-basin/04a_run_example_Arno_reservoirs.py`
+
+### 04b — Reservoir validation plots
+
+The `04b_run_example_Arno_reservoirs_plots.py` script validates reservoir results against MATLAB reference outputs.
+
+**Location:** `examples/01-event-Arno-basin/04b_run_example_Arno_reservoirs_plots.py`
+
+### 05 — GLM calibration (PEST++)
+
+The `05_calibrate_Arno_glm.py` script demonstrates gradient-based model calibration using `pestpp-glm` (Gauss-Levenberg-Marquardt).
+
+**Location:** `examples/01-event-Arno-basin/05_calibrate_Arno_glm.py`
+
+**What it does:**
+
+1. Preprocesses GIS data and converts meteorological forcing to NetCDF
+2. Initializes `PestSetup` from `Arno.calibration.yaml` and generates all PEST++ files
+3. Runs `pestpp-glm` in parallel with configurable workers
+4. Extracts optimal parameters, objective function history, and parameter sensitivities
+5. Runs a validation simulation with optimal parameters
+6. Plots observed vs simulated discharge (with NSE/KGE metrics) and objective function convergence
+
+**Output:**
+
+- Optimal parameter values (alpha, beta, gamma, kappa)
+- Objective function history by iteration
+- Parameter sensitivity from the Jacobian
+- Plot discharge comparison and convergence curve
+
+### 06 — IES ensemble calibration (PEST++)
+
+The `06_calibrate_Arno_ies.py` script demonstrates ensemble-based calibration using `pestpp-ies` (Iterative Ensemble Smoother).
+
+**Location:** `examples/01-event-Arno-basin/06_calibrate_Arno_ies.py`
+
+**Settings at the top of the script:**
+```python
+noptmax = 3          # Maximum optimization iterations
+ies_num_reals = 20   # Number of ensemble members
+```
+
+**What it does:**
+
+1. Preprocesses GIS data and converts meteorological forcing to NetCDF
+2. Overrides `pest_tool` to `ies` and configures ensemble settings
+3. Runs `pestpp-ies` (ensemble generated automatically by PEST++)
+4. Extracts optimal parameters and ensemble statistics for the objective function
+5. Runs a validation simulation with optimal parameters
+6. Plots observed vs simulated discharge and ensemble objective function history (mean ± std)
+
+**Output:**
+
+- Optimal parameters from the ensemble mean
+- Objective function history with ensemble spread (mean ± std per iteration)
+- Two-panel plot: discharge comparison and ensemble convergence
+
+### 07 — Morris global sensitivity analysis (PEST++)
+
+The `07_sensitivity_Arno_Morris.py` script demonstrates global sensitivity analysis using `pestpp-sen` with the Morris one-at-a-time (OAT) method.
+
+**Location:** `examples/01-event-Arno-basin/07_sensitivity_Arno_Morris.py`
+
+**Settings at the top of the script:**
+```python
+gsa_morris_r = 10    # Number of Morris trajectories (samples)
+```
+
+**What it does:**
+
+1. Preprocesses GIS data and converts meteorological forcing to NetCDF
+2. Overrides `pest_tool` to `sen` and configures Morris options
+3. Runs `pestpp-sen` in parallel across all available CPUs
+4. Reads Morris sensitivity indices (mean, mean_abs, std_dev) from `.msn` output file
+
+**Output:**
+
+- Table of Morris sensitivity indices per parameter (μ*, μ, σ)
+- Higher μ* indicates greater influence on model output
+
+## Quick start
 
 ### Prerequisites
 
-1. Install MOBIDICpy in development mode:
+1. Install MOBIDICpy with all dependencies:
    ```bash
+   # Base package
    pip install -e .
+
+   # For calibration and sensitivity analysis examples (05–07)
+   make install-calib
+   # or manually:
+   pip install "mobidicpy[calibration]" && get-pestpp :pyemu
    ```
+   Make sure the `pestpp-glm`, `pestpp-ies`, and `pestpp-sen` executables are on the `PATH` of the system.
 
-2. Ensure you have the required dependencies:
-   ```bash
-   pip install matplotlib
-   ```
-
-### Running the Arno example
+### Running the examples
 
 ```bash
-cd examples
-python run_example_Arno.py
+# Basic simulation
+python examples/01-event-Arno-basin/01a_run_example_Arno.py
+
+# Validation plots (requires 01a output)
+python examples/01-event-Arno-basin/01b_run_example_Arno_plots.py
+
+# Raster forcing comparison
+python examples/01-event-Arno-basin/02_run_example_Arno_raster_forcing.py
+
+# Restart capability
+python examples/01-event-Arno-basin/03_run_example_Arno_restart.py
+
+# Reservoir model
+python examples/01-event-Arno-basin/04a_run_example_Arno_reservoirs.py
+
+# GLM calibration
+python examples/01-event-Arno-basin/05_calibrate_Arno_glm.py
+
+# IES ensemble calibration
+python examples/01-event-Arno-basin/06_calibrate_Arno_ies.py
+
+# Morris sensitivity analysis
+python examples/01-event-Arno-basin/07_sensitivity_Arno_Morris.py
 ```
-
-Or from the project root:
-
-```bash
-python examples/run_example_Arno.py
-```
-
-### Plotting the validation results
-
-After running the main example, validate against MATLAB reference outputs:
-
-```bash
-python examples/run_example_Arno_plots.py
-```
-
-See [Validation against MATLAB reference](#validation-against-matlab-reference) for details.
-
-### Running the restart example
-
-Test the simulation restart capability:
-
-```bash
-python examples/run_example_Arno_restart.py
-```
-
-See [Restart from previous simulation state](#restart-from-previous-simulation-state) for details.
-
-## What the example does
-
-The `run_example_Arno.py` script performs the following steps:
-
-1. **Configure logging**: Sets up logger with specified debug level
-
-2. **Load configuration**: Reads the YAML configuration file (`Arno/Arno.yaml`)
-
-3. **GIS preprocessing**:
-   - Processes raster data (DEM, flow direction, soil parameters)
-   - Processes river network shapefile
-   - Builds network topology and Strahler ordering
-   - Maps hillslope cells to river reaches
-   - Saves preprocessed data to NetCDF and GeoParquet formats
-
-4. **Meteorological data conversion**:
-   - Converts MATLAB .mat format to CF-compliant NetCDF
-   - Organizes station data by variable type
-
-5. **Load forcing data**:
-   - Loads meteorological forcing from NetCDF
-   - Displays available variables and time range
-
-6. **Run simulation**:
-   - Creates Simulation object with GIS data, forcing, and configuration
-   - Runs simulation over the entire forcing period
-   - Computes soil water balance and channel routing at each time step
-   - Stores discharge time series
-
-7. **Save results**:
-   - Saves final model state to NetCDF
-   - Saves discharge time series to Parquet format
-
-8. **Visualize results**:
-   - Plots discharge hydrograph at a specific reach
-   - Shows network-wide discharge statistics
-   - Displays interactive plots
-
-## Customization
-
-You can customize the example by modifying these variables at the top of `run_example_Arno.py`:
-
-```python
-force_preprocessing = False  # Set to True to rerun preprocessing
-debug_level = "DEBUG"        # Logging level: DEBUG, INFO, WARNING, ERROR
-```
-
-The simulation runs for the entire period available in the meteorological forcing data. To run shorter simulations for testing, modify the `end_date` calculation in the script (commented example provided).
-
-## Output files
-
-The script creates the following outputs:
-
-### Preprocessed data
-- `Arno/gisdata/Arno_gisdata.nc` - Gridded GIS data (NetCDF)
-- `Arno/gisdata/Arno_net.parquet` - River network (GeoParquet)
-- `Arno/meteodata/Arno_meteodata.nc` - Meteorological data (NetCDF)
-
-### Simulation results
-- `Arno/states/final_state_YYYYMMDD_HHMMSS.nc` - Final model state (NetCDF)
-- `Arno/output/discharge_YYYYMMDD_YYYYMMDD.parquet` - Discharge time series (Parquet)
-
-## Example data
-
-The `Arno/` directory contains:
-
-```
-Arno/
-├── Arno.yaml                    # Configuration file
-├── raster/                      # Raster GIS data
-│   ├── dtm.tif                  # Digital Elevation Model
-│   ├── flowdir.tif              # Flow direction
-│   ├── flowacc.tif              # Flow accumulation
-│   ├── cap.tif                  # Capillary water capacity
-│   ├── grav.tif                 # Gravitational water capacity
-│   └── ks.tif                   # Hydraulic conductivity
-├── shp/                         # Vector GIS data
-│   └── Arno_river_network.shp   # River network shapefile
-├── meteodata/                   # Meteorological data
-│   └── meteodata.mat            # MATLAB format (original)
-├── gisdata/                     # Preprocessed data (created by script)
-├── states/                      # Model states (created by script)
-└── output/                      # Results (created by script)
-    └── matlab/                  # MATLAB reference outputs (for validation)
-        └── discharge.csv        # MATLAB discharge time series
-```
-
-## Configuration file
-
-The `Arno.yaml` file contains all model parameters and settings:
-
-- **Basin information**: ID, coordinates
-- **File paths**: Input/output locations
-- **GIS data**: Raster and vector files
-- **Model parameters**: Soil, routing, groundwater
-- **Initial conditions**: Initial soil moisture, discharge
-- **Simulation settings**: Time step, duration
-- **Output options**: What to save and in what format
-
-See `Arno/Arno.yaml` for detailed parameter descriptions.
-
-## Validation against MATLAB reference
-
-After running `run_example_Arno.py`, you can validate the Python implementation against MATLAB reference outputs using:
-
-```bash
-python examples/run_example_Arno_plots.py
-```
-
-### Comparison steps
-
-1. **Load data**:
-   - Loads Python discharge output (Parquet format)
-   - Loads MATLAB discharge output (CSV format)
-
-2. **Match reaches**:
-   - Accounts for +1 offset in MATLAB reach IDs (MATLAB reach_id = Python reach_id + 1)
-   - Identifies matching reaches between implementations
-
-3. **Align time series**:
-   - Finds common time range
-   - Ensures exact timestamp alignment
-
-4. **Calculate metrics**:
-   - Root Mean Square Error (RMSE)
-   - Bias
-
-5. **Visualize comparison**:
-   - Time series plots (Python vs MATLAB)
-   - Scatter plots with 1:1 line
-
-### Expected output
-
-The script displays:
-- Performance metrics for each matched reach
-- Overall average NSE and RMSE
-- Interactive comparison plots showing time series and scatter plots
-
-## Restart from previous simulation state
-
-The restart example demonstrates MOBIDICpy's ability to save intermediate states and continue simulations from previous simulation states.
-
-```bash
-python examples/run_example_Arno_restart.py
-```
-
-### What the restart example does
-
-The script performs the following workflow:
-
-1. **First simulation run**:
-   - Runs simulation from start to a midpoint (e.g., 50% of total period)
-   - Saves intermediate states to NetCDF file
-
-2. **Load saved state**:
-   - Loads the last saved state from the first run
-   - Uses `Simulation.set_initial_state()` to initialize from file
-
-3. **Second simulation run**:
-   - Restarts simulation from the saved state
-   - Continues to the end of the forcing period
-
-4. **Continuous simulation**:
-   - Runs a complete simulation without restart for comparison
-
-5. **Validation**:
-   - Compares restarted vs continuous results
-   - Calculates maximum and mean differences
-   - Verifies numerical equivalence (differences < 1e-6)
-
-6. **Visualization**:
-   - Plots discharge hydrographs (continuous vs restarted)
-   - Shows difference between runs
-   - Displays network-wide statistics
-
-### Customization
-
-You can customize the restart point by modifying the variable at the top of the script:
-
-```python
-restart_fraction = 0.5  # Run first simulation to 50% of period
-```
-
-### Use cases
-
-The restart capability enables:
-- **Long-term simulations**: Break long simulations into manageable chunks
-- **Checkpoint recovery**: Resume after system interruptions
-- **Multi-stage modeling**: Apply different parameters or forcings in different periods
-- **Ensemble forecasting**: Initialize multiple forecasts from a single spin-up run
-- **Real-time operations**: Save states at current time and restart with new forecast data
-
-### Expected output
-
-The script displays:
-- Simulation periods for first run, second run, and continuous run
-- Maximum difference between restarted and continuous results
-- Mean difference and relative error
-- Confirmation that results match within numerical precision
-- Three-panel visualization comparing discharge time series
 
 ## Additional resources
 
 - **User guide**: See `docs/` for detailed documentation
 - **API reference**: See `docs/api/` for function descriptions
+- **PEST++ documentation**: [PEST++ Users Guide](https://github.com/usgs/pestpp)
 - **GitHub issues**: Report bugs or request features
 
 ## Citation

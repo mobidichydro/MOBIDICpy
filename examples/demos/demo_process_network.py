@@ -4,8 +4,7 @@ from pathlib import Path
 from mobidic import load_config, process_river_network, save_network
 
 # Get directory containing this script
-SCRIPT_DIR = Path(__file__).parent
-EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+EXAMPLE_DIR = Path(__file__).parent.parent / "01-event-Arno-basin"
 
 # Load configuration
 config = load_config(EXAMPLE_DIR / "Arno.yaml")
