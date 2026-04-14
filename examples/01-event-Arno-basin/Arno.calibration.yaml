@@ -55,42 +55,41 @@ parameters:
     transform: log
     par_group: soil
 
-  - name: gamma
-    parameter_key: parameters.soil.gamma
-    initial_value: 5.0e-04
-    lower_bound: 1.0e-09
-    upper_bound: 1.0e-03
-    transform: log
+  - name: wcel
+    parameter_key: parameters.routing.wcel
+    initial_value: 5.18
+    lower_bound: 1.0
+    upper_bound: 10.0
+    transform: none
     par_group: soil
 
-  - name: kappa
-    parameter_key: parameters.soil.kappa
-    initial_value: 1.0e-04
-    lower_bound: 1.0e-09
-    upper_bound: 1.0e-03
+  - name: ks_factor
+    parameter_key: parameters.multipliers.ks_factor
+    initial_value: 1.0
+    lower_bound: 0.01
+    upper_bound: 100.0
     transform: log
     par_group: soil
-
 
 ######## OBSERVATIONS
 
 # REQUIRED: Observation time series for PEST++ calibration.
 observations:
-  - name: Q_292
+  - name: Q_313
     obs_file: "../datasets/Arno_event_Nov_2023/data/Q_Nave_di_Rosano_2023.csv" # REQUIRED: Path to observation data file [path to .csv file]
-    reach_id: 292 # REQUIRED: River reach ID to compare with observations [positive integer matching a reach ID in the network]
+    reach_id: 313 # REQUIRED: River reach ID to compare with observations [positive integer matching a reach ID in the network]
     weight: 1.0 # OPTIONAL: Weight for this observation group [positive float, default: 1.0]
     time_column: time # REQUIRED: Name of the time column in the observation file [string matching a column name in obs_file]
-    value_column: Q_292 # REQUIRED: Name of the value column in the observation file [string matching a column name in obs_file]
+    value_column: Q_313 # REQUIRED: Name of the value column in the observation file [string matching a column name in obs_file]
     
     # OPTIONAL: Derived metrics as pseudo-observations
     metrics:
       - metric: nse   # REQUIRED: Metric type (HydroErr package metric names) [nse | peak_error | ...]
         target: 1.0   # REQUIRED: Target value for this metric pseudo-observation [float]
-        weight: 10.0  # REQUIRED: Weight for this metric pseudo-observation [positive float]
+        weight: 2.0  # REQUIRED: Weight for this metric pseudo-observation [positive float]
       - metric: peak_error
         target: 0.0
-        weight: 8.0
+        weight: 2.0
 
 
 ######## PEST++ SETTINGS
