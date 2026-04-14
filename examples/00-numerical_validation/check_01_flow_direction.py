@@ -14,12 +14,14 @@ from mobidic.preprocessing import convert_to_mobidic_notation
 # Get directory containing this script
 config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
-
 # Configuration
 config = load_config(config_file)
 
 # Read flow direction computed in matlab
-zp = np.loadtxt(Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_output" / "Arno_event_Nov_2023" / "zp.csv", delimiter=",")
+zp = np.loadtxt(
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_output" / "Arno_event_Nov_2023" / "zp.csv",
+    delimiter=",",
+)
 
 # Configure logger
 configure_logger(level="DEBUG")
