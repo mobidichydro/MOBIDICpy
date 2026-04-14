@@ -75,12 +75,12 @@ parameters:
 
 # REQUIRED: Observation time series for PEST++ calibration.
 observations:
-  - name: Q_313
-    obs_file: "../datasets/Arno_event_Nov_2023/data/Q_Nave_di_Rosano_2023.csv" # REQUIRED: Path to observation data file [path to .csv file]
-    reach_id: 313 # REQUIRED: River reach ID to compare with observations [positive integer matching a reach ID in the network]
+  - name: Q_278
+    obs_file: "../datasets/Arno/data/Q_Nave_di_Rosano_2023.csv" # REQUIRED: Path to observation data file [path to .csv file]
+    reach_id: 278 # REQUIRED: River reach ID to compare with observations [positive integer matching a reach ID in the network]
     weight: 1.0 # OPTIONAL: Weight for this observation group [positive float, default: 1.0]
     time_column: time # REQUIRED: Name of the time column in the observation file [string matching a column name in obs_file]
-    value_column: Q_313 # REQUIRED: Name of the value column in the observation file [string matching a column name in obs_file]
+    value_column: Q_278 # REQUIRED: Name of the value column in the observation file [string matching a column name in obs_file]
     
     # OPTIONAL: Derived metrics as pseudo-observations
     metrics:

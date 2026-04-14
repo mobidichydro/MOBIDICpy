@@ -41,7 +41,7 @@ from mobidic import (
 calib_config_path = Path(__file__).parent / "Arno.calibration.yaml"
 
 # Path to meteorological data in .mat format
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_meteodata" / "Arno_event_Nov_2023.mat"
 
 # Read calibration configuration
 calib_config = load_calibration_config(calib_config_path)
