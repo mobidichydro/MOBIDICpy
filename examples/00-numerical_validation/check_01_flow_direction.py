@@ -11,7 +11,7 @@ from mobidic import (
 )
 from mobidic.preprocessing import convert_to_mobidic_notation
 
-# Get directory containing this script
+# Path to configuration file
 config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Configuration

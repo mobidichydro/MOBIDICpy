@@ -11,16 +11,15 @@ from mobidic.preprocessing import (
     compute_hillslope_cells,
 )
 
-# Get directory containing this script
-SCRIPT_DIR = Path(__file__).parent
-EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+# Path to configuration file
+config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Load configuration
-config = load_config(EXAMPLE_DIR / "Arno.yaml")
+config = load_config(config_file)
 
 
 # MATLAB ret structure import file .mat
-mat_data = loadmat(EXAMPLE_DIR / "gisdata" / "Arno_gisdata.mat")
+mat_data = loadmat(Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_gisdata" / "Arno_gisdata.mat")
 ret = mat_data["ret"]
 
 # Process river network

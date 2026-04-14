@@ -9,7 +9,7 @@ from mobidic import load_config
 from mobidic import process_river_network
 from mobidic.utils import configure_logger
 
-# Get directory containing this script
+# Path to configuration file
 config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Configure logging

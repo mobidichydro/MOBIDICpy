@@ -7,16 +7,14 @@ import numpy as np
 from pathlib import Path
 from mobidic import load_config, run_preprocessing, GISData, configure_logger
 
-# Get directory containing this script
-SCRIPT_DIR = Path(__file__).parent
-EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+# Path to configuration file
+config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Configure logging
 configure_logger(level="INFO")
 
 # Step 1: Load configuration
-config_path = EXAMPLE_DIR / "Arno.yaml"
-config = load_config(config_path)
+config = load_config(config_file)
 
 # Step 2: Run preprocessing
 gisdata = run_preprocessing(config)
@@ -40,7 +38,7 @@ print("STEP 5: Comparing Python vs MATLAB buildgis results")
 print("=" * 80)
 
 # Load MATLAB results
-matlab_file = EXAMPLE_DIR / "gisdata" / "Arno_gisdata.mat"
+matlab_file = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_gisdata" / "Arno_gisdata.mat"
 if not matlab_file.exists():
     print(f"\nERROR: MATLAB file not found: {matlab_file}")
     print("Please ensure the MATLAB reference data is available.")
