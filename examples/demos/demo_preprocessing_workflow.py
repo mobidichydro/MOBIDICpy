@@ -102,7 +102,7 @@ def main():
         grid = loaded_gisdata.grids[var_name]
         import numpy as np
 
-        print(f"  - {var_name}: min={np.nanmin(grid):.3f}, max={np.nanmax(grid):.3f}, mean={np.nanmean(grid):.3f}")
+        print(f"  - {var_name}: min={np.nanmin(grid):.3e}, max={np.nanmax(grid):.3e}, mean={np.nanmean(grid):.3e}")
     print()
 
     print("=" * 80)

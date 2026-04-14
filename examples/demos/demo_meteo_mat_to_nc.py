@@ -17,7 +17,7 @@ print("=" * 80)
 print("Example 1: Direct MAT to NetCDF conversion")
 print("=" * 80)
 
-mat_file = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+mat_file = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_meteodata" / "Arno_event_Nov_2023.mat"
 output_file = Path(__file__).parent / "meteodata.nc"
 
 convert_mat_to_netcdf(
