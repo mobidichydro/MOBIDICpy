@@ -45,7 +45,10 @@ version = "0.0.1"
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "coverage>=7.0",
+    "genbadge[coverage]>=1.6",
     "ruff>=0.1.0",
+    "bump-my-version>=1.0",
 ]
 calibration = [
     "pyemu>=1.4.0",
@@ -58,6 +61,7 @@ doc = [
     "mkdocs-autorefs >=1.4.0",
     "mdx-include >=1.4.1",
     "mkdocs-markdownextradata-plugin >=0.2.5",
+    "mike >=2.0.0",
 ]
 
 [project.urls]

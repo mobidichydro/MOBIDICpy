@@ -1,11 +1,11 @@
 site_name: MOBIDICpy
-site_description: MOBIDIC - Distributed and continuous hydrological balance model
-site_author: Fabio Castelli, Matteo Masi
+site_description: MOBIDICpy - Distributed and continuous hydrological balance model
+site_author: Fabio Castelli, Matteo Masi, and MOBIDIC contributors
 site_url: https://mobidichydro.github.io/mobidicpy
 repo_name: mobidicpy
 repo_url: https://github.com/mobidichydro/mobidicpy
 edit_uri: "edit/main/docs/"
-copyright: Copyright &copy; 2025, MOBIDICpy Project
+copyright: Copyright &copy; 2026 University of Florence (Italy), Department of Civil and Environmental Engineering (DICEA).
 
 nav:
   - Home: index.md
@@ -106,6 +106,8 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 extra:
+  version:
+    provider: mike
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/mobidichydro/mobidicpy

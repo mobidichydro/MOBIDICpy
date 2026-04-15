@@ -119,7 +119,9 @@ Journal of Hydrology, 517, 538-546. DOI: [10.1016/j.jhydrol.2014.05.053](https:/
 
 ## License
 
-MOBIDICpy is open-source software. See the repository for license details.
+Copyright (c) 2026 University of Florence (Italy), Department of Civil and Environmental Engineering ([DICEA](https://www.dicea.unifi.it/)).
+
+Licensed under the [Apache License, Version 2.0](https://github.com/mobidichydro/mobidicpy/blob/main/LICENSE).
 
 ## Support
 

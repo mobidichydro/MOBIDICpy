@@ -1,5 +1,18 @@
 # `MOBIDICpy`
 
+[![GitHub](https://img.shields.io/badge/github-mobidicpy-blue?logo=github)](https://github.com/mobidichydro/mobidicpy)
+[![License](https://img.shields.io/github/license/mobidichydro/mobidicpy)](https://github.com/mobidichydro/mobidicpy/blob/main/LICENSE)
+[![Python package](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
+[![PyPI](https://img.shields.io/pypi/v/mobidicpy)](https://pypi.org/project/mobidicpy/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/XXXX/badge)](https://www.bestpractices.dev/projects/XXXX)
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![cffconvert](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml)
+[![Linting](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml)
+[![Tests](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
+[![Coverage](badges/coverage.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/coverage.yml)
+[![Docs](https://github.com/mobidichydro/mobidicpy/actions/workflows/documentation-test.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/documentation-test.yml)
+
 <p align="left">
   <img src="docs/assets/logo_mobidic_color_white_bg.svg" alt="MOBIDICpy Logo" width="160">
 </p>
@@ -51,6 +64,13 @@ have a look at the [contribution guidelines](CONTRIBUTING.md).
 ## Credits
 
 This package was created using the [NLeSC/python-template](https://github.com/NLeSC/python-template).
+
+## License
+
+Copyright (c) 2026 University of Florence (Italy), Department of Civil and Environmental Engineering ([DICEA](https://www.dicea.unifi.it/)).
+
+Licensed under the [Apache License, Version 2.0](LICENSE).
+
 
 ## References
 
