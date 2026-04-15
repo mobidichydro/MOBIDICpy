@@ -19,6 +19,6 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: uv pip install --system ".[doc]"
+        run: uv sync --extra doc
       - name: Test mkdocs build
-        run: mkdocs build --strict
+        run: uv run mkdocs build --strict

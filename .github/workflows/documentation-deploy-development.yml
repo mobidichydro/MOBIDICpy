@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: uv pip install --system ".[doc]"
+        run: uv sync --extra doc
       - name: Setup Docs Deploy user
         run: |
           git config --global user.name "Docs Deploy"
@@ -28,4 +28,4 @@ jobs:
       - name: Deploy docs with mike
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mike deploy --push develop
+        run: uv run mike deploy --push develop
