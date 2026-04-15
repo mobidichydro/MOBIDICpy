@@ -30,3 +30,4 @@ jobs:
           TAG_NAME=${{ github.event.release.tag_name }}
           MAJ_MIN_VERSION=${TAG_NAME%.*}
           uv run mike deploy --push --update-aliases $MAJ_MIN_VERSION latest
+          uv run mike set-default --push latest

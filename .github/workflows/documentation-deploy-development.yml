@@ -28,4 +28,6 @@ jobs:
       - name: Deploy docs with mike
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: uv run mike deploy --push develop
+        run: |
+          uv run mike deploy --push develop
+          uv run mike set-default --push develop

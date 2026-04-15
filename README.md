@@ -1,17 +1,17 @@
-# `MOBIDICpy`
 
 [![GitHub](https://img.shields.io/badge/github-mobidicpy-blue?logo=github)](https://github.com/mobidichydro/mobidicpy)
 [![License](https://img.shields.io/github/license/mobidichydro/mobidicpy)](https://github.com/mobidichydro/mobidicpy/blob/main/LICENSE)
-[![Python package](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
 [![PyPI](https://img.shields.io/pypi/v/mobidicpy)](https://pypi.org/project/mobidicpy/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/XXXX/badge)](https://www.bestpractices.dev/projects/XXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) <!-- linkspector-disable-line -->
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/XXXX/badge)](https://www.bestpractices.dev/projects/XXXX) <!-- linkspector-disable-line -->
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8B-yellow)](https://fair-software.eu)
 [![cffconvert](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml)
 [![Linting](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml)
-[![Tests](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
+[![Python package](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
 [![Coverage](badges/coverage.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/coverage.yml)
 [![Docs](https://github.com/mobidichydro/mobidicpy/actions/workflows/documentation-test.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/documentation-test.yml)
+
+# `MOBIDICpy`
 
 <p align="left">
   <img src="docs/assets/logo_mobidic_color_white_bg.svg" alt="MOBIDICpy Logo" width="160">
