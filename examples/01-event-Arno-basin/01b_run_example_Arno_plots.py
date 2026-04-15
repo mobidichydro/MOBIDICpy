@@ -360,7 +360,7 @@ def compare_observed_discharge(output_dir: Path, data_dir: Path, observed_file: 
     plt.figure(figsize=(10, 4))
 
     plt.plot(common_index, df_observed_aligned, "b-", linewidth=1.5, alpha=0.7, label="Observed")
-    plt.plot(common_index, df_python_aligned, "r--", linewidth=1.0, alpha=0.8, label="MOBIDICpy")
+    plt.plot(common_index, df_python_aligned, "r--", linewidth=1.0, alpha=0.8, label="MOBIDICpy (uncalibrated)")
 
     plt.xlabel("Time")
     plt.ylabel("Discharge (m³/s)")
@@ -390,8 +390,8 @@ def main():
     # Define paths
     example_dir = Path(__file__).parent
     output_dir = example_dir / "output"
-    matlab_dir = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "output" / "matlab"
-    data_dir = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "data"
+    matlab_dir = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_event_Nov_2023"
+    data_dir = Path(__file__).parent.parent / "datasets" / "Arno" / "data"
 
     # Compare discharge
     discharge_results = compare_variable(
@@ -419,12 +419,12 @@ def main():
         variable_label="Lateral Inflow (m³/s)",
     )
 
-    # Compare with observed discharge at Nave di Rosano (reach 292)
+    # Compare with observed discharge at Nave di Rosano (reach 278)
     observed_results = compare_observed_discharge(
         output_dir=output_dir,
         data_dir=data_dir,
         observed_file="Q_Nave_di_Rosano_2023.parquet",
-        mobidic_id=292,
+        mobidic_id=278,
     )
 
     # Overall summary
@@ -437,7 +437,7 @@ def main():
     if lateral_results[0] is not None:
         print(f"Lateral Inflow: Mean RMSE = {lateral_results[0]:.6f} m³/s")
     if observed_results is not None:
-        print(f"Observed vs MOBIDICpy (Reach 292): RMSE = {observed_results['RMSE']:.3f} m³/s")
+        print(f"Observed vs MOBIDICpy (Reach 278): RMSE = {observed_results['RMSE']:.3f} m³/s")
     print("=" * 80)
 
 

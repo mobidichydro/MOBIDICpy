@@ -11,15 +11,17 @@ from mobidic import (
 )
 from mobidic.preprocessing import convert_to_mobidic_notation
 
-# Get directory containing this script
-SCRIPT_DIR = Path(__file__).parent
-EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+# Path to configuration file
+config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Configuration
-config = load_config(EXAMPLE_DIR / "Arno.yaml")
+config = load_config(config_file)
 
 # Read flow direction computed in matlab
-zp = np.loadtxt(EXAMPLE_DIR / "output" / "matlab" / "zp.csv", delimiter=",")
+zp = np.loadtxt(
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_event_Nov_2023" / "zp.csv",
+    delimiter=",",
+)
 
 # Configure logger
 configure_logger(level="DEBUG")
@@ -55,5 +57,3 @@ if num_differences == 0:
     print("CHECK PASSED. All flow direction values match between Python and MATLAB.")
 else:
     print(f"Number of differing cells: {num_differences}")
-    print("Differences (Python - MATLAB):")
-    print(difference)

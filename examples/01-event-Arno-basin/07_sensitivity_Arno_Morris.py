@@ -39,7 +39,9 @@ gsa_morris_r = 10  # Number of samples (r) for Morris sensitivity analysis
 calib_config_path = Path(__file__).parent / "Arno.calibration.yaml"
 
 # Path to meteorological data in .mat format
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+meteodata_mat_path = (
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "meteodata" / "Arno_event_Nov_2023.mat"
+)
 
 # Load calibration configuration
 cc = load_calibration_config(calib_config_path)

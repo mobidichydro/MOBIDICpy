@@ -13,15 +13,14 @@ from mobidic import (
 )
 from scipy.io import loadmat
 
-# Get directory containing this script
-SCRIPT_DIR = Path(__file__).parent
-EXAMPLE_DIR = SCRIPT_DIR / "Arno"
+# Path to configuration file
+config_file = Path(__file__).parent.parent / "01-event-Arno-basin" / "Arno.yaml"
 
 # Configuration
-config = load_config(EXAMPLE_DIR / "Arno.yaml")
+config = load_config(config_file)
 
 # MATLAB ch matrix import file .mat
-mat_data = loadmat(EXAMPLE_DIR / "gisdata" / "Arno_gisdata.mat")
+mat_data = loadmat(Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "gisdata" / "Arno_gisdata.mat")
 ch = mat_data["ch"]
 
 # Configure logger
@@ -201,7 +200,7 @@ else:
     print(f"   PARTIAL MATCH: {matching_cells}/{total_cells} cells match ({match_percentage:.4f}%)")
 
     if match_percentage >= 99.9:
-        print("   Very high agreement - differences likely due to edge cases or numerical precision")
+        print("   Very high agreement")
     elif match_percentage >= 95.0:
         print("   Good agreement - investigate remaining differences")
     else:

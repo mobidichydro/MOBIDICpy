@@ -41,7 +41,9 @@ force_preprocessing = False  # Set to True to force re-running preprocessing
 restart_fraction = 0.5  # Run first simulation to a portion of period, then restart
 
 config_file = Path(__file__).parent / "Arno.yaml"
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+meteodata_mat_path = (
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "meteodata" / "Arno_event_Nov_2023.mat"
+)
 
 """Run MOBIDIC with restart demonstration for Arno basin."""
 
@@ -289,7 +291,7 @@ print()
 print("Step 11: Plotting results...")
 
 # Select reach for visualization
-reach_id = 329
+reach_id = 278
 
 # Create figure with subplots
 fig, axes = plt.subplots(3, 1, figsize=(14, 10))

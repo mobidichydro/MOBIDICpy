@@ -16,7 +16,7 @@ from mobidic.preprocessing.meteo_preprocessing import (
 @pytest.fixture(scope="module")
 def real_mat_file_path():
     """Path to real MATLAB meteo data file (for integration tests)."""
-    return Path("examples/datasets/Arno_event_Nov_2023/meteodata/meteodata.mat")
+    return Path("examples/datasets/Arno/matlab/meteodata/Arno_event_Nov_2023.mat")
 
 
 @pytest.fixture(scope="module")

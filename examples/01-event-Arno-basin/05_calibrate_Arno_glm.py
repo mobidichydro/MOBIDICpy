@@ -41,7 +41,9 @@ from mobidic import (
 calib_config_path = Path(__file__).parent / "Arno.calibration.yaml"
 
 # Path to meteorological data in .mat format
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+meteodata_mat_path = (
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "meteodata" / "Arno_event_Nov_2023.mat"
+)
 
 # Read calibration configuration
 calib_config = load_calibration_config(calib_config_path)
@@ -116,11 +118,18 @@ if sens is not None:
 # =========================================================================
 print("\nRunning validation simulation with optimal parameters...")
 
+# Load main config
 config = load_config(config_file)
 
-# Map PEST parameter names to YAML dot-paths
+# Map PEST parameter names to YAML dot-paths and update config in-place
 param_name_to_key = {p.name: p.parameter_key for p in pest.calib_config.parameters}
 param_updates = {param_name_to_key[name]: val for name, val in optimal.items() if name in param_name_to_key}
+for dot_path, value in param_updates.items():
+    parts = dot_path.split(".")
+    obj = config
+    for part in parts[:-1]:
+        obj = getattr(obj, part)
+    setattr(obj, parts[-1], value)
 
 # Configure logger
 configure_logger_from_config(config)
