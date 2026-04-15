@@ -1,0 +1,13 @@
+
+code.highlight {
+    font-size: 18px;
+}
+
+/* Theme-dependent logo on home page */
+[data-md-color-scheme="default"] .theme-logo {
+    content: url("logo_mobidic_color.svg");
+}
+
+[data-md-color-scheme="slate"] .theme-logo {
+    content: url("logo_mobidic_white.svg");
+}
