@@ -174,7 +174,7 @@ class TestSaveDischargeReport:
 
         metadata = {
             "basin": "Test Basin",
-            "model_version": "0.0.1",
+            "model_version": "0.1.0",
             "notes": "Test run",
         }
 
@@ -208,7 +208,7 @@ class TestSaveDischargeReport:
 
         # Check custom metadata
         assert saved_metadata["basin"] == "Test Basin"
-        assert saved_metadata["model_version"] == "0.0.1"
+        assert saved_metadata["model_version"] == "0.1.0"
         assert saved_metadata["notes"] == "Test run"
 
     def test_save_creates_parent_directory(self, tmp_path, sample_network, sample_timeseries):

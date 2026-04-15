@@ -9,7 +9,7 @@ authors:
   - family-names: Castelli
     given-names: Fabio
     orcid: "https://orcid.org/0000-0003-0304-0289"
-version: "0.0.1"
+version: "0.1.0"
 repository-code: "https://github.com/mobidichydro/mobidicpy"
 keywords:
   - "Hydrology"
