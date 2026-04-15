@@ -19,14 +19,14 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: uv pip install --system ".[dev]" "genbadge[coverage]"
+        run: uv sync --extra dev
       - name: Run tests with coverage
         run: |
-          python -m coverage run
-          python -m coverage xml
-          python -m coverage report
+          uv run python -m coverage run
+          uv run python -m coverage xml
+          uv run python -m coverage report
       - name: Generate coverage badge
-        run: genbadge coverage -i coverage.xml -o badges/coverage.svg
+        run: uv run genbadge coverage -i coverage.xml -o badges/coverage.svg
       - name: Commit coverage badge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: EndBug/add-and-commit@v9
