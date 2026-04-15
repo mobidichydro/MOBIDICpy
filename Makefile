@@ -73,15 +73,15 @@ build:  ## Build package for distribution
 
 .PHONY: bump-patch
 bump-patch:  ## Bump patch version
-	$(PYTHON) -m bump_my_version bump patch
+	bump-my-version bump patch
 
 .PHONY: bump-minor
 bump-minor:  ## Bump minor version
-	$(PYTHON) -m bump_my_version bump minor
+	bump-my-version bump minor
 
 .PHONY: bump-major
 bump-major:  ## Bump major version
-	$(PYTHON) -m bump_my_version bump major
+	bump-my-version bump major
 
 # Utility targets
 .PHONY: clean
