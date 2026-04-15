@@ -39,9 +39,9 @@ jobs:
           which python
           python --version
       - name: Install dependencies
-        run: uv pip install --system ".[dev]"
+        run: uv sync --extra dev
       - name: Run unit tests
-        run: python -m pytest -v
+        run: uv run python -m pytest -v
 
   build-package:
     name: Verify package build
