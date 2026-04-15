@@ -12,6 +12,8 @@ jobs:
   coverage:
     name: Coverage report
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
