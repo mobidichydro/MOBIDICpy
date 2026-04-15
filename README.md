@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/mobidicpy)](https://pypi.org/project/mobidicpy/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) <!-- linkspector-disable-line -->
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12552/badge)](https://www.bestpractices.dev/projects/12552)
-[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8F%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
 [![cffconvert](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml)
 [![Linting](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml)
 [![Python package](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
