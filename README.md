@@ -5,6 +5,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19597505.svg)](https://doi.org/10.5281/zenodo.19597505)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12552/badge)](https://www.bestpractices.dev/projects/12552)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
+[![FAIR checklist badge](https://fairsoftwarechecklist.net/badge.svg)](https://fairsoftwarechecklist.net/v0.2?f=31&a=32111&i=31100&r=133)
 [![cffconvert](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml)
 [![Linting](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml)
 [![Python package](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
@@ -50,11 +51,17 @@ The documentation can be built locally using [MkDocs](https://www.mkdocs.org/):
 # Install documentation dependencies
 pip install .[doc]
 
-# Serve the documentation locally
+# Serve the documentation locally (http://127.0.0.1:8000)
 python -m mkdocs serve
 ```
-Then open your browser at `http://127.0.0.1:8000`.
 
+## Examples
+
+Examples are available in the [`examples`](examples/) directory. 
+
+## Documentation
+
+The project's full documentation is available [here](https://mobidichydro.github.io/MOBIDICpy/).
 
 ## Contributing
 
