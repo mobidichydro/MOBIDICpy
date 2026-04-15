@@ -8,6 +8,9 @@ on:
     branches:
     - main
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   lint:
     name: Linting
@@ -19,8 +22,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: uv pip install --system ".[dev]"
+        run: uv sync --extra dev
       - name: Check style with ruff
         run: |
-          ruff check .
-          ruff format --check .
+          uv run ruff check .
+          uv run ruff format --check .
