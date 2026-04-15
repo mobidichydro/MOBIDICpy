@@ -20,7 +20,7 @@ config = load_config(config_file)
 
 
 # MATLAB ret structure import file .mat
-mat_data = loadmat(Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_gisdata" / "Arno_gisdata.mat")
+mat_data = loadmat(Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "gisdata" / "Arno_gisdata.mat")
 ret = mat_data["ret"]
 
 # Process river network

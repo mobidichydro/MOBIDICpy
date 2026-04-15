@@ -38,7 +38,7 @@ print("STEP 5: Comparing Python vs MATLAB buildgis results")
 print("=" * 80)
 
 # Load MATLAB results
-matlab_file = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_gisdata" / "Arno_gisdata.mat"
+matlab_file = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "gisdata" / "Arno_gisdata.mat"
 if not matlab_file.exists():
     print(f"\nERROR: MATLAB file not found: {matlab_file}")
     print("Please ensure the MATLAB reference data is available.")

@@ -19,7 +19,7 @@ config = load_config(config_file)
 
 # Read flow direction computed in matlab
 zp = np.loadtxt(
-    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_output" / "Arno_event_Nov_2023" / "zp.csv",
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_event_Nov_2023" / "zp.csv",
     delimiter=",",
 )
 
