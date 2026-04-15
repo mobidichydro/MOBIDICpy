@@ -38,7 +38,9 @@ from mobidic import (
 force_preprocessing = True  # Set to True to force re-running preprocessing
 
 config_file = Path(__file__).parent / "Arno.yaml"
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab_meteodata" / "Arno_event_Nov_2023.mat"
+meteodata_mat_path = (
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "meteodata" / "Arno_event_Nov_2023.mat"
+)
 
 
 """Run complete MOBIDIC workflow for Arno basin."""

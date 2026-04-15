@@ -40,7 +40,9 @@ from mobidic import (
 force_preprocessing = False  # Set to True to force re-running preprocessing
 
 config_file = Path(__file__).parent / "Arno.yaml"
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+meteodata_mat_path = (
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "meteodata" / "Arno_event_Nov_2023.mat"
+)
 
 print("=" * 80)
 print("MOBIDIC - Arno Basin: station vs raster forcing comparison")
@@ -243,7 +245,7 @@ print()
 print("Step 7: Plotting results...")
 
 # Select reach for detailed comparison
-reach_id = 329
+reach_id = 278
 
 # Create figure with subplots
 fig, axes = plt.subplots(3, 2, figsize=(14, 10))
@@ -301,7 +303,7 @@ axes[2, 0].grid(True, alpha=0.3)
 axes[2, 0].legend()
 
 # Plot 6: Scatter plot - discharge correlation
-sample_reach_ids = [0, 100, 200, 292, 313, 329, 514]  # Sample of reaches
+sample_reach_ids = [0, 100, 200, 278, 195, 275, 376]  # Sample of reaches
 colors = plt.cm.viridis(np.linspace(0, 1, len(sample_reach_ids)))
 
 for i, rid in enumerate(sample_reach_ids):

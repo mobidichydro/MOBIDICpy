@@ -36,7 +36,9 @@ from mobidic import (
 force_preprocessing = True  # Set to True to force re-running preprocessing
 
 config_file = Path(__file__).parent / "Arno.reservoirs.yaml"
-meteodata_mat_path = Path(__file__).parent.parent / "datasets" / "Arno_event_Nov_2023" / "meteodata" / "meteodata.mat"
+meteodata_mat_path = (
+    Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "meteodata" / "Arno_event_Nov_2023.mat"
+)
 
 
 """Run complete MOBIDIC workflow for Arno basin."""
@@ -201,7 +203,7 @@ discharge_ts = results.time_series["discharge"]
 time_ts = results.time_series["time"]
 
 # Use one reach for visualization
-reach_id = 329
+reach_id = 278
 
 # Create figure with subplots
 fig, axes = plt.subplots(2, 1, figsize=(12, 8))
