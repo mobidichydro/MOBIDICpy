@@ -33,6 +33,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
       - name: Python info
         shell: bash -e {0}
         run: |
@@ -52,5 +53,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
       - name: Build package
         run: uv build
