@@ -30,4 +30,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           uv run mike deploy --push develop
-          uv run mike set-default --push develop
