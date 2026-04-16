@@ -90,16 +90,6 @@ source = ["mobidic"]
 command_line = "-m pytest"
 omit = ["examples/*"]
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py310,py311,py312
-skip_missing_interpreters = true
-[testenv]
-commands = pytest
-extras = dev
-"""
-
 [tool.ruff]
 line-length = 120
 output-format = "concise"
