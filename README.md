@@ -8,13 +8,13 @@
 [![cffconvert](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml)
 [![Linting](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/lint.yml)
 [![Python package](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/build.yml)
-[![Coverage](badges/coverage.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/coverage.yml)
+[![Coverage](https://raw.githubusercontent.com/mobidichydro/mobidicpy/main/badges/coverage.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/coverage.yml)
 [![Docs](https://github.com/mobidichydro/mobidicpy/actions/workflows/documentation-test.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/documentation-test.yml)
 
 # `MOBIDICpy`
 
 <p align="left">
-  <img src="docs/assets/logo_mobidic_color_white_bg.svg" alt="MOBIDICpy Logo" width="160">
+  <img src="https://raw.githubusercontent.com/mobidichydro/mobidicpy/main/docs/assets/logo_mobidic_color_white_bg.svg" alt="MOBIDICpy Logo" width="160">
 </p>
 
 MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo – distributed and continuous hydrological balance model) is a physically-based distributed hydrological model that simulates water and energy balances of the hydrological cycle at the catchment scale, and compute runoff generation and propagation through the river network.
