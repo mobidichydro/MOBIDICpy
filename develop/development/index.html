@@ -1381,6 +1381,10 @@ activated virtual environment with the development tools installed.</p>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>make<span class="w"> </span>bump-minor<span class="w">  </span><span class="c1"># bumps from e.g. 0.3.2 to 0.4.0</span>
 <a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>make<span class="w"> </span>bump-patch<span class="w">  </span><span class="c1"># bumps from e.g. 0.3.2 to 0.3.3</span>
 </code></pre></div>
+<p>After bumping the version, push the commit and tag to GitHub:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># --follow-tags pushes only annotated tags reachable from the commits being pushed</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main<span class="w"> </span>--follow-tags
+</code></pre></div>
 <h2 id="making-a-release">Making a release</h2>
 <p>This section describes how to make a release in 2 parts:</p>
 <ol>
