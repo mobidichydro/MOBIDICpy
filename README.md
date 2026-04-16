@@ -2,7 +2,7 @@
 [![GitHub](https://img.shields.io/badge/github-mobidicpy-blue?logo=github)](https://github.com/mobidichydro/mobidicpy)
 [![License](https://img.shields.io/github/license/mobidichydro/mobidicpy)](https://github.com/mobidichydro/mobidicpy/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/mobidicpy.svg?colorB=blue)](https://pypi.org/project/mobidicpy/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19597505.svg)](https://doi.org/10.5281/zenodo.19597505)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19597504.svg)](https://doi.org/10.5281/zenodo.19597504)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/12552/badge)](https://www.bestpractices.dev/projects/12552)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
 [![cffconvert](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/mobidichydro/mobidicpy/actions/workflows/cffconvert.yml)
