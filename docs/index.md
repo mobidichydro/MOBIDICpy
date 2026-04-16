@@ -52,7 +52,7 @@ See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mo
 
 ## Features
 
-**Currently implemented (v0.1.0)**
+**Currently implemented (v0.1)**
 
 - Simulation setup with YAML configuration file and parameter validation
 - GIS data I/O (raster and vector formats)

@@ -124,7 +124,7 @@ All datetimes in MOBIDICpy are **timezone-naive**. No timezone information is at
 
 MOBIDICpy is an ongoing translation effort focusing on:
 
-1. **Modernization**: Python 3.10+ with modern syntax
+1. **Modernization**: Python 3.11+ with modern syntax
 2. **Simplification**: Functional approach prioritizing clarity over abstraction
 3. **Validation**: Regression testing against MATLAB reference outputs
 4. **Performance**: Leveraging NumPy, Numba, pandas, and modern geospatial libraries
@@ -134,7 +134,7 @@ The original MATLAB implementation is being systematically translated with numer
 
 ## Current Status
 
-**Version 0.1.0** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.
+**Version 0.1** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.
 
 See the [home page](index.md) for implementation status.
 

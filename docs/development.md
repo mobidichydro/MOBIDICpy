@@ -137,6 +137,13 @@ make bump-minor  # bumps from e.g. 0.3.2 to 0.4.0
 make bump-patch  # bumps from e.g. 0.3.2 to 0.3.3
 ```
 
+After bumping the version, push the commit and tag to GitHub:
+
+```shell
+# --follow-tags pushes only annotated tags reachable from the commits being pushed
+git push origin main --follow-tags
+```
+
 ## Making a release
 
 This section describes how to make a release in 2 parts:

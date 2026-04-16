@@ -173,28 +173,28 @@ from mobidic import (
 
 ## Development status
 
-MOBIDICpy's currently implemented features (v0.1.0):
+MOBIDICpy's currently implemented features (v0.1):
 
-- ✅ Configuration system
-- ✅ GIS data I/O
-- ✅ Grid operations
-- ✅ River network processing
-- ✅ Hillslope-reach mapping
-- ✅ Meteorological preprocessing (station data, raster forcing, hyetograph generation)
-- ✅ Data I/O and consolidation
-- ✅ Complete preprocessing workflow
-- ✅ Soil water balance (4 reservoirs: capillary, gravitational, plants, surface)
-- ✅ Linear routing (hillslope + channel)
-- ✅ Reservoir module (preprocessing, routing, time-varying regulation)
-- ✅ Simulation engine (basic)
-- ✅ State I/O (NetCDF)
-- ✅ Report I/O (CSV/Parquet discharge time series)
-- ✅ Calibration and sensitivity analysis (PEST++ coupling via pyemu)
+- Configuration system
+- GIS data I/O
+- Grid operations
+- River network processing
+- Hillslope-reach mapping
+- Meteorological preprocessing (station data, raster forcing, hyetograph generation)
+- Data I/O and consolidation
+- Complete preprocessing workflow
+- Soil water balance (4 reservoirs: capillary, gravitational, plants, surface)
+- Linear routing (hillslope + channel)
+- Reservoir module (preprocessing, routing, time-varying regulation)
+- Simulation engine (basic)
+- State I/O (NetCDF)
+- Report I/O (CSV/Parquet discharge time series)
+- Calibration and sensitivity analysis (PEST++ coupling via pyemu)
 
 Coming soon:
 
-- ⏳ Energy balance module (1L, 5L schemes, Snow)
-- ⏳ Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
-- ⏳ Advanced routing (Muskingum-Cunge)
-- ⏳ Meteorological data gap filling and quality control
-- ⏳ CLI interface
+- Energy balance module (1L, 5L schemes, Snow)
+- Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
+- Advanced routing (Muskingum-Cunge)
+- Meteorological data gap filling and quality control
+- CLI interface
