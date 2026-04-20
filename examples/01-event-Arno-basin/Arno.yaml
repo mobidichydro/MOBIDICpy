@@ -90,7 +90,7 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ks.tif]
   ks: ../datasets/Arno/raster/ks.tif
 
-  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in meters per second
+  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in 1/seconds
   # [full pathname to .tif file, eg: /blue_nile/geodat/Kf.tif]
   kf:
 
@@ -159,7 +159,7 @@ parameters:
     # [positive number in float or exp notation]
     ks_max:
 
-    # OPTIONAL: Default value of (real or ideal) aquifer conductivity, in m/s
+    # OPTIONAL: Default value of (real or ideal) aquifer conductivity, in 1/s
     # [positive number in float or exp notation, default: 1.0e-7]
     kf: 1.000e-007
 
