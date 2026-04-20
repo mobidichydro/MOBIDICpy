@@ -5,7 +5,6 @@ It orchestrates the water balance calculations, routing, and I/O operations.
 
 Currently, this implements a simplified version without:
 - Energy balance (uses simple PET instead)
-- Groundwater models
 
 Translated from MATLAB: mobidic_sid.m (main simulation loop)
 """
@@ -26,6 +25,7 @@ from mobidic.preprocessing.meteo_raster import MeteoRaster
 from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.reservoir import reservoir_routing
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
+from mobidic.core.groundwater import groundwater_linear
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
 from mobidic.io import StateWriter
@@ -70,6 +70,7 @@ class SimulationState:
         discharge: np.ndarray,
         lateral_inflow: np.ndarray,
         reservoir_states: list | None = None,
+        h: np.ndarray | None = None,
     ):
         """Initialize simulation state.
 
@@ -81,6 +82,7 @@ class SimulationState:
             discharge: River discharge for each reach [m³/s]
             lateral_inflow: Lateral inflow to each reach [m³/s]
             reservoir_states: List of ReservoirState objects (None if no reservoirs)
+            h: Groundwater head [m] (None if groundwater is disabled)
         """
         self.wc = wc
         self.wg = wg
@@ -89,6 +91,7 @@ class SimulationState:
         self.discharge = discharge
         self.lateral_inflow = lateral_inflow
         self.reservoir_states = reservoir_states
+        self.h = h
 
 
 class SimulationResults:
@@ -344,6 +347,12 @@ class Simulation:
         discharge = np.zeros(len(self.network))
         lateral_inflow = np.zeros(len(self.network))
 
+        # Initialize groundwater head when Linear groundwater model is active
+        h = None
+        if self.config.parameters.groundwater.model == "Linear":
+            h_init = self.config.initial_conditions.groundwater_head
+            h = np.where(np.isfinite(self.dtm), h_init, np.nan)
+
         # Initialize reservoir states if reservoirs exist
         reservoir_states = None
         if self.reservoirs is not None:
@@ -361,15 +370,18 @@ class Simulation:
                 reservoir_states.append(state)
             logger.info(f"Initialized {len(reservoir_states)} reservoir states")
 
-        logger.success(
+        log_msg = (
             f"State initialized. Initial conditions (average): "
             f"Wc={np.nanmean(wc) * 1000:.1f} mm, "
             f"Wg={np.nanmean(wg) * 1000:.1f} mm, "
             f"Ws={np.nanmean(ws) * 1000:.1f} mm, "
             f"Wp={np.nanmean(wp) * 1000:.1f} mm"
         )
+        if h is not None:
+            log_msg += f", h={np.nanmean(h) * 1000:.1f} mm"
+        logger.success(log_msg)
 
-        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states)
+        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states, h=h)
 
     def set_initial_state(
         self,
@@ -678,6 +690,12 @@ class Simulation:
             param_grids["ks"] = self.ks * ks_factor
         else:
             param_grids["ks"] = np.full((self.nrows, self.ncols), params.soil.ks) * ks_factor
+
+        # Aquifer conductivity kf [1/s] (only used when groundwater is active)
+        if self.kf is not None:
+            param_grids["kf"] = self.kf
+        else:
+            param_grids["kf"] = np.full((self.nrows, self.ncols), params.soil.kf)
 
         # Flow coefficients
         if self.gamma is not None:
@@ -1377,6 +1395,37 @@ class Simulation:
             # fld: lateral flow rate [m/s] - analogous to MATLAB fld after division by dt
             flr = surface_runoff / self.dt
             fld = lateral_flow_depth / self.dt
+
+            # 5b. Groundwater dynamics
+            # Linear reservoir model: baseflow is added to surface runoff
+            # before lateral inflow accumulation
+            if self.config.parameters.groundwater.model == "Linear":
+                logger.debug("Computing linear groundwater dynamics")
+
+                # Recharge rate [m/s]: percolation - capillary_rise - global_loss_per_cell
+                # percolation_flat and capillary_flux_flat are in [m] over dt (from soil balance)
+                percolation_rate = percolation_flat / self.dt
+                capillary_rate = capillary_flux_flat / self.dt
+
+                # Global loss distributed uniformly to contributing cells [m/s]
+                global_loss = self.config.parameters.groundwater.global_loss  # [m³/s]
+                global_loss_per_cell = global_loss / len(ko) / cell_area if len(ko) > 0 else 0.0
+
+                recharge = percolation_rate - capillary_rate - global_loss_per_cell
+
+                h_flat_full = self.state.h.ravel("F")
+                h_flat = h_flat_full[ko]
+                kf_flat = self.param_grids["kf"].ravel("F")[ko]
+
+                h_out_flat, baseflow_flat = groundwater_linear(h_flat, kf_flat, recharge, self.dt)
+
+                h_flat_full[ko] = h_out_flat
+                self.state.h = h_flat_full.reshape((self.nrows, self.ncols), order="F")
+
+                # Add baseflow to surface runoff before accumulation
+                flr_flat_full = flr.ravel("F")
+                flr_flat_full[ko] = flr_flat_full[ko] + baseflow_flat
+                flr = flr_flat_full.reshape((self.nrows, self.ncols), order="F")
 
             # 6. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m)
             # Convert to discharge for accumulation
