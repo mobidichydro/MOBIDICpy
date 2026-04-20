@@ -197,6 +197,19 @@ def load_state(
             logger.warning("Wp not found in state file, initializing with zeros")
             wp = np.zeros((nrows, ncols))
 
+    # Groundwater head: optional, only present when Linear groundwater is active
+    h = None
+    gw_active = can_use_config and config.parameters.groundwater.model == "Linear"
+    if "h" in ds:
+        h = ds["h"].values
+    elif gw_active:
+        h_init = config.initial_conditions.groundwater_head
+        logger.warning(
+            f"h not found in state file, initializing to {h_init} m from initial_conditions.groundwater_head"
+        )
+        flow_acc = gisdata.grids["flow_acc"]
+        h = np.where(np.isfinite(flow_acc), h_init, np.nan)
+
     # Network variables: initialize with zeros if missing
     if "discharge" in ds:
         discharge = ds["discharge"].values
@@ -247,7 +260,7 @@ def load_state(
     # Import here to avoid circular import
     from mobidic.core.simulation import SimulationState
 
-    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow)
+    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, h=h)
 
     logger.success(f"State loaded: time={time.isoformat()}, grid={nrows}x{ncols}, reaches={len(discharge)}")
 
@@ -485,6 +498,7 @@ class StateWriter:
             discharge=state.discharge.copy(),
             lateral_inflow=state.lateral_inflow.copy(),
             reservoir_states=reservoir_states_copy,
+            h=state.h.copy() if state.h is not None else None,
         )
 
         # Add to buffer
@@ -539,6 +553,14 @@ class StateWriter:
         if self.output_states.soil_surface:
             ws_data = np.array([s.ws for s in self.buffer])
             data_vars["Ws"] = (["time", "y", "x"], ws_data)
+
+        if self.output_states.aquifer_head:
+            has_h = any(s.h is not None for s in self.buffer)
+            if has_h:
+                h_data = np.array(
+                    [s.h if s.h is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["h"] = (["time", "y", "x"], h_data)
 
         # Network variables
         if self.output_states.discharge:
@@ -611,6 +633,14 @@ class StateWriter:
                 "long_name": "Surface Water Content",
                 "units": "m",
                 "description": "Water in surface depressions",
+                "grid_mapping": "crs",
+            }
+
+        if "h" in flush_ds:
+            flush_ds["h"].attrs = {
+                "long_name": "Groundwater Head",
+                "units": "m",
+                "description": "Linear-reservoir groundwater head",
                 "grid_mapping": "crs",
             }
 
