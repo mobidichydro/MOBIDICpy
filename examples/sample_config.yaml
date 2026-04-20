@@ -228,7 +228,7 @@ parameters:
 
   groundwater:
     # REQUIRED: Groundwater model type
-    # [one among the following options: None, Linear, Linear_mult, Dupuit, MODFLOW]
+    # [one among the following options: None, Linear, Dupuit, MODFLOW]
     model: None
 
     # OPTIONAL: Global water loss from aquifers, in m³/s
@@ -334,6 +334,10 @@ initial_conditions:
   # OPTIONAL: Initial relative saturation of gravitational soil, non dimensional
   # [positive value in float or exp notation in the range 0-1, default: 0.01]
   Wgsat: 0.01
+
+  # OPTIONAL: Initial groundwater head, in meters
+  # [positive value in float or exp notation, default: 0.0]
+  groundwater_head: 0.01
 
   # OPTIONAL: Initial volume in reservoirs
   # [path to .csv file with columns 'reservoir_id' and 'volume_m3']
