@@ -304,6 +304,9 @@ class InitialConditions(BaseModel):
     Wgsat: Optional[float] = Field(
         0.01, description="Initial relative saturation of gravitational soil, non dimensional"
     )
+    groundwater_head: Optional[float] = Field(
+        0.0, description="Initial groundwater head, in meters (used when Linear groundwater model is active)"
+    )
     reservoir_volumes: Optional[PathField] = Field(
         None,
         description=(
@@ -318,6 +321,14 @@ class InitialConditions(BaseModel):
         """Validate that Ws is non-negative."""
         if v is not None and v < 0:
             raise ValueError("Ws must be non-negative")
+        return v if v is not None else 0.0
+
+    @field_validator("groundwater_head")
+    @classmethod
+    def check_groundwater_head_non_negative(cls, v: Optional[float]) -> float:
+        """Validate that groundwater_head is non-negative."""
+        if v is not None and v < 0:
+            raise ValueError("groundwater_head must be non-negative")
         return v if v is not None else 0.0
 
     @field_validator("Wcsat", "Wgsat")
