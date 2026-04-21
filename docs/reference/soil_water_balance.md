@@ -15,15 +15,12 @@ Key processes simulated:
 
 - **Surface processes**: Canopy interception, throughfall, surface ET
 - **Subsurface processes**: Horton infiltration (stochastic), Dunne runoff
-- **Soil ET**: Single-parameter S-curve for soil moisture stress
-- **Capillary absorption**: Wg → Wc transfer
-- **Percolation**: Deep drainage with optional capillary rise feedback
+- **Soil ET**: Single-parameter S-curve for soil moisture stress (not yet implemented)
+- **Capillary absorption**: Wg to Wc transfer
+- **Percolation**: Deep drainage
 - **Lateral flow**: Subsurface lateral drainage
-- **Capillary rise**: Optional upward flux from groundwater (Salvucci 1993)
-- **Surface routing**: Depression storage with linear routing
+- **Surface storage routing**: Depression storage with linear routing
 
 ## Functions
 
 ::: mobidic.core.soil_water_balance.soil_mass_balance
-
-::: mobidic.core.soil_water_balance.capillary_rise

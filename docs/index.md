@@ -52,7 +52,7 @@ See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mo
 
 ## Features
 
-**Currently implemented (v0.1)**
+**Currently implemented (v0.2)**
 
 - Simulation setup with YAML configuration file and parameter validation
 - GIS data I/O (raster and vector formats)
@@ -64,6 +64,7 @@ See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mo
 - Design storm hyetograph generation from IDF parameters (Chicago method)
 - Soil water balance module (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope and channel)
+- Linear reservoir groundwater model (with multi-aquifer capability)
 - Reservoir module (preprocessing, routing, time-varying regulation)
 - Basic I/O (NetCDF states, Parquet time series, export of interpolated meteorological data)
 
@@ -73,7 +74,6 @@ See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mo
 
 - Meteorological data gap filling and quality control
 - Energy balance schemes
-- Groundwater models
 - Advanced routing methods
 - CLI interface
 

@@ -4,6 +4,7 @@ from mobidic.core import constants
 from mobidic.core.soil_water_balance import soil_mass_balance, capillary_rise
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.reservoir import ReservoirState, reservoir_routing
+from mobidic.core.groundwater import groundwater_linear
 from mobidic.core.simulation import Simulation, SimulationState, SimulationResults
 from mobidic.core.interpolation import (
     precipitation_interpolation,
@@ -19,6 +20,7 @@ __all__ = [
     "linear_channel_routing",
     "ReservoirState",
     "reservoir_routing",
+    "groundwater_linear",
     "Simulation",
     "SimulationState",
     "SimulationResults",

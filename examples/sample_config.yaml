@@ -95,7 +95,7 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ks.tif]
   ks: example/raster/ks.tif
 
-  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in meters per second
+  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in 1/seconds
   # [full pathname to .tif file, eg: /blue_nile/geodat/Kf.tif]
   kf:
 
@@ -107,11 +107,11 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Alb.tif]
   Alb:
 
-  # OPTIONAL: Grid of binary mask (0,1) defining the artesian aquifer extension
+  # OPTIONAL: Grid mask defining the artesian aquifer(s) extension
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ma.tif]
   Ma:
 
-  # OPTIONAL: Grid of binary mask (0,1) defining the freatic aquifer extension
+  # OPTIONAL: Grid mask defining the freatic aquifer(s) extension
   # [full pathname to .tif file, eg: /blue_nile/geodat/Mf.tif]
   Mf:
 
@@ -164,7 +164,7 @@ parameters:
     # [positive number in float or exp notation]
     ks_max:
 
-    # OPTIONAL: Default value of (real or ideal) aquifer conductivity, in m/s
+    # OPTIONAL: Default value of (real or ideal) aquifer conductivity, in 1/s
     # [positive number in float or exp notation, default: 1.0e-7]
     kf: 1.000e-007
 
@@ -228,7 +228,7 @@ parameters:
 
   groundwater:
     # REQUIRED: Groundwater model type
-    # [one among the following options: None, Linear, Linear_mult, Dupuit, MODFLOW]
+    # [one among the following options: None, Linear, Dupuit, MODFLOW]
     model: None
 
     # OPTIONAL: Global water loss from aquifers, in m³/s
@@ -334,6 +334,10 @@ initial_conditions:
   # OPTIONAL: Initial relative saturation of gravitational soil, non dimensional
   # [positive value in float or exp notation in the range 0-1, default: 0.01]
   Wgsat: 0.01
+
+  # OPTIONAL: Initial groundwater head, in meters
+  # [positive value in float or exp notation, default: 0.0]
+  groundwater_head: 0.01
 
   # OPTIONAL: Initial volume in reservoirs
   # [path to .csv file with columns 'reservoir_id' and 'volume_m3']

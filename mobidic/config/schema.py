@@ -107,7 +107,13 @@ class RasterFiles(BaseModel):
         None, description="Grid of binary mask (0,1) defining the artesian aquifer extension"
     )
     Mf: Optional[PathField] = Field(
-        None, description="Grid of binary mask (0,1) defining the freatic aquifer extension"
+        None,
+        description=(
+            "Grid defining the freatic aquifer extension. Cells with value <= 0 "
+            "are outside the aquifer. A single positive class defines one "
+            "aquifer; multiple positive classes enable multi-aquifer mode, where "
+            "groundwater head is averaged within each class."
+        ),
     )
     gamma: Optional[PathField] = Field(None, description="Grid of percolation coefficient, in one over seconds")
     kappa: Optional[PathField] = Field(None, description="Grid of adsorption coefficient, in one over seconds")
@@ -207,7 +213,11 @@ class RoutingParameters(BaseModel):
     wcel: float = Field(..., description="Flood wave celerity in channels, in m/s")
     Br0: float = Field(1.0, description="Width of channels with first Strahler order, in meters")
     NBr: float = Field(
-        1.5, description="Exponent of equation W = Br0*O^NBr, where W=Width of channels and O=Strahler order"
+        1.5,
+        description=(
+            "Exponent of equation $W = B_{r0} \\cdot O^{N_{Br}}$, "
+            "where $W$ is the width of channels and $O$ is the Strahler order"
+        ),
     )
     n_Man: float = Field(0.03, description="Manning roughness coefficient for channels, in s/m^(1/3)")
 
@@ -231,8 +241,15 @@ class RoutingParameters(BaseModel):
 class GroundwaterParameters(BaseModel):
     """Groundwater model parameters."""
 
-    model: Literal["None", "Linear", "Linear_mult", "Dupuit", "MODFLOW"] = Field(
-        ..., description="Groundwater model type"
+    model: Literal["None", "Linear", "Dupuit", "MODFLOW"] = Field(
+        ...,
+        description=(
+            "Groundwater model type. With 'Linear', the number of aquifers is "
+            "inferred from the Mf raster: if Mf is not provided or contains a "
+            "single positive class, a single linear reservoir is used; if Mf "
+            "contains multiple positive classes, groundwater head is averaged "
+            "within each class at every time step (LINEAR_MULT behaviour)."
+        ),
     )
     global_loss: Optional[float] = Field(0.0, description="Global water loss from aquifers, in m³/s")
 
@@ -304,6 +321,9 @@ class InitialConditions(BaseModel):
     Wgsat: Optional[float] = Field(
         0.01, description="Initial relative saturation of gravitational soil, non dimensional"
     )
+    groundwater_head: Optional[float] = Field(
+        0.0, description="Initial groundwater head, in meters (used when Linear groundwater model is active)"
+    )
     reservoir_volumes: Optional[PathField] = Field(
         None,
         description=(
@@ -318,6 +338,14 @@ class InitialConditions(BaseModel):
         """Validate that Ws is non-negative."""
         if v is not None and v < 0:
             raise ValueError("Ws must be non-negative")
+        return v if v is not None else 0.0
+
+    @field_validator("groundwater_head")
+    @classmethod
+    def check_groundwater_head_non_negative(cls, v: Optional[float]) -> float:
+        """Validate that groundwater_head is non-negative."""
+        if v is not None and v < 0:
+            raise ValueError("groundwater_head must be non-negative")
         return v if v is not None else 0.0
 
     @field_validator("Wcsat", "Wgsat")
@@ -525,14 +553,20 @@ class HyetographConfig(BaseModel):
     Configuration for generating synthetic hyetographs from IDF (Intensity-Duration-Frequency)
     parameters. Used to create design storm precipitation fields for simulation.
 
-    The IDF formula used is: h = ka * k * a * t^n
+    The IDF formula used is:
+
+    $$
+    h = k_a \\cdot k \\cdot a \\cdot t^n
+    $$
+
     where:
-        - h is precipitation depth [mm]
-        - ka is the areal reduction factor (ARF) coefficient
-        - k is the return period factor (spatially distributed raster)
-        - a is the IDF scale parameter (spatially distributed raster)
-        - n is the IDF shape parameter (spatially distributed raster)
-        - t is duration [hours]
+
+    - $h$ is precipitation depth [mm]
+    - $k_a$ is the areal reduction factor (ARF) coefficient
+    - $k$ is the return period factor (spatially distributed raster)
+    - $a$ is the IDF scale parameter (spatially distributed raster)
+    - $n$ is the IDF shape parameter (spatially distributed raster)
+    - $t$ is duration [hours]
     """
 
     a_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'a' parameter (scale factor)")

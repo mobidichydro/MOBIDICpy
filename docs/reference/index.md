@@ -66,13 +66,17 @@ High-level workflow orchestrating the complete preprocessing pipeline.
 Hillslope water balance with four reservoir model (capillary, gravitational, plants, surface).
 
 - [`soil_mass_balance()`](soil_water_balance.md#mobidic.core.soil_water_balance.soil_mass_balance) - Main hillslope water balance function
-- [`capillary_rise()`](soil_water_balance.md#mobidic.core.soil_water_balance.capillary_rise) - Calculate capillary rise from groundwater
 
 ### [Routing](routing.md)
 Hillslope and channel routing algorithms for water propagation.
 
 - [`hillslope_routing()`](routing.md#mobidic.core.routing.hillslope_routing) - Accumulate lateral flow following flow directions
 - [`linear_channel_routing()`](routing.md#mobidic.core.routing.linear_channel_routing) - Linear reservoir channel routing
+
+### [Groundwater](groundwater.md)
+Saturated-zone dynamics providing the baseflow contribution to surface runoff.
+
+- [`groundwater_linear()`](groundwater.md#functions) - Linear-reservoir groundwater model (with optional multi-aquifer averaging via the `Mf` raster)
 
 ### [Simulation](simulation.md)
 Main simulation engine and time-stepping loop.
@@ -144,10 +148,11 @@ from mobidic import (
     run_preprocessing,
     # Soil Water Balance
     soil_mass_balance,
-    capillary_rise,
     # Routing
     hillslope_routing,
     linear_channel_routing,
+    # Groundwater
+    groundwater_linear,
     # Reservoirs
     process_reservoirs,
     Reservoir,
@@ -173,7 +178,7 @@ from mobidic import (
 
 ## Development status
 
-MOBIDICpy's currently implemented features (v0.1):
+MOBIDICpy's currently implemented features (v0.2):
 
 - Configuration system
 - GIS data I/O
@@ -185,6 +190,7 @@ MOBIDICpy's currently implemented features (v0.1):
 - Complete preprocessing workflow
 - Soil water balance (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope + channel)
+- Linear reservoir groundwater model (with multi-aquifer capability via the `Mf` raster)
 - Reservoir module (preprocessing, routing, time-varying regulation)
 - Simulation engine (basic)
 - State I/O (NetCDF)
@@ -194,7 +200,7 @@ MOBIDICpy's currently implemented features (v0.1):
 Coming soon:
 
 - Energy balance module (1L, 5L schemes, Snow)
-- Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
+- Advanced groundwater models (Dupuit, MODFLOW)
 - Advanced routing (Muskingum-Cunge)
 - Meteorological data gap filling and quality control
 - CLI interface

@@ -25,8 +25,6 @@ The hydrological processes in the soil-water balance include:
 
 - **Percolation and hypodermic flow**: Modeled as linearly dependent on gravitational water content through empirical rate coefficients ($\beta$ for downhill hypodermic flow, $\gamma$ for percolation toward groundwater).
 
-- **Capillary rise**: Optional upward flux from shallow water table following Salvucci (1993), using Brooks-Corey parameterization for soil matric potential.
-
 - **Absorption**: Transfer from gravitational to capillary reservoir dependent on capillary soil saturation deficit.
 
 - **Runoff**: Outgoing runoff toward the downhill cell is evaluated as linearly dependent from surface water content through a kinematic parameter ($\alpha$).
@@ -74,15 +72,16 @@ When reservoirs are present in the river network, a dedicated **reservoir routin
 - **Network integration**: Reservoir outflow is added to the lateral inflow of the outlet  reach. Inlet reach discharge is zeroed to prevent double-counting of water that enters the  reservoir.
 
 
-### Groundwater (not yet implemented)
+### Groundwater
 
 Several groundwater models are available:
 
 - **None**: No groundwater interaction
-- **Linear**: Simple linear reservoir
-- **Linear_mult**: Multiple parallel linear reservoirs
-- **Dupuit**: 2-D physics-based aquifer model with explicit surface-subsurface interaction
-- **MODFLOW**: Coupling with USGS MODFLOW
+- **Linear**: Linear-reservoir groundwater. Each cell is treated as an independent reservoir with linear reservoir equation, where the net recharge is calulated from the soil balance. The resulting baseflow is added to surface runoff before lateral inflow accumulation. With a single aquifer class (or no `Mf` mask in the configuration file), one reservoir per cell is used; with multiple positive classes in the raster file `Mf`, the head is averaged within each class (multiple linear reservoirs, with independent heads).
+- **Dupuit**: 2-D physics-based aquifer model with explicit surface-subsurface interaction. Not yet implemented.
+- **MODFLOW**: Coupling with USGS MODFLOW. Not yet implemented.
+
+See the [Groundwater API reference](reference/groundwater.md) for implementation details.
 
 
 
@@ -134,7 +133,7 @@ The original MATLAB implementation is being systematically translated with numer
 
 ## Current Status
 
-**Version 0.1** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.
+**Version 0.2** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing) are implemented. Energy balance and advanced routing methods are under development.
 
 See the [home page](index.md) for implementation status.
 
