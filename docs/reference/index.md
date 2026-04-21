@@ -194,7 +194,7 @@ MOBIDICpy's currently implemented features (v0.1):
 Coming soon:
 
 - Energy balance module (1L, 5L schemes, Snow)
-- Groundwater models (Linear, Linear_mult, Dupuit, MODFLOW)
+- Groundwater models (Dupuit, MODFLOW)
 - Advanced routing (Muskingum-Cunge)
 - Meteorological data gap filling and quality control
 - CLI interface
