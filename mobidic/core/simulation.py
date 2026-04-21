@@ -723,9 +723,9 @@ class Simulation:
             param_grids["alpha"] = np.full((self.nrows, self.ncols), params.soil.alpha)
 
         # Channelized flow fraction cha [-]
-        # From buildgis_mysql_include.m line 655-656
+        # From buildgis_mysql_include.m line 655-656, then mobidic_sid.m line 775: cha^chafac
         param_grids["cha"] = self.flow_acc / np.nanmax(self.flow_acc)
-        param_grids["cha"] = np.where(param_grids["cha"] > 0, param_grids["cha"], 0.0)
+        param_grids["cha"] = param_grids["cha"] ** self.config.parameters.multipliers.chan_factor
 
         # Surface alpha parameter alpsur
         param_grids["alpsur"] = self.alpsur * param_grids["alpha"]
