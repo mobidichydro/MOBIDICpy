@@ -18,12 +18,12 @@ def groundwater_linear(
 
     Approximates groundwater dynamics as a linear reservoir:
 
-    .. math::
+    $$
+    q = k_f \\cdot h, \\quad dh/dt = R - q
+    $$
 
-        q = k_f \\cdot h, \\quad dh/dt = R - q
-
-    where :math:`h` is the groundwater head, :math:`k_f` is the aquifer conductivity,
-    :math:`R` is the net recharge (percolation - capillary rise - losses), and :math:`q` is the baseflow.
+    where $h$ is the groundwater head, $k_f$ is the aquifer conductivity,
+    $R$ is the net recharge, and $q$ is the baseflow.
 
     The equation is solved analytically, and the average baseflow over the time step is computed.
 
@@ -34,11 +34,9 @@ def groundwater_linear(
             1D array (same shape as h0)
         dt: Time step [s]
 
-    Returns:
-        Tuple ``(h, q)`` where:
-
-        - ``h``: Updated groundwater head [m]
-        - ``q``: Average baseflow over the time step [m/s]
+    Returns a tuple of:
+        - $h$: Updated groundwater head [m]
+        - $q$: Average baseflow over the time step [m/s]
 
     """
     h0 = np.asarray(h0, dtype=np.float64)
