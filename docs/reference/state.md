@@ -6,7 +6,7 @@ The state I/O module provides functions to save and load MOBIDIC simulation stat
 
 State files store:
 
-- **Grid variables**: Capillary water (Wc), gravitational water (Wg), plant water (Wp), surface water (Ws)
+- **Grid variables**: Capillary water (Wc), gravitational water (Wg), plant water (Wp), surface water (Ws), groundwater head (h, optional)
 - **Network variables**: Discharge, lateral inflow for each reach
 - **Metadata**: Simulation time, grid coordinates, CRS, global attributes
 - **CF-1.12 compliance**: NetCDF Climate and Forecast metadata conventions
@@ -396,12 +396,12 @@ output_states:
   soil_gravitational: true      # Save gravitational water (Wg)
   soil_plant: true              # Save plant/canopy water (Wp)
   soil_surface: true            # Save surface water (Ws)
+  aquifer_head: false           # Save groundwater head (h) when Linear groundwater is active
+  reservoir_states: false       # Save reservoir volumes, stages, flows
   # Other state outputs (not yet implemented):
-  reservoir_states: false
   surface_temperature: false
   ground_temperature: false
-  aquifer_head: false
-  et_prec: false
+  evapotranspiration: false
 
 output_states_settings:
   output_format: "netCDF"       # Format (currently only netCDF)
@@ -431,6 +431,7 @@ NetCDF state files contain:
 - `Wg(time, y, x)`: Gravitational water content [m] (if enabled)
 - `Wp(time, y, x)`: Plant/canopy water content [m] (optional, if enabled)
 - `Ws(time, y, x)`: Surface water content [m] (if enabled)
+- `h(time, y, x)`: Groundwater head [m] (if `aquifer_head: true` and Linear groundwater is active)
 - `discharge(time, reach)`: River discharge [m³/s] (if enabled)
 - `lateral_inflow(time, reach)`: Lateral inflow to reaches [m³/s] (if enabled)
 - `crs()`: Grid mapping (CRS metadata, scalar)

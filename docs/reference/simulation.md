@@ -18,7 +18,7 @@ The simulation engine coordinates:
 - **Output generation**: NetCDF states (with chunking) and Parquet/CSV reports
 - **Restart capability**: Load and resume from previously saved states
 
-**Current implementation**: Includes soil water balance, routing (hillslope, channel, reservoir), and state/report I/O. Energy balance and groundwater models not yet implemented.
+**Current implementation**: Includes soil water balance, routing (hillslope, channel, reservoir), linear-reservoir groundwater (with multi-aquifer averaging), and state/report I/O. Energy balance and advanced groundwater models (Dupuit, MODFLOW) are not yet implemented.
 
 ## Classes
 
@@ -37,12 +37,13 @@ The main simulation loop performs the following operations for each time step:
 3. **Save interpolated meteo** (optional): Export interpolated grids when using station-based forcing
 4. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep
 5. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows
-6. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge, zero basin fluxes
-7. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
-8. **Channel routing**: Linear reservoir routing through river network
-9. **Store results**: Save discharge and lateral inflow time series
-10. **Output states**: Optionally save states (with automatic chunking if needed)
-11. **Update and advance**: Store flow fields for next timestep and advance simulation time
+6. **Groundwater dynamics** (if `parameters.groundwater.model == "Linear"`): Update groundwater head from net recharge (percolation − global loss) and add the resulting baseflow to the surface runoff rate; optionally average head within each class of the `Mf` raster (multi-aquifer mode)
+7. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge, zero basin fluxes
+8. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
+9. **Channel routing**: Linear reservoir routing through river network
+10. **Store results**: Save discharge and lateral inflow time series
+11. **Output states**: Optionally save states (with automatic chunking if needed)
+12. **Update and advance**: Store flow fields for next timestep and advance simulation time
 
 **Key feature**: The simulation uses a feedback loop where flows from timestep `t` are routed through the hillslope at timestep `t+1` before entering the soil water balance. This ensures proper spatial connectivity of overland flow.
 
@@ -316,6 +317,7 @@ output_forcing_data:
 - [Preprocessing](preprocessing.md) - GIS data and reservoir preprocessing
 - [Soil Water Balance](soil_water_balance.md) - Hillslope water balance
 - [Routing](routing.md) - Hillslope, channel, and reservoir routing
+- [Groundwater](groundwater.md) - Linear-reservoir groundwater dynamics
 - [State I/O](state.md) - NetCDF state export/import
 - [Report I/O](report.md) - Time series export/import
 

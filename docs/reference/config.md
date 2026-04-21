@@ -2,6 +2,8 @@
 
 The configuration module provides a schema-driven approach to loading and validating MOBIDIC model configurations using YAML.
 
+See the [sample configuration file](https://github.com/mobidichydro/mobidicpy/blob/main/examples/sample_config.yaml) for a complete example with all available options and their descriptions.
+
 ## Overview
 
 Configuration files define all aspects of a MOBIDIC simulation, including:
@@ -16,7 +18,7 @@ Configuration files define all aspects of a MOBIDIC simulation, including:
     - `groundwater`: Model type, global loss
     - `reservoirs`: Reservoir shapefiles, stage-storage curves, regulation curves/schedules (optional)
     - `multipliers`: Multiplying factors for calibration
-- **Initial conditions**: Initial state (hillslope runoff, soil saturation, reservoir volumes)
+- **Initial conditions**: Initial state (hillslope runoff, soil saturation, groundwater head, reservoir volumes)
 - **Simulation settings**: Time step, resampling, soil/energy balance schemes, precipitation interpolation
 - **Output options**:
     - `output_states`: Boolean flags for state variables to save
@@ -104,8 +106,6 @@ The configuration is organized hierarchically (using nested Pydantic models):
 ::: mobidic.config.schema.Advanced
 
 ## Configuration structure
-
-See the [sample configuration file](https://github.com/mobidichydro/mobidicpy/blob/main/examples/sample_config.yaml) for a complete example with all available options and their descriptions.
 
 ## Validation
 
