@@ -76,7 +76,7 @@ Hillslope and channel routing algorithms for water propagation.
 ### [Groundwater](groundwater.md)
 Saturated-zone dynamics providing the baseflow contribution to surface runoff.
 
-- [`groundwater_linear()`](groundwater.md#mobidic.core.groundwater.groundwater_linear) - Linear-reservoir groundwater model (with optional multi-aquifer averaging via the `Mf` raster)
+- [`groundwater_linear()`](groundwater.md#functions) - Linear-reservoir groundwater model (with optional multi-aquifer averaging via the `Mf` raster)
 
 ### [Simulation](simulation.md)
 Main simulation engine and time-stepping loop.

@@ -88,10 +88,10 @@ output_states:
 At every timestep, when `parameters.groundwater.model == "Linear"`, the simulation:
 
 1. Computes the per-cell net recharge $R$ from the soil percolation and global-loss terms.
-2. Calls [`groundwater_linear()`](groundwater.md#mobidic.core.groundwater.groundwater_linear) to update the head $h$ and obtain the average baseflow $q$.
+2. Calls [`groundwater_linear()`](#functions) to update the head $h$ and obtain the average baseflow $q$.
 3. (Optional) Averages $h$ within each class of the `Mf` raster in multi-aquifer mode.
 4. Adds the baseflow to the surface runoff rate before lateral inflow accumulation into the river reaches.
-5. Persists the updated head into [`SimulationState`](simulation.md#mobidic.core.simulation.SimulationState) (`state.h`), so it can be written to the state NetCDF when `output_states.aquifer_head` is enabled and reloaded on warm start.
+5. Persists the updated head into [`SimulationState`](simulation.md#classes) (`state.h`), so it can be written to the state NetCDF when `output_states.aquifer_head` is enabled and reloaded on warm start.
 
 ## Model status
 
