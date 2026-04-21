@@ -213,7 +213,11 @@ class RoutingParameters(BaseModel):
     wcel: float = Field(..., description="Flood wave celerity in channels, in m/s")
     Br0: float = Field(1.0, description="Width of channels with first Strahler order, in meters")
     NBr: float = Field(
-        1.5, description="Exponent of equation W = Br0*O^NBr, where W=Width of channels and O=Strahler order"
+        1.5,
+        description=(
+            "Exponent of equation $W = B_{r0} \\cdot O^{N_{Br}}$, "
+            "where $W$ is the width of channels and $O$ is the Strahler order"
+        ),
     )
     n_Man: float = Field(0.03, description="Manning roughness coefficient for channels, in s/m^(1/3)")
 
@@ -549,14 +553,20 @@ class HyetographConfig(BaseModel):
     Configuration for generating synthetic hyetographs from IDF (Intensity-Duration-Frequency)
     parameters. Used to create design storm precipitation fields for simulation.
 
-    The IDF formula used is: h = ka * k * a * t^n
+    The IDF formula used is:
+
+    $$
+    h = k_a \\cdot k \\cdot a \\cdot t^n
+    $$
+
     where:
-        - h is precipitation depth [mm]
-        - ka is the areal reduction factor (ARF) coefficient
-        - k is the return period factor (spatially distributed raster)
-        - a is the IDF scale parameter (spatially distributed raster)
-        - n is the IDF shape parameter (spatially distributed raster)
-        - t is duration [hours]
+
+    - $h$ is precipitation depth [mm]
+    - $k_a$ is the areal reduction factor (ARF) coefficient
+    - $k$ is the return period factor (spatially distributed raster)
+    - $a$ is the IDF scale parameter (spatially distributed raster)
+    - $n$ is the IDF shape parameter (spatially distributed raster)
+    - $t$ is duration [hours]
     """
 
     a_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'a' parameter (scale factor)")
