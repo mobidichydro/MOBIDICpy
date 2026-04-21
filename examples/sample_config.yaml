@@ -107,11 +107,11 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Alb.tif]
   Alb:
 
-  # OPTIONAL: Grid of binary mask (0,1) defining the artesian aquifer extension
+  # OPTIONAL: Grid mask defining the artesian aquifer(s) extension
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ma.tif]
   Ma:
 
-  # OPTIONAL: Grid of binary mask (0,1) defining the freatic aquifer extension
+  # OPTIONAL: Grid mask defining the freatic aquifer(s) extension
   # [full pathname to .tif file, eg: /blue_nile/geodat/Mf.tif]
   Mf:
 
