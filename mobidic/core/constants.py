@@ -19,7 +19,7 @@ KC_FAO_DEFAULT = 1.0  # Default FAO crop coefficient (-). Not currently used.
 # ============================================================================
 
 W_MIN = 1e-5  # Minimum water content (m)
-FLUX_MIN = 1e-10  # Minimum flux to avoid division by zero (m/s). Not currently used.
+FLUX_MIN = 1e-10  # Minimum flux to avoid division by zero (m/s)
 HSOIL_MIN = 1e-3  # Minimum soil depth (m). Not currently used.
 TOLERANCE = 1e-8  # General numerical tolerance (-). Not currently used.
 MASS_BALANCE_RTOL = 1e-6  # Relative tolerance for mass balance checks (-). Not currently used.

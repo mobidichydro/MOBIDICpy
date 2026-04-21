@@ -692,6 +692,8 @@ class Simulation:
             param_grids["ks"] = self.ks * ks_factor
         else:
             param_grids["ks"] = np.full((self.nrows, self.ncols), params.soil.ks) * ks_factor
+        param_grids["ks"] = np.maximum(param_grids["ks"], const.FLUX_MIN)
+        param_grids["ks"][np.isnan(self.dtm)] = np.nan
 
         # Aquifer conductivity kf [1/s] (only used when groundwater is active)
         if self.kf is not None:
