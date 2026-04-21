@@ -107,7 +107,13 @@ class RasterFiles(BaseModel):
         None, description="Grid of binary mask (0,1) defining the artesian aquifer extension"
     )
     Mf: Optional[PathField] = Field(
-        None, description="Grid of binary mask (0,1) defining the freatic aquifer extension"
+        None,
+        description=(
+            "Grid defining the freatic aquifer extension. Cells with value <= 0 "
+            "are outside the aquifer. A single positive class defines one "
+            "aquifer; multiple positive classes enable multi-aquifer mode, where "
+            "groundwater head is averaged within each class."
+        ),
     )
     gamma: Optional[PathField] = Field(None, description="Grid of percolation coefficient, in one over seconds")
     kappa: Optional[PathField] = Field(None, description="Grid of adsorption coefficient, in one over seconds")
@@ -231,8 +237,15 @@ class RoutingParameters(BaseModel):
 class GroundwaterParameters(BaseModel):
     """Groundwater model parameters."""
 
-    model: Literal["None", "Linear", "Linear_mult", "Dupuit", "MODFLOW"] = Field(
-        ..., description="Groundwater model type"
+    model: Literal["None", "Linear", "Dupuit", "MODFLOW"] = Field(
+        ...,
+        description=(
+            "Groundwater model type. With 'Linear', the number of aquifers is "
+            "inferred from the Mf raster: if Mf is not provided or contains a "
+            "single positive class, a single linear reservoir is used; if Mf "
+            "contains multiple positive classes, groundwater head is averaged "
+            "within each class at every time step (LINEAR_MULT behaviour)."
+        ),
     )
     global_loss: Optional[float] = Field(0.0, description="Global water loss from aquifers, in m³/s")
 
