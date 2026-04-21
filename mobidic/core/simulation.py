@@ -282,6 +282,21 @@ class Simulation:
         self.beta = gisdata.grids.get("beta")
         self.alpha = gisdata.grids.get("alpha")
 
+        # Freatic aquifer mask (optional). When multiple positive classes are
+        # present, enables multi-aquifer mode with per-class h averaging
+        self.mf = gisdata.grids.get("Mf")
+        self.aquifer_ids: np.ndarray | None = None
+        if self.mf is not None:
+            mf_arr = np.asarray(self.mf, dtype=float)
+            valid = np.isfinite(mf_arr) & (mf_arr > 0)
+            unique_ids = np.unique(mf_arr[valid])
+            if unique_ids.size > 1:
+                self.aquifer_ids = unique_ids
+                logger.info(
+                    f"Multi-aquifer mode: {unique_ids.size} classes detected in Mf "
+                    f"(ids={unique_ids.tolist()}); groundwater head will be averaged within each class"
+                )
+
         # River network
         self.network = gisdata.network
 
@@ -1425,6 +1440,18 @@ class Simulation:
 
                 h_flat_full[ko] = h_out_flat
                 self.state.h = h_flat_full.reshape((self.nrows, self.ncols), order="F")
+
+                # Multi-aquifer averaging
+                # When Mf defines >1 positive classes, average h within each class.
+                if self.aquifer_ids is not None:
+                    h2d = self.state.h
+                    for aquifer_id in self.aquifer_ids:
+                        mask = self.mf == aquifer_id
+                        if not np.any(mask):
+                            continue
+                        mean_h = np.nanmean(h2d[mask])
+                        if np.isfinite(mean_h):
+                            h2d[mask] = mean_h
 
                 # Add baseflow to surface runoff before accumulation
                 flr_flat_full = flr.ravel("F")
