@@ -161,6 +161,7 @@ def _linear_routing_kernel(
     K: np.ndarray,
     C3: np.ndarray,
     C4: np.ndarray,
+    dt: float,
     discharge_final: np.ndarray,
     qL_total: np.ndarray,
 ) -> None:
@@ -180,6 +181,7 @@ def _linear_routing_kernel(
         K: Storage coefficient (lag time) [s]
         C3: Recession coefficients
         C4: Lateral inflow coefficients
+        dt: Time step [s]
         discharge_final: Output discharge array (modified in-place)
         qL_total: Total inflow array (modified in-place)
     """
@@ -189,36 +191,18 @@ def _linear_routing_kernel(
         qL_total[ki] = lateral_inflow[ki]
 
         # Add contributions from upstream reaches (MATLAB lines 67-74)
+        # Uses log-free equivalent of MATLAB's `(Qx(jj) - Q(jj,tt-1)*C4(jj))/log(C3(jj))`:
+        # since log(C3) = -dt/K exactly, the transient correction is
+        # -(Qx(jj) - Q(jj,tt-1)*C4(jj)) * K / dt. This form is stable for all K > 0
+        # (including when C3 underflows to 0 at dt >> K).
         jj1 = upstream_1_idx[ki]
         if jj1 >= 0:
-            # Compute mean integral of upstream discharge over time step
-            if C3[jj1] == 1.0:
-                # Special case: no decay (K → ∞)
-                mean_upstream = qL_total[jj1] / C4[jj1]
-            elif abs(C3[jj1]) < 1e-10:
-                # Special case: instant decay (K → 0)
-                mean_upstream = qL_total[jj1] / C4[jj1]
-            else:
-                # General case: compute integral mean
-                mean_upstream = qL_total[jj1] / C4[jj1] + (qL_total[jj1] - discharge_initial[jj1] * C4[jj1]) / np.log(
-                    C3[jj1]
-                )
+            mean_upstream = qL_total[jj1] / C4[jj1] - (qL_total[jj1] - discharge_initial[jj1] * C4[jj1]) * K[jj1] / dt
             qL_total[ki] += mean_upstream
 
         jj2 = upstream_2_idx[ki]
         if jj2 >= 0:
-            # Compute mean integral of upstream discharge over time step
-            if C3[jj2] == 1.0:
-                # Special case: no decay (K → ∞)
-                mean_upstream = qL_total[jj2] / C4[jj2]
-            elif abs(C3[jj2]) < 1e-10:
-                # Special case: instant decay (K → 0)
-                mean_upstream = qL_total[jj2] / C4[jj2]
-            else:
-                # General case: compute integral mean
-                mean_upstream = qL_total[jj2] / C4[jj2] + (qL_total[jj2] - discharge_initial[jj2] * C4[jj2]) / np.log(
-                    C3[jj2]
-                )
+            mean_upstream = qL_total[jj2] / C4[jj2] - (qL_total[jj2] - discharge_initial[jj2] * C4[jj2]) * K[jj2] / dt
             qL_total[ki] += mean_upstream
 
         # MATLAB line 75: Qx(ki) = Qx(ki) * C4(ki)
@@ -410,6 +394,7 @@ def linear_channel_routing(
         K,
         C3,
         C4,
+        float(dt),
         discharge_final,
         qL_total,
     )
