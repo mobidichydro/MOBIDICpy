@@ -1361,7 +1361,7 @@ class Simulation:
                 percolation_coeff=gamma_flat,
                 absorption_coeff=kappa_flat,
                 rainfall_fraction=f0_flat,
-                et_shape=3.0,
+                et_shape=0.0,
                 capillary_rise_enabled=False,
                 test_mode=False,
                 alpsur=alpsur_flat,
