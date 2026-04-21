@@ -538,10 +538,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#groundwater-not-yet-implemented" class="md-nav__link">
+  <a href="#groundwater" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Groundwater (not yet implemented)
+        Groundwater
       
     </span>
   </a>
@@ -692,6 +692,8 @@
       
         
           
+        
+      
         
       
         
@@ -1063,6 +1065,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/groundwater/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groundwater
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/simulation/" class="md-nav__link">
         
   
@@ -1269,10 +1299,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#groundwater-not-yet-implemented" class="md-nav__link">
+  <a href="#groundwater" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Groundwater (not yet implemented)
+        Groundwater
       
     </span>
   </a>
@@ -1393,9 +1423,6 @@
 <p><strong>Percolation and hypodermic flow</strong>: Modeled as linearly dependent on gravitational water content through empirical rate coefficients (<span class="arithmatex">\(\beta\)</span> for downhill hypodermic flow, <span class="arithmatex">\(\gamma\)</span> for percolation toward groundwater).</p>
 </li>
 <li>
-<p><strong>Capillary rise</strong>: Optional upward flux from shallow water table following Salvucci (1993), using Brooks-Corey parameterization for soil matric potential.</p>
-</li>
-<li>
 <p><strong>Absorption</strong>: Transfer from gravitational to capillary reservoir dependent on capillary soil saturation deficit.</p>
 </li>
 <li>
@@ -1444,15 +1471,15 @@
 <li><strong>Adaptive sub-stepping</strong>: For numerical stability, the model can automatically subdivide  the simulation timestep when discharge variability is high.</li>
 <li><strong>Network integration</strong>: Reservoir outflow is added to the lateral inflow of the outlet  reach. Inlet reach discharge is zeroed to prevent double-counting of water that enters the  reservoir.</li>
 </ul>
-<h3 id="groundwater-not-yet-implemented">Groundwater (not yet implemented)</h3>
+<h3 id="groundwater">Groundwater</h3>
 <p>Several groundwater models are available:</p>
 <ul>
 <li><strong>None</strong>: No groundwater interaction</li>
-<li><strong>Linear</strong>: Simple linear reservoir</li>
-<li><strong>Linear_mult</strong>: Multiple parallel linear reservoirs</li>
-<li><strong>Dupuit</strong>: 2-D physics-based aquifer model with explicit surface-subsurface interaction</li>
-<li><strong>MODFLOW</strong>: Coupling with USGS MODFLOW</li>
+<li><strong>Linear</strong>: Linear-reservoir groundwater. Each cell is treated as an independent reservoir with linear reservoir equation, where the net recharge is calulated from the soil balance. The resulting baseflow is added to surface runoff before lateral inflow accumulation. With a single aquifer class (or no <code>Mf</code> mask in the configuration file), one reservoir per cell is used; with multiple positive classes in the raster file <code>Mf</code>, the head is averaged within each class (multiple linear reservoirs, with independent heads).</li>
+<li><strong>Dupuit</strong>: 2-D physics-based aquifer model with explicit surface-subsurface interaction. Not yet implemented.</li>
+<li><strong>MODFLOW</strong>: Coupling with USGS MODFLOW. Not yet implemented.</li>
 </ul>
+<p>See the <a href="../reference/groundwater/">Groundwater API reference</a> for implementation details.</p>
 <h2 id="calibration-and-sensitivity-analysis">Calibration and sensitivity analysis</h2>
 <p>MOBIDICpy includes an integrated interface to <a href="https://github.com/usgs/pestpp">PEST++</a> by USGS for automated parameter estimation, global sensitivity analysis, and uncertainty quantification without requiring manual PEST++ file management.</p>
 <p>The integration is built on <a href="https://github.com/pypest/pyemu">pyEMU</a> and (currently) supports the following <a href="https://github.com/usgs/pestpp">PEST++</a> tools:</p>
@@ -1488,7 +1515,7 @@
 </ol>
 <p>The original MATLAB implementation is being systematically translated with numerical consistency respect to the original model behavior.</p>
 <h2 id="current-status">Current Status</h2>
-<p><strong>Version 0.1</strong> - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, reservoir routing) are implemented. Energy balance, groundwater models, and advanced routing methods are under development.</p>
+<p><strong>Version 0.2</strong> - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing) are implemented. Energy balance and advanced routing methods are under development.</p>
 <p>See the <a href="../">home page</a> for implementation status.</p>
 <h2 id="references">References</h2>
 <p>Campo, L., Caparrini, F., Castelli, F. (2006). Use of multi-platform, multi-temporal remote-sensing data for calibration of a 
