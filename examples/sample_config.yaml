@@ -129,7 +129,12 @@ raster_files:
 
   # OPTIONAL: Grid of hillslope flow coefficient, in one over seconds
   # [full pathname to .tif file]
-  alpha: 
+  alpha:
+
+  # OPTIONAL: Grid of Corine Land Cover (CLC) level 3 codes.
+  # If provided, FAO single crop coefficients (Kc) are looked up per CLC class
+  # [full pathname to .tif file, eg: /blue_nile/geodat/CLC.tif]
+  CLC:
 
 raster_settings:
   # REQUIRED: Flow direction pointer type
@@ -183,7 +188,19 @@ parameters:
     # REQUIRED: Hillslope flow coefficient, in 1/s
     # [positive number in float or exp notation]
     alpha: 2.50e-05
-  
+
+    # OPTIONAL: Default FAO single crop coefficient, non dimensional.
+    # Used where raster_files.CLC is not provided or where the CLC class is
+    # missing from the Kc/CLC mapping.
+    # [positive number, default: 1.0]
+    Kc: 1.0
+
+    # OPTIONAL: Path to a CSV file mapping CLC level 3 codes to 12 monthly Kc
+    # values (columns: clc_code, kc_jan, kc_feb, ..., kc_dec).
+    # If left blank, the default mapping is used (see data/default_kc_clc_map.csv).
+    # [full pathname to .csv file]
+    Kc_CLC_map:
+
   energy:
     # OPTIONAL: Deep ground temperature, in deg. Kelvin
     # [positive number in float or exp notation, default: 290.0]
