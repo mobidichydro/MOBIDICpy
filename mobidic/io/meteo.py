@@ -125,8 +125,8 @@ class MeteoWriter:
             # Stack list of 2D arrays into 3D array (time, y, x)
             data_array = np.stack(self.data_buffer[var], axis=0)
 
-            # Convert units from m/s to mm/h for precipitation and PET
-            if var in ["precipitation", "pet"]:
+            # Convert units from m/s to mm/h for precipitation, PET, and ET
+            if var in ["precipitation", "pet", "et"]:
                 data_array = data_array * 1000.0 * 3600.0
 
             # Create DataArray with metadata
@@ -235,6 +235,7 @@ def _get_variable_longname(var_name: str) -> str:
     longnames = {
         "precipitation": "precipitation rate",
         "pet": "potential evapotranspiration rate",
+        "et": "actual evapotranspiration rate",
         "temperature": "air temperature",
         "temperature_min": "minimum air temperature",
         "temperature_max": "maximum air temperature",
@@ -257,6 +258,7 @@ def _get_variable_units(var_name: str) -> str:
     units = {
         "precipitation": "mm h-1",
         "pet": "mm h-1",
+        "et": "mm h-1",
         "temperature": "degC",
         "temperature_min": "degC",
         "temperature_max": "degC",

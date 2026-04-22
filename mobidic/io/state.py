@@ -520,6 +520,7 @@ class StateWriter:
             h=state.h.copy() if state.h is not None else None,
             ts=state.ts.copy() if state.ts is not None else None,
             td=state.td.copy() if state.td is not None else None,
+            et=state.et.copy() if state.et is not None else None,
         )
 
         # Add to buffer
@@ -598,6 +599,14 @@ class StateWriter:
                     [s.td if s.td is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
                 )
                 data_vars["Td"] = (["time", "y", "x"], td_data)
+
+        if self.output_states.evapotranspiration:
+            has_et = any(s.et is not None for s in self.buffer)
+            if has_et:
+                et_data = np.array(
+                    [s.et if s.et is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["ET"] = (["time", "y", "x"], et_data)
 
         # Network variables
         if self.output_states.discharge:
@@ -694,6 +703,14 @@ class StateWriter:
                 "long_name": "Deep Soil Temperature",
                 "units": "K",
                 "description": "Deep-soil temperature from energy balance",
+                "grid_mapping": "crs",
+            }
+
+        if "ET" in flush_ds:
+            flush_ds["ET"].attrs = {
+                "long_name": "Actual Evapotranspiration Rate",
+                "units": "m s-1",
+                "description": "Actual evapotranspiration as bounded by soil water availability",
                 "grid_mapping": "crs",
             }
 
