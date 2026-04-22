@@ -314,6 +314,17 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
             default_value = _get_default_parameter_value(name, config)
             grids[name] = np.full_like(grids["dtm"], default_value, dtype=float)
 
+    # Corine Land Cover (CLC) raster: optional categorical grid; when absent the
+    # simulation falls back to the scalar parameters.soil.Kc. We keep it out of
+    # the numeric optional_rasters loop because it carries class codes and must
+    # not be filled with a default flux value nor averaged during decimation.
+    if config.raster_files.CLC is not None:
+        logger.debug(f"Loading CLC from {config.raster_files.CLC}")
+        clc_result = grid_to_matrix(config.raster_files.CLC)
+        grids["CLC"] = clc_result["data"]
+    else:
+        logger.debug("No CLC raster provided; Kc will default to parameters.soil.Kc")
+
     # Calculate alpsur (surface routing parameter based on slope)
     # From buildgis_mysql_include.m lines 647-651
     logger.debug("Calculating alpsur from DTM slopes")
@@ -334,11 +345,19 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     if decimation_factor > 1:
         logger.info(f"Decimating grids by factor {decimation_factor}")
 
-        # Decimate most grids using simple averaging
+        # Decimate most grids using simple averaging. flow_dir/flow_acc follow
+        # a dedicated path below; CLC holds discrete class codes so averaging
+        # is skipped and the upper-left sub-cell of each block is taken.
+        categorical_grids = {"CLC"}
         for name in grids.keys():
-            if name not in ["flow_dir", "flow_acc"]:
-                logger.debug(f"Decimating {name}")
-                grids[name] = decimate_raster(grids[name], decimation_factor)
+            if name in ("flow_dir", "flow_acc"):
+                continue
+            if name in categorical_grids:
+                logger.debug(f"Decimating {name} (nearest)")
+                grids[name] = grids[name][::decimation_factor, ::decimation_factor]
+                continue
+            logger.debug(f"Decimating {name}")
+            grids[name] = decimate_raster(grids[name], decimation_factor)
 
         # Decimate flow direction and accumulation
         logger.debug("Decimating flow_dir and flow_acc")

@@ -26,6 +26,7 @@ from mobidic.core.groundwater import groundwater_linear
 from mobidic.core.energy_balance import compute_energy_balance_1l, solar_hours
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
+from mobidic.core.crop_coefficients import compute_kc_grid, load_kc_clc_mapping
 from mobidic.io import StateWriter
 
 # Energy-balance forcing variables required when energy_balance != "None"
@@ -296,6 +297,29 @@ class Simulation:
         # Energy balance grids (optional rasters; fallback to scalar from config)
         self.ch_raster = gisdata.grids.get("CH")
         self.alb_raster = gisdata.grids.get("Alb")
+
+        # Corine Land Cover grid (optional). When present, FAO Kc values are
+        # looked up per CLC class and per month; otherwise the scalar default
+        # Kc (parameters.soil.Kc) is applied uniformly.
+        self.clc = gisdata.grids.get("CLC")
+        kc_map_path = self.config.parameters.soil.Kc_CLC_map
+        self.kc_default = float(self.config.parameters.soil.Kc)
+        if self.clc is not None:
+            self.kc_clc_mapping = load_kc_clc_mapping(kc_map_path)
+            logger.info(
+                f"FAO Kc enabled with {len(self.kc_clc_mapping)} CLC classes "
+                f"(default Kc={self.kc_default} for unmapped / missing cells)"
+            )
+        else:
+            self.kc_clc_mapping = None
+            if kc_map_path is not None:
+                logger.warning(
+                    "parameters.soil.Kc_CLC_map is set but raster_files.CLC is not: "
+                    "Kc will default uniformly to parameters.soil.Kc"
+                )
+        # Cache the most recently computed Kc grid to avoid rebuilding it when
+        # the month does not change between timesteps.
+        self._kc_grid_cache: tuple[int, np.ndarray] | None = None
 
         # Freatic aquifer mask (optional). When multiple positive classes are
         # present, enables multi-aquifer mode with per-class h averaging
@@ -718,6 +742,24 @@ class Simulation:
         pet = calculate_pet((self.nrows, self.ncols), self.dt, pet_rate_mm_day=1.0)
 
         return pet
+
+    def _get_kc(self, time: datetime) -> np.ndarray | float:
+        """Return the FAO Kc factor for the current timestep.
+
+        Uses the CLC raster and the monthly Kc mapping when available,
+        otherwise returns the scalar default Kc. The result is cached per
+        month since the mapping only changes at month boundaries.
+        """
+        if self.clc is None or self.kc_clc_mapping is None:
+            return self.kc_default
+
+        month = time.month
+        if self._kc_grid_cache is not None and self._kc_grid_cache[0] == month:
+            return self._kc_grid_cache[1]
+
+        kc = compute_kc_grid(self.clc, self.kc_clc_mapping, month, self.kc_default)
+        self._kc_grid_cache = (month, kc)
+        return kc
 
     def _prepare_grids(self) -> dict[str, np.ndarray]:
         """Prepare grids for simulation.
@@ -1360,6 +1402,23 @@ class Simulation:
 
             # 2. Calculate PET (and run energy balance pre-pass when active)
             energy_pre_state: dict | None = None
+
+            # Build the effective turbulent-exchange coefficient CH*Kc used by
+            # the energy-balance. Translated from MATLAB  CH(ko).*Kc_FAO_map(ko) 
+            # in mobidic_sid.m. Kc is applied inside the energy balance rather than as a
+            # post-hoc scaling of PET, since CH affects both the sensible and
+            # latent heat fluxes in the nonlinear Ts solution.
+            kc_now = self._get_kc(current_time)
+            ch_eff_ko = None
+            if energy_active:
+                if isinstance(kc_now, np.ndarray):
+                    kc_ko = kc_now.ravel("F")[ko]
+                    ch_eff_ko = ch_flat_full * kc_ko
+                elif kc_now != 1.0:
+                    ch_eff_ko = ch_flat_full * float(kc_now)
+                else:
+                    ch_eff_ko = ch_flat_full
+
             if energy_active:
                 # Fetch energy forcing variables (units from interpolation/raster:
                 # temperatures in degC, humidity in %, radiation in W/m^2, wind in m/s).
@@ -1441,7 +1500,7 @@ class Simulation:
                     tair_max=tmax_ko,
                     tair_min=tmin_ko,
                     qair=rh_ko,
-                    ch=ch_flat_full,
+                    ch=ch_eff_ko,
                     alb=alb_flat_full,
                     kaps=kaps,
                     nis=nis,
@@ -1641,7 +1700,8 @@ class Simulation:
             # 5a. Energy balance re-entry: refine Ts/Td using actual ET/PET ratio
             if energy_active and energy_pre_state is not None:
                 etp_ko = energy_pre_state["etp"]
-                etrsuetp_ko = np.where(etp_ko > 0.0, np.minimum(et_flat / etp_ko, 1.0), 0.0)
+                etp_ko_corr = np.where(etp_ko > 0.0, etp_ko, 1.0)
+                etrsuetp_ko = np.where(etp_ko > 0.0, np.minimum(et_flat / etp_ko_corr, 1.0), 0.0)
 
                 # Re-run with corrected etrsuetp; restart from initial Ts/Td and updated td_rise
                 ts_re_ko, td_re_ko, _, _ = compute_energy_balance_1l(
@@ -1653,7 +1713,7 @@ class Simulation:
                     tair_max=energy_pre_state["tmax"],
                     tair_min=energy_pre_state["tmin"],
                     qair=energy_pre_state["rh"],
-                    ch=ch_flat_full,
+                    ch=ch_eff_ko,
                     alb=alb_flat_full,
                     kaps=kaps,
                     nis=nis,
