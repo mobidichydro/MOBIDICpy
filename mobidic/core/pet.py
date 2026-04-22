@@ -1,7 +1,7 @@
 """Potential evapotranspiration (PET).
 
-This module provides PET calculation. Currently, it implements a constant PET rate,
-with a default of 1 mm/day. The energy balance approach is not yet implemented.
+This module outputs a grid with a constant potential evapotranspiration (PET) rate.
+It is used when the energy balance is not active.
 
 """
 
@@ -18,14 +18,10 @@ def calculate_pet(
     """
     Calculate potential evapotranspiration using constant rate.
 
-    This function replicates the MATLAB approach for PET when energy balance
-    is not active. MATLAB uses: etp = Mones/(1000*3600*24) which equals
-    constant 1 mm/day.
-
     Args:
         grid_shape: Shape of grid (nrows, ncols)
         dt: Time step duration [s]
-        pet_rate_mm_day: PET rate [mm/day] (default: 1.0, matching MATLAB)
+        pet_rate_mm_day: PET rate [mm/day] (default: 1.0 mm/day)
 
     Returns:
         Potential evapotranspiration rate [m/s]
@@ -34,10 +30,6 @@ def calculate_pet(
         - MATLAB default: etp = 1/(1000*3600*24) m/s = 1 mm/day
         - When energy balance is active, PET comes from forenergybal.m
         - For Phase 1 (no energy balance), uses constant rate
-
-    References:
-        MATLAB: mobidic_sid.m line 332:
-        etp = Mones/(1000*3600*24);  % = 1 mm/day constant
 
     Examples:
         >>> # Calculate PET for 100x100 grid, 900s time step, 1 mm/day rate

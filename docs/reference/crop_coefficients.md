@@ -1,17 +1,17 @@
 # Crop coefficients (Kc / CLC)
 
-This module supports the **FAO single crop coefficient** method to adjust the potential evapotranspiration (PET) for different land-cover types. Monthly $K_c$ values are mapped from **Corine Land Cover (CLC) level 3** codes.
+This module supports the **FAO single crop coefficient** method to adjust the evapotranspiration (ET) for different land-cover types. Monthly $K_c$ values are mapped to **Corine Land Cover (CLC) level 3** codes, using default mapping values (see `data/kc_clc_mapping.csv` file). The user can provide a custom mapping file if desired. The $K_c$ factor is applied to the turbulent exchange coefficient $C_H$ in the energy balance calculation, ensuring that the resulting surface temperature and ET are consistent with the land-cover type.
 
 ## Background
 
-The FAO-56 single crop coefficient methodology defines the actual crop evapotranspiration as:
+The FAO-56 single crop coefficient methodology defines the crop evapotranspiration as:
 
 $$ET_c = K_c \cdot ET_0$$
 
 where:
 
-- $ET_0$ is the reference evapotranspiration (calculated from the energy balance for a reference grass surface)
-- $K_c$ is the crop coefficient, encoding the land-cover properties that affect evaporative demand
+- $ET_0$ is the reference evapotranspiration (calculated for a reference grass surface)
+- $K_c$ is the crop coefficient that adjusts $ET_0$ to account for the specific vegetation type and growth stage.
 
 $K_c$ depends on:
 
@@ -26,7 +26,7 @@ $K_c$ depends on:
 
 The $K_c$ factor is **applied to the turbulent exchange coefficient** $C_H$ before the energy balance solver is called:
 
-$$C_H^{\text{eff}} = K_c \cdot C_H$$
+$$C_H^{\text{adj}} = K_c \cdot C_H$$
 
 !!! warning "Why not multiply PET by Kc?"
     Scaling PET by $K_c$ after the energy balance would keep $T_s$ solved with the original (wrong) $C_H$.  
@@ -36,7 +36,7 @@ $$C_H^{\text{eff}} = K_c \cdot C_H$$
 
 When the PET is obtained from the meteorological forcing data (raster NetCDF) or the energy balance is not active, $K_c$ is applied directly to PET:
 
-$$ET_c = K_c \cdot \text{PET}_{\text{raster/constant}}$$
+$$PET_c = K_c \cdot \text{PET}_{\text{raster/constant}}$$
 
 This is the standard FAO-56 formula applied as a simple multiplicative factor, which is the only option when PET is treated as an external input.
 
@@ -45,7 +45,7 @@ This is the standard FAO-56 formula applied as a simple multiplicative factor, w
 | Raster contains | Behaviour |
 |---|---|
 | `et` | Used directly as actual evapotranspiration; $K_c$ is **not** applied again (it is assumed to be already embedded). The energy balance is skipped regardless of `simulation.energy_balance`. |
-| `pet` | $K_c$ is applied ($ET_c = K_c \cdot \text{PET}$) before the soil water balance. The energy balance is skipped regardless of `simulation.energy_balance`. |
+| `pet` | $K_c$ is applied ($PET_c = K_c \cdot \text{PET}$) before the soil water balance, and then $PET_c$ is used as input of the soil water balance module to calculate actual ET. The energy balance is skipped regardless of `simulation.energy_balance`. |
 | both `et` and `pet` | `et` takes precedence and `pet` is ignored. |
 | neither | Normal energy-balance or constant-PET path applies (see above). |
 
@@ -72,13 +72,6 @@ clc_code,kc_jan,kc_feb,...,kc_dec
 
 Comment lines starting with `#` are ignored. The default values are derived from the FAO-56 guidelines adapted to the CLC classification.
 
-## Functions
-
-::: mobidic.core.crop_coefficients.load_kc_clc_mapping
-
-::: mobidic.core.crop_coefficients.compute_kc_grid
-
-::: mobidic.core.crop_coefficients.default_kc_clc_mapping_path
 
 ## Configuration
 
@@ -134,3 +127,11 @@ simulation:
 - CLC is an integer classification raster. During grid decimation it is sub-sampled using **nearest-neighbour** (upper-left sub-cell) rather than averaging, to preserve class codes.
 - The CLC grid is saved to and loaded from the consolidated `gisdata.nc` file (as the `CLC` variable) so that the mapping can be applied without the original GeoTIFF at simulation time.
 - When the CLC raster is present but a cell's class code is not in the mapping, that cell gets `parameters.soil.Kc`.
+
+## Functions
+
+::: mobidic.core.crop_coefficients.load_kc_clc_mapping
+
+::: mobidic.core.crop_coefficients.compute_kc_grid
+
+::: mobidic.core.crop_coefficients.default_kc_clc_mapping_path

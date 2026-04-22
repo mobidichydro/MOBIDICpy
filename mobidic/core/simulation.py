@@ -1565,7 +1565,7 @@ class Simulation:
                     time_step_index=step,
                 )
             elif self._raster_et_source == "pet":
-                # PET from raster: apply Kc to obtain actual ET
+                # PET from raster: apply Kc to obtain actual PETc
                 pet = self._get_forcing_fn(
                     current_time,
                     "pet",

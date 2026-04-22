@@ -1,6 +1,6 @@
 # Energy balance
 
-The energy balance module computes the surface energy budget at the land surface and provides the **potential evapotranspiration (PET)** that drives the soil-water balance. Surface ($T_s$) and deep-soil ($T_d$) temperatures are calculated as additional state variables.
+The energy balance module computes the surface energy budget at the land surface and calculates the **evapotranspiration (ET)** that drives the soil-water balance. Surface ($T_s$) and deep-soil ($T_d$) temperatures are calculated as additional state variables.
 
 ## Overview
 
@@ -14,12 +14,12 @@ The energy budget includes:
 - Latent heat flux (Magnus formula for saturation specific humidity)
 - Ground heat flux (1-D conduction with deep-temperature boundary $T_{const}$)
 
-## Two-step strategy
+## Two-step calculation
 
 For each timestep the energy balance is solved in two steps:
 
-1. **Initial** (saturated assumption, $\eta = 1$): produces the potential evapotranspiration $\text{PET}$ that the soil module will use. The ratio $\eta = \text{ET}_r / \text{ET}_p$ is set to 1 (no water limitation).
-2. **Second step** (after the soil water balance): re-computes $T_s$ and $T_d$ using the actual ratio $\eta$ obtained from the soil module. The result is stored into the state only where $\eta < 1$ (water-limited cells); cells that remain saturated keep the initial result.
+1. **Initial** (soil saturation assumption): calculates the energy balance assuming no water limitation. The ratio $\eta = \text{ET} / \text{PET}$ is set to 1.
+2. **Second step** (after the soil water balance): re-computes $T_s$ and $T_d$ using the actual ratio $\eta$ obtained from the soil module.
 
 The deep-temperature value evaluated at sunrise is preserved across timesteps and is used as the starting point for the day sub-period in the second step calculation.
 
@@ -38,19 +38,14 @@ with $\omega = 2\pi / 86400$ rad/s. Two modes are supported:
 
 Sunrise and sunset hours are obtained by bisection on the solar elevation, computed from the basin baricenter latitude/longitude and the Julian day.
 
-## Functions
 
-::: mobidic.core.energy_balance.compute_energy_balance_1l
+## Land-cover adjustment via Kc
 
-::: mobidic.core.energy_balance.energy_balance_1l
+When a Corine Land Cover raster (`raster_files.CLC`) is provided, the turbulent exchange coefficient $C_H$ is scaled by the monthly FAO crop coefficient $K_c$ before the energy balance solver is called:
 
-::: mobidic.core.energy_balance.diurnal_radiation_cycle
+$$C_H^{\text{adj}} = K_c \cdot C_H$$
 
-::: mobidic.core.energy_balance.solar_hours
-
-::: mobidic.core.energy_balance.solar_position
-
-::: mobidic.core.energy_balance.saturation_specific_humidity
+Bboth the sensible heat flux $H$ and the latent heat flux $LE$ share the same $C_H$ in the energy budget. See [Crop coefficients (Kc / CLC)](crop_coefficients.md) for the full description and configuration options.
 
 ## Configuration
 
@@ -90,7 +85,7 @@ output_states:
 
 output_forcing_data:
   meteo_data: true            # Saves precipitation, temperature_min/max, humidity,
-                              # wind_speed, radiation, and pet to meteo_forcing.nc
+                              # wind_speed, radiation, and pet (or et when Kc != 1) to meteo_forcing.nc
 ```
 
 **Required meteorological forcing.** When `simulation.energy_balance == "1L"`, the simulation needs the following variables in addition to precipitation:
@@ -112,10 +107,9 @@ When `simulation.energy_balance == "1L"`:
 4. The **second step** is run with $\eta = \text{ET} / \text{PET}$, restarting the day sub-period from the initial `td_rise`. The result overwrites $(T_s, T_d)$ only on water-limited cells.
 5. $T_s$ and $T_d$ are written to the state file when the corresponding `output_states` flags are enabled.
 
-## Use of PET in raster forcing: speed up
+## ET/PET when using raster forcing, to speed up simulations
 
-When the input [`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster) already contains a `pet` variable (for example, a `meteo_forcing.nc` produced by an earlier run), the simulation **skips the energy balance entirely** and reads PET directly from the raster. In this case, the simulation **speeds up** significantly.
-In this mode, $T_s$ and $T_d$ states are not updated (they keep their initial values), and the temperature/humidity/wind/radiation variables are **not required** in the input file.
+When the input [`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster) contains an `et` or `pet` variable, the simulation **skips the energy balance entirely** regardless of the `simulation.energy_balance` setting, and reads the evapotranspiration demand directly from the raster. In this case, the simulation **speeds up** significantly. In this mode, the temperature/humidity/wind/radiation variables are **not required** in the input file. See [Crop coefficients (Kc)](crop_coefficients.md#when-a-meteoraster-contains-et-andor-pet-variables) for details.
 
 ## Model status
 
@@ -123,3 +117,17 @@ In this mode, $T_s$ and $T_d$ states are not updated (they keep their initial va
 - **1L** — single-layer analytical Fourier scheme (this module)
 - **5L** — multi-layer soil temperature profile (not yet implemented)
 - **Snow** — snow accumulation and melt (not yet implemented)
+
+## Functions
+
+::: mobidic.core.energy_balance.compute_energy_balance_1l
+
+::: mobidic.core.energy_balance.energy_balance_1l
+
+::: mobidic.core.energy_balance.diurnal_radiation_cycle
+
+::: mobidic.core.energy_balance.solar_hours
+
+::: mobidic.core.energy_balance.solar_position
+
+::: mobidic.core.energy_balance.saturation_specific_humidity
