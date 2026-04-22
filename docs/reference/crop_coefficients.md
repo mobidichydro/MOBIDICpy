@@ -28,21 +28,35 @@ The $K_c$ factor is **applied to the turbulent exchange coefficient** $C_H$ befo
 
 $$C_H^{\text{eff}} = K_c \cdot C_H$$
 
-This is the physically correct approach. The 1L energy balance solves the surface energy budget:
-
-$$R_n = H + LE + G$$
-
 !!! warning "Why not multiply PET by Kc?"
     Scaling PET by $K_c$ after the energy balance would keep $T_s$ solved with the original (wrong) $C_H$.  
-    Because $H$ and $LE$ share the same $C_H$ in the energy budget, the correct $T_s$ depends on $K_c \cdot C_H$, not on the bare-soil value. Post-hoc rescaling of PET also makes the re-entry step (which refines $T_s$ from the actual ET/PET ratio) thermodynamically inconsistent.
+    Because $H$ and $LE$ share the same $C_H$ in the energy budget, the correct $T_s$ depends on $K_c \cdot C_H$, not on the bare-soil value.
 
 ### When a precomputed PET raster is used, or in constant-PET mode
 
-When the energy balance is not active (no aerodynamic solver), $K_c$ is applied directly to PET:
+When the PET is obtained from the meteorological forcing data (raster NetCDF) or the energy balance is not active, $K_c$ is applied directly to PET:
 
 $$ET_c = K_c \cdot \text{PET}_{\text{raster/constant}}$$
 
 This is the standard FAO-56 formula applied as a simple multiplicative factor, which is the only option when PET is treated as an external input.
+
+### When a MeteoRaster contains `et` and/or `pet` variables
+
+| Raster contains | Behaviour |
+|---|---|
+| `et` | Used directly as actual evapotranspiration; $K_c$ is **not** applied again (it is assumed to be already embedded). The energy balance is skipped regardless of `simulation.energy_balance`. |
+| `pet` | $K_c$ is applied ($ET_c = K_c \cdot \text{PET}$) before the soil water balance. The energy balance is skipped regardless of `simulation.energy_balance`. |
+| both `et` and `pet` | `et` takes precedence and `pet` is ignored. |
+| neither | Normal energy-balance or constant-PET path applies (see above). |
+
+### Output variable naming (`et` vs `pet`)
+
+The variable saved in `meteo_forcing.nc` and used as a state diagnostic changes name depending on whether $K_c$ was applied:
+
+- **`et`** — actual crop evapotranspiration ($ET_c$): saved when $K_c \ne 1$ and the energy balance is active.
+- **`pet`** — potential evapotranspiration (reference ET): saved when $K_c = 1$ (no land-cover adjustment).
+
+The state grid (`output_states.evapotranspiration`) is always saved as **`ET`** [m/s] and contains the actual ET as bounded by soil water availability (output of the soil water balance module).
 
 ## Monthly Kc values
 

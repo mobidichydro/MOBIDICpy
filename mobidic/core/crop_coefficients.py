@@ -34,18 +34,28 @@ def default_kc_clc_mapping_path() -> Path:
 
 
 def load_kc_clc_mapping(path: str | Path | None = None) -> dict[int, np.ndarray]:
-    """Load CLC code -> monthly Kc mapping from CSV.
+    """Load a mapping from CLC codes to monthly Kc values.
 
-    The file may include comment lines starting with ``#``. It must contain a
-    header row with the columns ``clc_code, kc_jan, kc_feb, ..., kc_dec``.
+    The input CSV file may include comment lines starting with ``#`` and must
+    contain a header row with the following columns:
+
+        clc_code, kc_jan, kc_feb, kc_mar, kc_apr, kc_may, kc_jun,
+        kc_jul, kc_aug, kc_sep, kc_oct, kc_nov, kc_dec
 
     Args:
-        path: Path to a CSV file. If ``None``, the default mapping shipped with
-            the package is used.
+        path: Path to the CSV file. If ``None``, the default mapping bundled
+            with the package is used.
 
     Returns:
-        Dictionary mapping integer CLC code to a length-12 array of monthly Kc
-        values (January..December).
+        mapping: Dictionary mapping each CLC code (int) to a NumPy array of shape
+            ``(12,)`` containing monthly Kc values ordered from January to
+            December.
+
+    Raises:
+        FileNotFoundError:
+            If the provided file path does not exist.
+        ValueError:
+            If the file format is invalid or required columns are missing.
     """
     csv_path = Path(path) if path else default_kc_clc_mapping_path()
     if not csv_path.exists():
@@ -86,8 +96,8 @@ def compute_kc_grid(
         default_kc: Kc value used where CLC is NaN or not present in the mapping.
 
     Returns:
-        2D Kc grid with the same shape as ``clc_grid``, or ``default_kc`` as a
-        scalar when ``clc_grid`` is None.
+        kc: 2D Kc grid with the same shape as ``clc_grid``, or ``default_kc`` as a
+            scalar when ``clc_grid`` is None.
     """
     if not 1 <= month <= 12:
         raise ValueError(f"month must be in 1..12, got {month}")
