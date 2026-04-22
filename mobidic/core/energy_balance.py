@@ -30,7 +30,7 @@ def solar_position(hour: float, day: int, lat: float, lon: float) -> tuple[float
         lon: Longitude [deg East].
 
     Returns:
-        (azimuth, elevation) in degrees.
+        tuple[float, float]: Solar (azimuth, elevation) [deg].
     """
     delta = 23.45 * np.pi / 180.0 * np.cos(2.0 * np.pi / 365.0 * (172 - (day % 365)))
     dt1 = round(lon / 15.0) - lon / 15.0
@@ -53,7 +53,7 @@ def solar_hours(lat: float, lon: float, jday: int) -> tuple[float, float]:
         jday: Day of year (1-365).
 
     Returns:
-        (hrise, hset) in decimal hours of the local day.
+        tuple[float, float]: Sunrise (hrise) and sunset (hset) in decimal hours.
     """
     # Sunrise: solar elevation crosses zero in the morning (0-12)
     hpre, hpos = 0.0, 12.0
@@ -100,7 +100,7 @@ def diurnal_radiation_cycle(
             "instant" if it is an instantaneous value at ``t_sunrise``.
 
     Returns:
-        (amplitude, constant) arrays with the same shape as ``rs_avg``.
+        tuple[NDArray[np.float64], NDArray[np.float64]]: (amplitude, constant) arrays with the same shape as ``rs_avg``.
     """
     w = 2.0 * np.pi / 86400.0
     p_r = -np.pi / 2.0
@@ -133,7 +133,7 @@ def saturation_specific_humidity(
         dT: Dew-point depression [K] (default 0).
 
     Returns:
-        Specific humidity [kg/kg].
+        NDArray[np.float64]: Specific humidity [kg/kg].
     """
     ep = 0.622
     Tc = T - 273.15 - dT
@@ -200,10 +200,9 @@ def energy_balance_1l(
         etrsuetp: Water-limited to energy-limited ET ratio [-] (scalar or per cell).
 
     Returns:
-        (ts, td, evp):
-            * ts — surface temperature at the end of the sub-period [K]
-            * td — deep-soil temperature at the end of the sub-period [K]
-            * evp — evaporation over the sub-period [m]
+        ts (NDArray[np.float64]): Surface temperature at the end of the sub-period [K].
+        td (NDArray[np.float64]): Deep-soil temperature at the end of the sub-period [K].
+        evp (NDArray[np.float64]): Evaporation over the sub-period [m].
     """
     # Soil-depth scaling
     dz = np.sqrt(nis / ff)
@@ -388,12 +387,10 @@ def compute_energy_balance_1l(
             ``td_rise`` rather than the current ``td``.
 
     Returns:
-        Tuple ``(ts_new, td_new, etp, td_rise_new)``:
-            * ``ts_new`` — updated surface temperature [K]
-            * ``td_new`` — updated deep temperature [K]
-            * ``etp`` — potential evapotranspiration over the timestep [m].
-              Only meaningful in the initial pass; zeros elsewhere.
-            * ``td_rise_new`` — updated ``td`` at sunrise (for later re-entry).
+        ts_new (NDArray[np.float64]): Updated surface temperature [K].
+        td_new (NDArray[np.float64]): Updated deep temperature [K].
+        etp (NDArray[np.float64]): Potential evapotranspiration over the timestep [m]. Only meaningful in the initial pass; zeros elsewhere.
+        td_rise_new (NDArray[np.float64]): Updated ``td`` at sunrise (for later re-entry).
     """
     omega = 2.0 * np.pi / 86400.0
 
