@@ -80,6 +80,8 @@ plugins:
           show_submodules: false
           show_source: true
           show_docstring_description: true
+          show_root_heading: true
+          show_object_full_path: false
           docstring_style: google
           docstring_section_style: table
 
