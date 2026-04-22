@@ -233,9 +233,10 @@ class Simulation:
         self.config = config
 
         # Detect forcing type and set up method
-        # _raster_et_source: "et" if raster has actual ET, "pet" if raster has PET, None otherwise.
-        # When set, energy balance is skipped and the raster variable is used directly.
-        # "et" takes priority over "pet" when both are present.
+        # _raster_et_source: "pet_c" if raster has Kc-adjusted PET (used directly),
+        # "pet" if raster has reference PET (Kc will be applied), None otherwise.
+        # When set, energy balance is forced off.
+        # "pet_c" takes priority over "pet" when both are present.
         self._raster_et_source: str | None = None
         if isinstance(forcing, MeteoRaster):
             self.forcing_mode = "raster"
@@ -246,14 +247,17 @@ class Simulation:
             self._get_forcing_fn = self._get_raster_forcing
             # No interpolation weights needed
             self._interpolation_weights = None
-            # Detect precomputed ET/PET: when present, skip energy balance calculations
-            if "et" in forcing.variables:
-                self._raster_et_source = "et"
-                logger.info("Precomputed ET found in raster forcing: energy balance will be skipped")
+            # Detect precomputed PETc/PET: when present, energy balance is forced off.
+            if "pet_c" in forcing.variables:
+                self._raster_et_source = "pet_c"
+                logger.info(
+                    "Precomputed PETc found in raster forcing: energy balance will be disabled "
+                    "(Kc already embedded, not applied again)"
+                )
             elif "pet" in forcing.variables:
                 self._raster_et_source = "pet"
                 logger.info(
-                    "Precomputed PET found in raster forcing: energy balance will be skipped (Kc will be applied)"
+                    "Precomputed PET found in raster forcing: energy balance will be disabled (Kc will be applied)"
                 )
         else:  # MeteoData
             self.forcing_mode = "station"
@@ -389,11 +393,6 @@ class Simulation:
             f"Simulation initialized: grid={self.nrows}x{self.ncols}, "
             f"dt={self.dt}s, network={len(self.network)} reaches"
         )
-
-    @property
-    def _kc_is_active(self) -> bool:
-        """True when Kc differs from 1.0 (CLC mapping present or scalar Kc != 1)."""
-        return self.clc is not None or self.kc_default != 1.0
 
     def _initial_state(self) -> SimulationState:
         """Initialize the initial simulation state variables with initial conditions from configuration.
@@ -735,7 +734,7 @@ class Simulation:
         grid = self.forcing.get_timestep(time, variable)
 
         # Convert units to match _interpolate_forcing output
-        if variable in ("precipitation", "pet", "et"):
+        if variable in ("precipitation", "pet", "pet_c"):
             # Convert mm/h to m/s: divide by 1000 * 3600
             grid = grid / 1000.0 / 3600.0
 
@@ -1311,8 +1310,6 @@ class Simulation:
         # Skip energy balance when ET or PET is provided by the raster forcing.
         # simulation.energy_balance has no effect when _raster_et_source is set.
         energy_active = self.config.simulation.energy_balance == "1L" and self._raster_et_source is None
-        # When energy balance is active with Kc, the output PET field is ETc → use "et" variable name.
-        et_meteo_var = "et" if (energy_active and self._kc_is_active) else "pet"
         solar_cache: dict[int, tuple[float, float]] = {}
         td_rise_full = None  # Td evaluated at sunrise (per cell), updated by pre-pass each step
         if energy_active:
@@ -1370,10 +1367,12 @@ class Simulation:
 
             # Define which variables to save (precipitation + energy variables when active).
             # Skip energy variables when the energy balance is bypassed (e.g. PET from raster).
+            # The saved ET field is PETc (Kc-adjusted potential ET from the energy-balance
+            # first pass, before the soil water balance) -> stored as "pet_c".
             meteo_variables = ["precipitation"]
             if energy_active:
                 meteo_variables.extend(_ENERGY_VARIABLES)
-                meteo_variables.append(et_meteo_var)
+                meteo_variables.append("pet_c")
 
             meteo_writer = MeteoWriter(
                 output_path=output_dir / "meteo_forcing.nc",
@@ -1556,16 +1555,16 @@ class Simulation:
                     "hrise_s": hrise_s,
                     "hset_s": hset_s,
                 }
-            elif self._raster_et_source == "et":
-                # Actual ET from raster: use directly, Kc already embedded
+            elif self._raster_et_source == "pet_c":
+                # PETc (Kc-adjusted) from raster: use directly, Kc already embedded
                 pet = self._get_forcing_fn(
                     current_time,
-                    "et",
+                    "pet_c",
                     weights_cache=self._interpolation_weights,
                     time_step_index=step,
                 )
             elif self._raster_et_source == "pet":
-                # PET from raster: apply Kc to obtain actual PETc
+                # Reference PET from raster: apply Kc to obtain PETc
                 pet = self._get_forcing_fn(
                     current_time,
                     "pet",
@@ -1585,12 +1584,14 @@ class Simulation:
                     pet = pet * float(kc_now)
 
             # 3. Save interpolated meteorological data (if enabled)
+            # When energy balance is active, the Kc-adjusted potential ET computed by the
+            # energy-balance first pass (PETc), is saved before the soil water balance runs.
             if meteo_writer is not None:
                 meteo_kwargs = {"precipitation": precip}
                 if energy_active and energy_pre_state is not None:
-                    pet_grid_full = np.full(self.nrows * self.ncols, np.nan)
-                    pet_grid_full[ko] = energy_pre_state["etp"] / self.dt
-                    pet_grid_full = pet_grid_full.reshape((self.nrows, self.ncols), order="F")
+                    pet_c_grid_full = np.full(self.nrows * self.ncols, np.nan)
+                    pet_c_grid_full[ko] = energy_pre_state["etp"] / self.dt
+                    pet_c_grid_full = pet_c_grid_full.reshape((self.nrows, self.ncols), order="F")
                     meteo_kwargs.update(
                         {
                             "temperature_max": tmax_grid - 273.15,
@@ -1598,7 +1599,7 @@ class Simulation:
                             "humidity": rh_grid * 100.0,
                             "wind_speed": wind_grid,
                             "radiation": rs_grid,
-                            et_meteo_var: pet_grid_full,
+                            "pet_c": pet_c_grid_full,
                         }
                     )
                 meteo_writer.append(current_time, **meteo_kwargs)
