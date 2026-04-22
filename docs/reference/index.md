@@ -78,6 +78,15 @@ Saturated-zone dynamics providing the baseflow contribution to surface runoff.
 
 - [`groundwater_linear()`](groundwater.md#functions) - Linear-reservoir groundwater model (with optional multi-aquifer averaging via the `Mf` raster)
 
+### [Energy Balance](energy_balance.md)
+Surface energy budget computing potential evapotranspiration and tracking surface/deep-soil temperatures.
+
+- [`compute_energy_balance_1l()`](energy_balance.md#mobidic.core.energy_balance.compute_energy_balance_1l) - Orchestrator for the 1-layer scheme over a model timestep (sunrise/sunset sub-stepping)
+- [`energy_balance_1l()`](energy_balance.md#mobidic.core.energy_balance.energy_balance_1l) - Analytical Fourier 1-layer solver
+- [`solar_position()`](energy_balance.md#mobidic.core.energy_balance.solar_position), [`solar_hours()`](energy_balance.md#mobidic.core.energy_balance.solar_hours) - Solar geometry helpers
+- [`diurnal_radiation_cycle()`](energy_balance.md#mobidic.core.energy_balance.diurnal_radiation_cycle) - Sinusoidal decomposition of daily radiation
+- [`saturation_specific_humidity()`](energy_balance.md#mobidic.core.energy_balance.saturation_specific_humidity) - Magnus formula
+
 ### [Simulation](simulation.md)
 Main simulation engine and time-stepping loop.
 
@@ -153,6 +162,13 @@ from mobidic import (
     linear_channel_routing,
     # Groundwater
     groundwater_linear,
+    # Energy Balance
+    compute_energy_balance_1l,
+    energy_balance_1l,
+    diurnal_radiation_cycle,
+    saturation_specific_humidity,
+    solar_hours,
+    solar_position,
     # Reservoirs
     process_reservoirs,
     Reservoir,
@@ -192,14 +208,15 @@ MOBIDICpy's currently implemented features (v0.2):
 - Linear routing (hillslope + channel)
 - Linear reservoir groundwater model (with multi-aquifer capability via the `Mf` raster)
 - Reservoir module (preprocessing, routing, time-varying regulation)
+- Energy balance, 1-layer (1L) scheme
 - Simulation engine (basic)
-- State I/O (NetCDF)
+- State I/O (NetCDF, including surface and deep-soil temperatures)
 - Report I/O (CSV/Parquet discharge time series)
 - Calibration and sensitivity analysis (PEST++ coupling via pyemu)
 
-Coming soon:
+Not yet implemented features:
 
-- Energy balance module (1L, 5L schemes, Snow)
+- Energy balance: 5-layer scheme and Snow module
 - Advanced groundwater models (Dupuit, MODFLOW)
 - Advanced routing (Muskingum-Cunge)
 - Meteorological data gap filling and quality control

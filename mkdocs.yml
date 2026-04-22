@@ -25,6 +25,7 @@ nav:
     - Soil Water Balance: reference/soil_water_balance.md
     - Routing: reference/routing.md
     - Groundwater: reference/groundwater.md
+    - Energy Balance: reference/energy_balance.md
     - Simulation: reference/simulation.md
     - State I/O: reference/state.md
     - Report I/O: reference/report.md
