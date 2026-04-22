@@ -23,6 +23,7 @@ def capillary_rise(
 ) -> NDArray[np.float64]:
     """
     Calculate capillary rise from groundwater table.
+    (Currently not used in main water balance function but available for future use)
 
     Uses the Salvucci (1993) approximate solution for steady vertical flux of
     moisture through unsaturated homogeneous soil.
