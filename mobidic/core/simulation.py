@@ -1404,7 +1404,7 @@ class Simulation:
             energy_pre_state: dict | None = None
 
             # Build the effective turbulent-exchange coefficient CH*Kc used by
-            # the energy-balance. Translated from MATLAB  CH(ko).*Kc_FAO_map(ko)
+            # the energy-balance. Translated from MATLAB  CH(ko).*Kc_FAO_map(ko) 
             # in mobidic_sid.m. Kc is applied inside the energy balance rather than as a
             # post-hoc scaling of PET, since CH affects both the sensible and
             # latent heat fluxes in the nonlinear Ts solution.
@@ -1700,8 +1700,8 @@ class Simulation:
             # 5a. Energy balance re-entry: refine Ts/Td using actual ET/PET ratio
             if energy_active and energy_pre_state is not None:
                 etp_ko = energy_pre_state["etp"]
-                etp_ko_corr = np.where(etp_ko > 0.0, etp_ko, 1.0)
-                etrsuetp_ko = np.where(etp_ko > 0.0, np.minimum(et_flat / etp_ko_corr, 1.0), 0.0)
+                safe_etp = np.where(etp_ko > 0.0, etp_ko, 1.0)
+                etrsuetp_ko = np.where(etp_ko > 0.0, np.minimum(et_flat / safe_etp, 1.0), 0.0)
 
                 # Re-run with corrected etrsuetp; restart from initial Ts/Td and updated td_rise
                 ts_re_ko, td_re_ko, _, _ = compute_energy_balance_1l(
