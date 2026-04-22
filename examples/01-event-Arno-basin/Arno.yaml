@@ -102,7 +102,7 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Alb.tif]
   Alb:
 
-  # OPTIONAL: Grid mask defining the artesian aquifer(s) extension
+  # OPTIONAL: Grid mask defining the artesian aquifer(s) extension. Not implemented yet.
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ma.tif]
   Ma:
 
@@ -202,7 +202,7 @@ parameters:
 
   routing:
     # REQUIRED: Type of channel routing scheme
-    # [one among the following options 'Musk', 'MuskCun', 'Lag', 'Linear']
+    # [one among the following options 'Linear']
     method: Linear
 
     # REQUIRED: Flood wave celerity in channels, in m/s
@@ -223,7 +223,7 @@ parameters:
 
   groundwater:
     # REQUIRED: Groundwater model type
-    # [one among the following options: None, Linear, Dupuit, MODFLOW]
+    # [one among the following options: None, Linear]
     model: None
 
     # OPTIONAL: Global water loss from aquifers, in m³/s
@@ -309,15 +309,15 @@ simulation:
   decimation: 1
 
   # REQUIRED: Type of soil hydrology scheme
-  # [one among the following options 'Bucket', 'CN']
+  # [one among the following options 'Bucket']
   soil_scheme: Bucket
 
   # REQUIRED: Type of surface energy balance scheme
-  # [one among the following options 'None', '1L', '5L', 'Snow']
+  # [one among the following options 'None', '1L']
   energy_balance: None
 
   ## OPTIONAL: Precipitation spatial interpolation method
-  # [one among the following options: 'Nearest', 'IDW' (default)]
+  # [one among the following options: 'Nearest', 'IDW' (default, faster)]
   precipitation_interp: IDW
 
 ####### OUTPUT CONTROLS

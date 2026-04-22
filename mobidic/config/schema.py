@@ -209,7 +209,7 @@ class RoutingParameters(BaseModel):
         - n_Man: Manning roughness coefficient for channels (default: 0.03 s/m^(1/3))
     """
 
-    method: Literal["Musk", "MuskCun", "Lag", "Linear"] = Field(..., description="Type of channel routing scheme")
+    method: Literal["Linear"] = Field(..., description="Type of channel routing scheme")
     wcel: float = Field(..., description="Flood wave celerity in channels, in m/s")
     Br0: float = Field(1.0, description="Width of channels with first Strahler order, in meters")
     NBr: float = Field(
@@ -241,7 +241,7 @@ class RoutingParameters(BaseModel):
 class GroundwaterParameters(BaseModel):
     """Groundwater model parameters."""
 
-    model: Literal["None", "Linear", "Dupuit", "MODFLOW"] = Field(
+    model: Literal["None", "Linear"] = Field(
         ...,
         description=(
             "Groundwater model type. With 'Linear', the number of aquifers is "
@@ -368,8 +368,8 @@ class Simulation(BaseModel):
     decimation: int = Field(
         1, description="Decimation factor from grid data space resolution to model space resolution"
     )
-    soil_scheme: Literal["Bucket", "CN"] = Field(..., description="Type of soil hydrology scheme")
-    energy_balance: Literal["None", "1L", "5L", "Snow"] = Field(
+    soil_scheme: Literal["Bucket"] = Field(..., description="Type of soil hydrology scheme")
+    energy_balance: Literal["None", "1L"] = Field(
         ..., description="Type of surface energy balance scheme"
     )
     precipitation_interp: Optional[Literal["Nearest", "IDW"]] = Field(
