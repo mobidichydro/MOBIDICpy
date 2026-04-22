@@ -389,7 +389,7 @@ def compute_energy_balance_1l(
     Returns:
         ts_new (NDArray[np.float64]): Updated surface temperature [K].
         td_new (NDArray[np.float64]): Updated deep temperature [K].
-        etp (NDArray[np.float64]): Potential evapotranspiration over the timestep [m]. Only meaningful in the initial pass; zeros elsewhere.
+        etp (NDArray[np.float64]): Potential evapotranspiration over the timestep [m].
         td_rise_new (NDArray[np.float64]): Updated ``td`` at sunrise (for later re-entry).
     """
     omega = 2.0 * np.pi / 86400.0

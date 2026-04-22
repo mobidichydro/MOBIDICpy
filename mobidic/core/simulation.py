@@ -1404,7 +1404,7 @@ class Simulation:
             energy_pre_state: dict | None = None
 
             # Build the effective turbulent-exchange coefficient CH*Kc used by
-            # the energy-balance. Translated from MATLAB  CH(ko).*Kc_FAO_map(ko) 
+            # the energy-balance. Translated from MATLAB  CH(ko).*Kc_FAO_map(ko)
             # in mobidic_sid.m. Kc is applied inside the energy balance rather than as a
             # post-hoc scaling of PET, since CH affects both the sensible and
             # latent heat fluxes in the nonlinear Ts solution.
