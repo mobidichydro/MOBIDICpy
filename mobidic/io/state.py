@@ -210,6 +210,25 @@ def load_state(
         flow_acc = gisdata.grids["flow_acc"]
         h = np.where(np.isfinite(flow_acc), h_init, np.nan)
 
+    # Surface and deep-soil temperatures: only present when energy balance is active
+    ts = None
+    td = None
+    energy_active = can_use_config and config.simulation.energy_balance != "None"
+    if "Ts" in ds:
+        ts = ds["Ts"].values
+    elif energy_active:
+        tcost = config.parameters.energy.Tconst
+        logger.warning(f"Ts not found in state file, initializing to Tconst={tcost} K")
+        flow_acc = gisdata.grids["flow_acc"]
+        ts = np.where(np.isfinite(flow_acc), tcost, np.nan)
+    if "Td" in ds:
+        td = ds["Td"].values
+    elif energy_active:
+        tcost = config.parameters.energy.Tconst
+        logger.warning(f"Td not found in state file, initializing to Tconst={tcost} K")
+        flow_acc = gisdata.grids["flow_acc"]
+        td = np.where(np.isfinite(flow_acc), tcost, np.nan)
+
     # Network variables: initialize with zeros if missing
     if "discharge" in ds:
         discharge = ds["discharge"].values
@@ -260,7 +279,7 @@ def load_state(
     # Import here to avoid circular import
     from mobidic.core.simulation import SimulationState
 
-    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, h=h)
+    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, h=h, ts=ts, td=td)
 
     logger.success(f"State loaded: time={time.isoformat()}, grid={nrows}x{ncols}, reaches={len(discharge)}")
 
@@ -499,6 +518,8 @@ class StateWriter:
             lateral_inflow=state.lateral_inflow.copy(),
             reservoir_states=reservoir_states_copy,
             h=state.h.copy() if state.h is not None else None,
+            ts=state.ts.copy() if state.ts is not None else None,
+            td=state.td.copy() if state.td is not None else None,
         )
 
         # Add to buffer
@@ -561,6 +582,22 @@ class StateWriter:
                     [s.h if s.h is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
                 )
                 data_vars["h"] = (["time", "y", "x"], h_data)
+
+        if self.output_states.surface_temperature:
+            has_ts = any(s.ts is not None for s in self.buffer)
+            if has_ts:
+                ts_data = np.array(
+                    [s.ts if s.ts is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["Ts"] = (["time", "y", "x"], ts_data)
+
+        if self.output_states.ground_temperature:
+            has_td = any(s.td is not None for s in self.buffer)
+            if has_td:
+                td_data = np.array(
+                    [s.td if s.td is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["Td"] = (["time", "y", "x"], td_data)
 
         # Network variables
         if self.output_states.discharge:
@@ -641,6 +678,22 @@ class StateWriter:
                 "long_name": "Groundwater Head",
                 "units": "m",
                 "description": "Linear-reservoir groundwater head",
+                "grid_mapping": "crs",
+            }
+
+        if "Ts" in flush_ds:
+            flush_ds["Ts"].attrs = {
+                "long_name": "Surface Temperature",
+                "units": "K",
+                "description": "Land surface temperature from energy balance",
+                "grid_mapping": "crs",
+            }
+
+        if "Td" in flush_ds:
+            flush_ds["Td"].attrs = {
+                "long_name": "Deep Soil Temperature",
+                "units": "K",
+                "description": "Deep-soil temperature from energy balance",
                 "grid_mapping": "crs",
             }
 
