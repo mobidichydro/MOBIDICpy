@@ -5,14 +5,28 @@ The solver is an analytical Fourier decomposition
 of the land-surface energy budget, splitting the timestep at the sunrise
 and sunset boundaries.
 
+The kernel (``energy_balance_1l``) is JIT-compiled with Numba; a pure
+NumPy reference implementation (``_energy_balance_1l_numpy``) is kept
+for testing.
+
 """
 
 from __future__ import annotations
 
 import numpy as np
+from numba import njit, prange
 from numpy.typing import NDArray
 
 from mobidic.core import constants as const
+
+# Constants are saved at the module level for the JIT kernel
+_SIGMA = const.STEFAN_BOLTZMANN
+_EPS_AIR = const.EMISS_AIR
+_EPS_SOI = const.EMISS_SOIL
+_RHO_WATER = const.RHO_WATER
+_RHO_AIR = const.RHO_AIR
+_LV = const.LV
+_CP_AIR = const.CP_AIR
 
 
 # ---------------------------------------------------------------------------
@@ -149,6 +163,194 @@ def saturation_specific_humidity(
 # ---------------------------------------------------------------------------
 
 
+@njit(cache=True, fastmath=True, parallel=True)
+def _energy_balance_1l_kernel(
+    ff: float,
+    a_tem: NDArray[np.float64],
+    a_rad: NDArray[np.float64],
+    p_tem: float,
+    p_rad: float,
+    c_tem: NDArray[np.float64],
+    c_rad: NDArray[np.float64],
+    td_ini: NDArray[np.float64],
+    tm: NDArray[np.float64],
+    u: NDArray[np.float64],
+    pair: float,
+    hair: NDArray[np.float64],
+    step: float,
+    ch: NDArray[np.float64],
+    alb: NDArray[np.float64],
+    kaps: float,
+    nis: float,
+    tcost: float,
+    etrsuetp: NDArray[np.float64],
+    tt_values: NDArray[np.float64],
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Numba-compiled per-cell kernel for the 1L surface energy balance."""
+    n = tm.shape[0]
+    ts_out = np.empty(n, dtype=np.float64)
+    td_out = np.empty(n, dtype=np.float64)
+    evp = np.empty(n, dtype=np.float64)
+
+    sigma = _SIGMA
+    eps_air = _EPS_AIR
+    eps_soi = _EPS_SOI
+    rhow = _RHO_WATER
+    rhoair = _RHO_AIR
+    lv = _LV
+    cp = _CP_AIR
+
+    dz = np.sqrt(nis / ff)
+    alpha_param = np.sqrt(365.0)
+    alphadz2 = (1.0 + alpha_param) * dz * dz
+    kaps_dz = kaps / dz
+    half_step = 0.5 * step
+
+    # Phase trig (loop-invariant across cells AND time substeps)
+    sin_p_rad = np.sin(p_rad)
+    cos_p_rad = np.cos(p_rad)
+    sin_p_tem = np.sin(p_tem)
+    cos_p_tem = np.cos(p_tem)
+
+    nt = tt_values.shape[0]
+    w = ff
+
+    for i in prange(n):
+        tm_i = tm[i]
+        c_tem_i = c_tem[i]
+        c_rad_i = c_rad[i]
+        a_tem_i = a_tem[i]
+        a_rad_i = a_rad[i]
+        td_ini_i = td_ini[i]
+        u_i = u[i]
+        ch_i = ch[i]
+        alb_i = alb[i]
+        hair_i = hair[i]
+        etr_i = etrsuetp[i]
+
+        tm_c = tm_i - 273.15
+        tm_cx = tm_c + 243.5
+        tm2 = tm_i * tm_i
+        tm3 = tm2 * tm_i
+        tm4 = tm3 * tm_i
+        kh = ch_i * u_i
+        rhoaircpkh = rhoair * cp * kh
+        p622 = 0.622 * rhoair * lv * etr_i / pair * kh
+        es4tm3 = 4.0 * sigma * eps_soi * tm3
+        ea4tm3 = 4.0 * sigma * eps_air * tm3
+
+        es1 = 6.112 * np.exp(17.67 * tm_c / tm_cx)
+        es2 = 17.67 * es1 * (1.0 - tm_c / tm_cx) / tm_cx
+        ea1 = es1 * hair_i
+        ea2 = es2 * hair_i
+
+        den = -kaps_dz - es4tm3 - rhoaircpkh - p622 * es2
+
+        d0 = (
+            2.0 * nis * (
+                tcost / (alpha_param * alphadz2)
+                - (p622 * tm_i * (es2 - ea2) + 3.0 * sigma * (eps_soi - eps_air) * tm4 + p622 * (ea1 - es1))
+                / (den * alphadz2)
+            )
+        )
+        d1 = -2.0 * nis * (1.0 - alb_i) / (den * alphadz2)
+        d2 = -2.0 * nis * (p622 * ea2 + rhoaircpkh + ea4tm3) / (den * alphadz2)
+        pp = 2.0 * nis * (-alpha_param * (kaps / (den * dz)) - (1.0 + alpha_param)) / (alpha_param * alphadz2)
+        pp2 = pp * pp
+        pp3 = pp2 * pp
+
+        # Replicates the original ``(c_tem**2)**2`` (i.e. c_tem**4) term
+        c_tem2 = c_tem_i * c_tem_i
+        c_tem4 = c_tem2 * c_tem2
+
+        variaroba = (
+            c_rad_i * (1.0 - alb_i)
+            + 3.0 * sigma * eps_soi * tm4
+            + (-3.0 * eps_air * sigma + 4.0 * sigma * eps_air) * c_tem4
+            + (rhoaircpkh + p622 * ea2) * c_tem_i
+            + p622 * (ea1 - es1 + (es2 - ea2) * tm_i)
+        )
+
+        d1_s = d1 * a_rad_i
+        d2_s = d2 * a_tem_i
+        ppw = pp * w
+        ppw2 = ppw * w
+        denom_osc = pp3 + ppw2
+        denom_ts = kaps_dz + es4tm3 + rhoaircpkh + p622 * es2
+        d_const_td = (d1 * c_rad_i + d2 * c_tem_i) / pp
+        ea_term = ea4tm3 + rhoaircpkh + p622 * ea2
+
+        ts_i = 0.0
+        td_i = 0.0
+        evp_acc = 0.0
+        evp0_prev = 0.0
+
+        for k in range(nt):
+            tt = tt_values[k]
+            e_pt = np.exp(pp * tt)
+
+            # Constant-part solution
+            td1 = d_const_td * (e_pt - 1.0)
+            ts1 = (kaps_dz * td1 + variaroba) / denom_ts
+
+            # Sinusoidal-part solution (single mode in 1L scheme)
+            wttp_r = w * tt + p_rad
+            wttp_t = w * tt + p_tem
+            sin_wttp_r = np.sin(wttp_r)
+            cos_wttp_r = np.cos(wttp_r)
+            sin_wttp_t = np.sin(wttp_t)
+            cos_wttp_t = np.cos(wttp_t)
+
+            td2 = (
+                ppw * (d1_s * (e_pt * cos_p_rad - cos_wttp_r) + d2_s * (e_pt * cos_p_tem - cos_wttp_t))
+                + (e_pt - 1.0) * d0 * (pp2 + w * w)
+                + e_pt * (td_ini_i * (pp3 + ppw2) + pp2 * (d2_s * sin_p_tem + d1_s * sin_p_rad))
+                - pp2 * (d2_s * sin_wttp_t + d1_s * sin_wttp_r)
+            ) / denom_osc
+            ts2 = (
+                kaps_dz * td2
+                + a_rad_i * sin_wttp_r * (1.0 - alb_i)
+                + a_tem_i * sin_wttp_t * ea_term
+            ) / denom_ts
+
+            td_i = td1 + td2
+            ts_i = ts1 + ts2
+
+            # Inlined saturation_specific_humidity (Magnus, dT=0)
+            ts_c = ts_i - 273.15
+            es_s = 6.112 * np.exp(17.67 * ts_c / (ts_c + 243.5))
+            qs_soil = 0.622 * es_s / (pair - 0.378 * es_s)
+
+            tair_inst = a_tem_i * sin_wttp_t + c_tem_i
+            ta_c = tair_inst - 273.15
+            es_a = 6.112 * np.exp(17.67 * ta_c / (ta_c + 243.5))
+            qs_air = 0.622 * es_a / (pair - 0.378 * es_a)
+
+            evp0 = rhoair * lv * etr_i * kh * (qs_soil - qs_air * hair_i)
+            evp_acc += (evp0_prev + evp0) * half_step
+            evp0_prev = evp0
+
+        evp_water = evp_acc / (rhow * lv)
+        if evp_water > 0.0 and np.isfinite(evp_water):
+            evp[i] = evp_water
+        else:
+            evp[i] = 0.0
+        ts_out[i] = ts_i
+        td_out[i] = td_i
+
+    return ts_out, td_out, evp
+
+
+def _broadcast_to_n(value: float | NDArray[np.float64], n: int) -> NDArray[np.float64]:
+    """Broadcast a scalar or array input to a contiguous float64 array of length ``n``."""
+    arr = np.asarray(value, dtype=np.float64)
+    if arr.ndim == 0:
+        return np.full(n, arr.item(), dtype=np.float64)
+    if arr.shape != (n,):
+        raise ValueError(f"Expected scalar or array of shape ({n},), got shape {arr.shape}")
+    return np.ascontiguousarray(arr)
+
+
 def energy_balance_1l(
     ff: float,
     a_tem: NDArray[np.float64],
@@ -175,7 +377,7 @@ def energy_balance_1l(
 
     Solves the constant + sinusoidal parts of the linearised surface energy
     balance analytically and integrates the evaporation flux via trapezoidal
-    integration inside ``[0, t_end]`` with step ``step``.
+    integration inside ``[0, t_end]`` with step ``step``. Numba-accelerated.
 
     Args:
         ff: Diurnal angular frequency [rad/s] (typically ``2*pi/86400``).
@@ -204,6 +406,75 @@ def energy_balance_1l(
         td (NDArray[np.float64]): Deep-soil temperature at the end of the sub-period [K].
         evp (NDArray[np.float64]): Evaporation over the sub-period [m].
     """
+    tm_arr = np.ascontiguousarray(tm, dtype=np.float64)
+    n = tm_arr.shape[0]
+
+    a_tem_arr = _broadcast_to_n(a_tem, n)
+    a_rad_arr = _broadcast_to_n(a_rad, n)
+    c_tem_arr = _broadcast_to_n(c_tem, n)
+    c_rad_arr = _broadcast_to_n(c_rad, n)
+    td_ini_arr = _broadcast_to_n(td_ini, n)
+    u_arr = _broadcast_to_n(u, n)
+    hair_arr = _broadcast_to_n(hair, n)
+    ch_arr = _broadcast_to_n(ch, n)
+    alb_arr = _broadcast_to_n(alb, n)
+    etr_arr = _broadcast_to_n(etrsuetp, n)
+
+    if step <= 0:
+        tt_values = np.zeros(1, dtype=np.float64)
+        step_safe = 0.0
+    else:
+        n_pts = int(np.floor(t_end / step + 1e-9)) + 1
+        tt_values = np.arange(n_pts, dtype=np.float64) * step
+        step_safe = float(step)
+
+    return _energy_balance_1l_kernel(
+        float(ff),
+        a_tem_arr,
+        a_rad_arr,
+        float(p_tem),
+        float(p_rad),
+        c_tem_arr,
+        c_rad_arr,
+        td_ini_arr,
+        tm_arr,
+        u_arr,
+        float(pair),
+        hair_arr,
+        step_safe,
+        ch_arr,
+        alb_arr,
+        float(kaps),
+        float(nis),
+        float(tcost),
+        etr_arr,
+        tt_values,
+    )
+
+
+def _energy_balance_1l_numpy(
+    ff: float,
+    a_tem: NDArray[np.float64],
+    a_rad: NDArray[np.float64] | float,
+    p_tem: float,
+    p_rad: float,
+    c_tem: NDArray[np.float64],
+    c_rad: NDArray[np.float64] | float,
+    td_ini: NDArray[np.float64],
+    tm: NDArray[np.float64],
+    u: NDArray[np.float64] | float,
+    pair: float,
+    hair: NDArray[np.float64],
+    t_end: float,
+    step: float,
+    ch: NDArray[np.float64],
+    alb: NDArray[np.float64],
+    kaps: float,
+    nis: float,
+    tcost: float,
+    etrsuetp: float | NDArray[np.float64],
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+    """Pure-NumPy reference implementation of the 1L solver (used for regression tests)."""
     # Soil-depth scaling
     dz = np.sqrt(nis / ff)
     alpha_param = np.sqrt(365.0)  # dz_deep / dz
