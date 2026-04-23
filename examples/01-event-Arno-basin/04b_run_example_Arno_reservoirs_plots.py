@@ -419,11 +419,11 @@ def main():
         variable_label="Lateral Inflow (m³/s)",
     )
 
-    # Compare with observed discharge at Nave di Rosano (reach 278)
+    # Compare with observed discharge at Nave di Rosano TOS01004659 (reach 278)
     observed_results = compare_observed_discharge(
         output_dir=output_dir,
         data_dir=data_dir,
-        observed_file="Q_Nave_di_Rosano_2023.parquet",
+        observed_file="Q_TOS01004659_15min_2023.parquet",
         mobidic_id=278,
     )
 
