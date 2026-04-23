@@ -390,7 +390,9 @@ def main():
     # Define paths
     example_dir = Path(__file__).parent
     output_dir = example_dir / "output"
-    matlab_dir = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_daily_balance_2017_2018"
+    matlab_dir = (
+        Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_daily_balance_2017_2018"
+    )
     data_dir = Path(__file__).parent.parent / "datasets" / "Arno" / "data"
 
     # Compare discharge

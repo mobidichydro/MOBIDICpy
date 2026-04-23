@@ -142,7 +142,8 @@ elif config.paths.meteoraster:
     print("  [OK] Forcing data loaded (raster-based).")
 else:
     raise FileNotFoundError(
-        "No meteorological data found. Please provide either a time-series NetCDF (meteodata) or a raster NetCDF (meteoraster) in the configuration."
+        "No meteorological data found. Please provide either a time-series NetCDF (meteodata) \
+        or a raster NetCDF (meteoraster) in the configuration."
     )
 
 print(f"  [OK] Time range: {forcing.start_date} to {forcing.end_date}")
