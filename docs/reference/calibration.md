@@ -26,49 +26,6 @@ The calibration workflow is driven by a single YAML configuration file (alongsid
 | `ies` | Iterative Ensemble Smoother | Ensemble-based calibration and uncertainty |
 | `sen` | Sensitivity analysis | Global sensitivity analysis |
 
-## Calibration setup
-
-::: mobidic.calibration.pest_setup.PestSetup
-
-## Calibration results
-
-::: mobidic.calibration.results.CalibrationResults
-
-## Configuration
-
-::: mobidic.calibration.config.CalibrationConfig
-
-::: mobidic.calibration.config.CalibrationParameter
-
-::: mobidic.calibration.config.ObservationGroup
-
-::: mobidic.calibration.config.MetricConfig
-
-::: mobidic.calibration.config.CalibrationPeriod
-
-::: mobidic.calibration.config.load_calibration_config
-
-## Observations
-
-::: mobidic.calibration.observation.load_observations
-
-::: mobidic.calibration.observation.align_observations_to_simulation
-
-## Performance metrics
-
-::: mobidic.calibration.metrics.nse
-
-::: mobidic.calibration.metrics.nse_log
-
-::: mobidic.calibration.metrics.kge
-
-::: mobidic.calibration.metrics.pbias
-
-::: mobidic.calibration.metrics.rmse
-
-::: mobidic.calibration.metrics.peak_error
-
-::: mobidic.calibration.metrics.compute_metrics
 
 ## Quick import
 
@@ -120,4 +77,49 @@ phi = results.get_objective_function_history()
 sens = results.get_parameter_sensitivities()
 ```
 
-See [Examples](../examples.md#05-glm-calibration-pest) for complete working scripts.
+See [Examples](../examples.md#15-glm-calibration-pest) for complete working scripts.
+
+
+## Calibration setup
+
+::: mobidic.calibration.pest_setup.PestSetup
+
+## Calibration results
+
+::: mobidic.calibration.results.CalibrationResults
+
+## Configuration
+
+::: mobidic.calibration.config.CalibrationConfig
+
+::: mobidic.calibration.config.CalibrationParameter
+
+::: mobidic.calibration.config.ObservationGroup
+
+::: mobidic.calibration.config.MetricConfig
+
+::: mobidic.calibration.config.CalibrationPeriod
+
+::: mobidic.calibration.config.load_calibration_config
+
+## Observations
+
+::: mobidic.calibration.observation.load_observations
+
+::: mobidic.calibration.observation.align_observations_to_simulation
+
+## Performance metrics
+
+::: mobidic.calibration.metrics.nse
+
+::: mobidic.calibration.metrics.nse_log
+
+::: mobidic.calibration.metrics.kge
+
+::: mobidic.calibration.metrics.pbias
+
+::: mobidic.calibration.metrics.rmse
+
+::: mobidic.calibration.metrics.peak_error
+
+::: mobidic.calibration.metrics.compute_metrics
