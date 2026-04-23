@@ -505,10 +505,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#energy-balance-not-yet-implemented" class="md-nav__link">
+  <a href="#energy-balance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Energy balance (not yet implemented)
+        Energy balance
       
     </span>
   </a>
@@ -692,6 +692,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -1093,6 +1097,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/energy_balance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Energy Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/crop_coefficients/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Crop Coefficients (Kc)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/simulation/" class="md-nav__link">
         
   
@@ -1266,10 +1326,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#energy-balance-not-yet-implemented" class="md-nav__link">
+  <a href="#energy-balance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Energy balance (not yet implemented)
+        Energy balance
       
     </span>
   </a>
@@ -1429,7 +1489,7 @@
 <p><strong>Runoff</strong>: Outgoing runoff toward the downhill cell is evaluated as linearly dependent from surface water content through a kinematic parameter (<span class="arithmatex">\(\alpha\)</span>).</p>
 </li>
 </ul>
-<h3 id="energy-balance-not-yet-implemented">Energy balance (not yet implemented)</h3>
+<h3 id="energy-balance">Energy balance</h3>
 <p>MOBIDIC solves water and energy balance simultaneously in the soil-vegetation subsystem. The energy module computes:</p>
 <ul>
 <li>Surface net radiation (<span class="arithmatex">\(R_n\)</span>)</li>
@@ -1437,15 +1497,16 @@
 <li>Sensible heat flux (<span class="arithmatex">\(H\)</span>)</li>
 <li>Latent heat flux (<span class="arithmatex">\(LE\)</span>) for evapotranspiration</li>
 </ul>
-<p><strong>Turbulent fluxes</strong> are computed using bulk formulations that include both surface roughness and atmospheric stability effects (Van den Hurk and Holtslag, 1997). The energy balance is coupled with <strong>1-D heat diffusion</strong> into the soil, with vertical discretization using a three-point scheme.</p>
+<p><strong>Turbulent fluxes</strong> are computed using bulk formulations that include both surface roughness and atmospheric stability effects (Van den Hurk and Holtslag, 1997). The energy balance is coupled with <strong>1-D heat diffusion</strong> into the soil.</p>
 <p><strong>Evapotranspiration</strong>: Potential ET is computed first from the energy balance, then actual ET is calculated considering water availability in canopy, surface, and capillary soil reservoirs. Soil moisture stress on ET follows an S-curve relationship based on capillary saturation.</p>
-<p>Three energy balance configurations are available:</p>
+<p>Energy balance configurations:</p>
 <ul>
 <li><strong>None</strong>: Energy balance disabled (a constant PET rate of 1 mm/day is used)</li>
-<li><strong>1-Layer (1L)</strong>: Single surface layer for land surface temperature</li>
-<li><strong>5-Layer (5L)</strong>: Multi-layer soil temperature profile with depth</li>
-<li><strong>Snow module</strong>: Includes snow accumulation and melt processes</li>
+<li><strong>1-Layer (1L)</strong>: Single surface layer for land surface temperature, solved analytically with a Fourier decomposition of the diurnal cycle and split at sunrise/sunset boundaries within each timestep. Two passes per timestep (saturated pre-pass to obtain PET, then re-entry with the actual ET/PET ratio to refine <span class="arithmatex">\(T_s\)</span> and <span class="arithmatex">\(T_d\)</span>).</li>
+<li><strong>5-Layer (5L)</strong>: Multi-layer soil temperature profile with depth (not yet implemented)</li>
+<li><strong>Snow module</strong>: Includes snow accumulation and melt processes (not yet implemented)</li>
 </ul>
+<p>See the <a href="../reference/energy_balance/">Energy Balance API reference</a> for implementation details.</p>
 <h3 id="routing">Routing</h3>
 <p>Water routing occurs at two levels:</p>
 <ol>
@@ -1515,7 +1576,7 @@
 </ol>
 <p>The original MATLAB implementation is being systematically translated with numerical consistency respect to the original model behavior.</p>
 <h2 id="current-status">Current Status</h2>
-<p><strong>Version 0.2</strong> - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing) are implemented. Energy balance and advanced routing methods are under development.</p>
+<p><strong>Version 0.2</strong> - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing, 1-layer energy balance) are implemented. Advanced energy balance schemes (5L, Snow), advanced groundwater models, and advanced routing methods are under development.</p>
 <p>See the <a href="../">home page</a> for implementation status.</p>
 <h2 id="references">References</h2>
 <p>Campo, L., Caparrini, F., Castelli, F. (2006). Use of multi-platform, multi-temporal remote-sensing data for calibration of a 

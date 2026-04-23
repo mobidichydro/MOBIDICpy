@@ -530,6 +530,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -902,6 +906,62 @@
   
   
     <li class="md-nav__item">
+      <a href="energy_balance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Energy Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="crop_coefficients/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Crop Coefficients (Kc)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="simulation/" class="md-nav__link">
         
   
@@ -1185,6 +1245,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#energy-balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy Balance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#simulation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1350,6 +1421,15 @@
 <ul>
 <li><a href="groundwater/#functions"><code>groundwater_linear()</code></a> - Linear-reservoir groundwater model (with optional multi-aquifer averaging via the <code>Mf</code> raster)</li>
 </ul>
+<h3 id="energy-balance"><a href="energy_balance/">Energy Balance</a></h3>
+<p>Surface energy budget computing potential evapotranspiration and tracking surface/deep-soil temperatures.</p>
+<ul>
+<li><a href="energy_balance/#functions"><code>compute_energy_balance_1l()</code></a> - Orchestrator for the 1-layer scheme over a model timestep (sunrise/sunset sub-stepping)</li>
+<li><a href="energy_balance/#functions"><code>energy_balance_1l()</code></a> - Analytical Fourier 1-layer solver</li>
+<li><a href="energy_balance/#functions"><code>solar_position()</code></a>, <a href="energy_balance/#functions"><code>solar_hours()</code></a> - Solar geometry helpers</li>
+<li><a href="energy_balance/#functions"><code>diurnal_radiation_cycle()</code></a> - Sinusoidal decomposition of daily radiation</li>
+<li><a href="energy_balance/#functions"><code>saturation_specific_humidity()</code></a> - Magnus formula</li>
+</ul>
 <h3 id="simulation"><a href="simulation/">Simulation</a></h3>
 <p>Main simulation engine and time-stepping loop.</p>
 <ul>
@@ -1421,27 +1501,34 @@
 <a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="n">linear_channel_routing</span><span class="p">,</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="c1"># Groundwater</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    <span class="n">groundwater_linear</span><span class="p">,</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="c1"># Reservoirs</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="n">process_reservoirs</span><span class="p">,</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="n">Reservoir</span><span class="p">,</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>    <span class="n">Reservoirs</span><span class="p">,</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    <span class="n">load_reservoirs</span><span class="p">,</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>    <span class="n">save_reservoirs</span><span class="p">,</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>    <span class="c1"># Simulation</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>    <span class="n">Simulation</span><span class="p">,</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    <span class="n">SimulationState</span><span class="p">,</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    <span class="n">SimulationResults</span><span class="p">,</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="c1"># State I/O</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    <span class="n">StateWriter</span><span class="p">,</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    <span class="n">load_state</span><span class="p">,</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    <span class="n">MeteoWriter</span><span class="p">,</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="c1"># Report I/O</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    <span class="n">save_discharge_report</span><span class="p">,</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>    <span class="n">save_lateral_inflow_report</span><span class="p">,</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    <span class="n">load_discharge_report</span><span class="p">,</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="c1"># Constants</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    <span class="n">constants</span><span class="p">,</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="p">)</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    <span class="c1"># Energy Balance</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    <span class="n">compute_energy_balance_1l</span><span class="p">,</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>    <span class="n">energy_balance_1l</span><span class="p">,</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>    <span class="n">diurnal_radiation_cycle</span><span class="p">,</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    <span class="n">saturation_specific_humidity</span><span class="p">,</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>    <span class="n">solar_hours</span><span class="p">,</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>    <span class="n">solar_position</span><span class="p">,</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>    <span class="c1"># Reservoirs</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    <span class="n">process_reservoirs</span><span class="p">,</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    <span class="n">Reservoir</span><span class="p">,</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    <span class="n">Reservoirs</span><span class="p">,</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    <span class="n">load_reservoirs</span><span class="p">,</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    <span class="n">save_reservoirs</span><span class="p">,</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    <span class="c1"># Simulation</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    <span class="n">Simulation</span><span class="p">,</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    <span class="n">SimulationState</span><span class="p">,</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>    <span class="n">SimulationResults</span><span class="p">,</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    <span class="c1"># State I/O</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="n">StateWriter</span><span class="p">,</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    <span class="n">load_state</span><span class="p">,</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>    <span class="n">MeteoWriter</span><span class="p">,</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>    <span class="c1"># Report I/O</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>    <span class="n">save_discharge_report</span><span class="p">,</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>    <span class="n">save_lateral_inflow_report</span><span class="p">,</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>    <span class="n">load_discharge_report</span><span class="p">,</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>    <span class="c1"># Constants</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>    <span class="n">constants</span><span class="p">,</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="p">)</span>
 </code></pre></div>
 <h2 id="development-status">Development status</h2>
 <p>MOBIDICpy&rsquo;s currently implemented features (v0.2):</p>
@@ -1458,14 +1545,15 @@
 <li>Linear routing (hillslope + channel)</li>
 <li>Linear reservoir groundwater model (with multi-aquifer capability via the <code>Mf</code> raster)</li>
 <li>Reservoir module (preprocessing, routing, time-varying regulation)</li>
+<li>Energy balance, 1-layer (1L) scheme</li>
 <li>Simulation engine (basic)</li>
-<li>State I/O (NetCDF)</li>
+<li>State I/O (NetCDF, including surface and deep-soil temperatures)</li>
 <li>Report I/O (CSV/Parquet discharge time series)</li>
 <li>Calibration and sensitivity analysis (PEST++ coupling via pyemu)</li>
 </ul>
-<p>Coming soon:</p>
+<p>Not yet implemented features:</p>
 <ul>
-<li>Energy balance module (1L, 5L schemes, Snow)</li>
+<li>Energy balance: 5-layer scheme and Snow module</li>
 <li>Advanced groundwater models (Dupuit, MODFLOW)</li>
 <li>Advanced routing (Muskingum-Cunge)</li>
 <li>Meteorological data gap filling and quality control</li>

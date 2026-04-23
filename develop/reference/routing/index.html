@@ -530,6 +530,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1104,6 +1108,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../energy_balance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Energy Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crop_coefficients/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Crop Coefficients (Kc)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../simulation/" class="md-nav__link">
         
   
@@ -1433,8 +1493,12 @@
 <div class="doc doc-object doc-function">
 
 
+<h2 id="mobidic.core.routing.hillslope_routing" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">mobidic</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">routing</span><span class="o">.</span><span class="n">hillslope_routing</span><span class="p">(</span><span class="n">lateral_flow</span><span class="p">,</span> <span class="n">flow_direction</span><span class="p">)</span></code>
 
-<a id="mobidic.core.routing.hillslope_routing"></a>
+</h2>
+
+
     <div class="doc doc-contents first">
 
         <p>Route lateral flow ONE STEP from upslope cells to immediate downstream neighbors.</p>
@@ -1724,8 +1788,12 @@ during preprocessing, regardless of original format.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="mobidic.core.routing.linear_channel_routing" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">mobidic</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">routing</span><span class="o">.</span><span class="n">linear_channel_routing</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">discharge_initial</span><span class="p">,</span> <span class="n">lateral_inflow</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span></code>
 
-<a id="mobidic.core.routing.linear_channel_routing"></a>
+</h2>
+
+
     <div class="doc doc-contents first">
 
         <p>Route water through river network using linear reservoir method.</p>
@@ -2320,8 +2388,12 @@ Shape: (n_reaches,). Indexed by DataFrame index (not mobidic_id).</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="mobidic.core.reservoir.reservoir_routing" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">mobidic</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">reservoir</span><span class="o">.</span><span class="n">reservoir_routing</span><span class="p">(</span><span class="n">reservoirs_data</span><span class="p">,</span> <span class="n">reservoir_states</span><span class="p">,</span> <span class="n">reach_discharge</span><span class="p">,</span> <span class="n">surface_runoff</span><span class="p">,</span> <span class="n">lateral_flow</span><span class="p">,</span> <span class="n">soil_wg</span><span class="p">,</span> <span class="n">soil_wg0</span><span class="p">,</span> <span class="n">current_time</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cell_area</span><span class="p">,</span> <span class="n">base_substeps</span><span class="o">=</span><span class="n">N_SUBSTEP_RESERVOIR</span><span class="p">)</span></code>
 
-<a id="mobidic.core.reservoir.reservoir_routing"></a>
+</h2>
+
+
     <div class="doc doc-contents first">
 
         <p>Route water through reservoirs.</p>
@@ -2366,7 +2438,12 @@ Shape: (n_reaches,). Indexed by DataFrame index (not mobidic_id).</p>
                 <code>reservoir_states</code>
             </td>
             <td>
-                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="mobidic.core.reservoir.ReservoirState" href="#mobidic.core.reservoir.ReservoirState">ReservoirState</a>]</code>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="mobidic.core.reservoir.ReservoirState
+
+
+  
+      dataclass
+  " href="#mobidic.core.reservoir.ReservoirState">ReservoirState</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2536,7 +2613,12 @@ Shape: (n_reaches,). Indexed by DataFrame index (not mobidic_id).</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<a class="autorefs autorefs-internal" title="mobidic.core.reservoir.ReservoirState" href="#mobidic.core.reservoir.ReservoirState">ReservoirState</a>], <span title="numpy.ndarray">ndarray</span>, <span title="numpy.ndarray">ndarray</span>, <span title="numpy.ndarray">ndarray</span>, <span title="numpy.ndarray">ndarray</span>]</code>
+                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<a class="autorefs autorefs-internal" title="mobidic.core.reservoir.ReservoirState
+
+
+  
+      dataclass
+  " href="#mobidic.core.reservoir.ReservoirState">ReservoirState</a>], <span title="numpy.ndarray">ndarray</span>, <span title="numpy.ndarray">ndarray</span>, <span title="numpy.ndarray">ndarray</span>, <span title="numpy.ndarray">ndarray</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2968,7 +3050,17 @@ Shape: (n_reaches,). Indexed by DataFrame index (not mobidic_id).</p>
 
 
 
-<a id="mobidic.core.reservoir.ReservoirState"></a>
+<h2 id="mobidic.core.reservoir.ReservoirState" class="doc doc-heading">
+            <code>mobidic.core.reservoir.ReservoirState</code>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h2>
+
+
     <div class="doc doc-contents first">
 
 
