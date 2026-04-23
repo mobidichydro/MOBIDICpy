@@ -1,10 +1,13 @@
 """Tests for mobidic.io.state module."""
 
 from datetime import datetime, timedelta
+from types import SimpleNamespace
+
 import numpy as np
 import xarray as xr
 import pytest
 from mobidic.io.state import load_state, StateWriter
+from mobidic.core.reservoir import ReservoirState
 from mobidic.core.simulation import SimulationState
 from mobidic.config.schema import OutputStates
 
@@ -761,3 +764,475 @@ class TestChunking:
 
         assert chunk_001.exists(), "First chunk file should exist"
         assert not chunk_002.exists(), "Second chunk file should not exist (size limit not exceeded)"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for config-driven loading and advanced StateWriter tests
+# ---------------------------------------------------------------------------
+
+
+def _make_mock_config(*, gw_model="None", energy_balance="None", wg_wc_tr=-1.0):
+    """Build a minimal config-like object that exposes only what load_state needs."""
+    return SimpleNamespace(
+        parameters=SimpleNamespace(
+            multipliers=SimpleNamespace(
+                Wc_factor=1.0,
+                Wg_factor=1.0,
+                Wg_Wc_tr=wg_wc_tr,
+            ),
+            groundwater=SimpleNamespace(model=gw_model),
+            energy=SimpleNamespace(Tconst=290.0),
+        ),
+        initial_conditions=SimpleNamespace(
+            Wcsat=0.3,
+            Wgsat=0.2,
+            Ws=0.0,
+            groundwater_head=5.0,
+        ),
+        simulation=SimpleNamespace(energy_balance=energy_balance),
+    )
+
+
+def _make_mock_gisdata(nrows, ncols, *, with_nan_border=True):
+    """Build a minimal GISData-like object with the grids that load_state touches."""
+    flow_acc = np.ones((nrows, ncols), dtype=float)
+    if with_nan_border:
+        flow_acc[0, :] = np.nan
+        flow_acc[-1, :] = np.nan
+    return SimpleNamespace(
+        grids={
+            "Wc0": np.full((nrows, ncols), 0.2),
+            "Wg0": np.full((nrows, ncols), 0.1),
+            "flow_acc": flow_acc,
+        }
+    )
+
+
+def _write_minimal_state_nc(path, *, extra_vars=None, nrows=10, ncols=15, network_size=5):
+    """Write a tiny state NetCDF with configurable included variables."""
+    coords = {
+        "x": 1e6 + np.arange(ncols) * 100.0,
+        "y": 2e6 + np.arange(nrows) * 100.0,
+        "time": datetime(2020, 6, 15),
+    }
+    data_vars = {"crs": ([], 0)}
+    if extra_vars:
+        for name, arr in extra_vars.items():
+            if arr.ndim == 1:
+                data_vars[name] = (["reach"], arr)
+                coords["reach"] = np.arange(len(arr))
+            else:
+                data_vars[name] = (["y", "x"], arr)
+    ds = xr.Dataset(data_vars=data_vars, coords=coords)
+    ds.to_netcdf(path)
+    ds.close()
+
+
+class TestLoadStateConfigDrivenInit:
+    """load_state must use config + gisdata to initialize missing state variables."""
+
+    def test_missing_wc_initialized_from_config(self, tmp_path, sample_grid_metadata):
+        """Missing Wc is rebuilt from Wc0 * Wc_factor * Wcsat with NaN outside the domain."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_wc.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={"Wg": np.random.rand(nrows, ncols) * 0.1},
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config()
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+
+        assert state.wc.shape == (nrows, ncols)
+        # Interior cells: Wc0 (0.2) * Wcsat (0.3) = 0.06
+        assert state.wc[nrows // 2, ncols // 2] == pytest.approx(0.06)
+        # Border rows have NaN flow_acc => NaN wc
+        assert np.all(np.isnan(state.wc[0, :]))
+        assert np.all(np.isnan(state.wc[-1, :]))
+
+    def test_missing_wc_with_wg_wc_transition(self, tmp_path, sample_grid_metadata):
+        """Wg_Wc_tr >= 0 triggers the transition branch in the Wc initialization path."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_wc_tr.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={"Wg": np.random.rand(nrows, ncols) * 0.1},
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config(wg_wc_tr=0.5)
+        gisdata = _make_mock_gisdata(nrows, ncols, with_nan_border=False)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+
+        # wg0' = min(0.5 * 0.1, 0.3) = 0.05; wc0' = 0.3 - 0.05 = 0.25; wc = 0.25 * 0.3
+        np.testing.assert_allclose(state.wc, 0.25 * 0.3)
+
+    def test_missing_wg_initialized_from_config(self, tmp_path, sample_grid_metadata):
+        """Missing Wg is rebuilt from Wg0 * Wg_factor * Wgsat with NaN outside the domain."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_wg.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={"Wc": np.random.rand(nrows, ncols) * 0.2},
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config()
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+
+        assert state.wg[nrows // 2, ncols // 2] == pytest.approx(0.1 * 0.2)
+        assert np.all(np.isnan(state.wg[0, :]))
+
+    def test_missing_wg_with_wg_wc_transition(self, tmp_path, sample_grid_metadata):
+        """Wg_Wc_tr >= 0 triggers the transition branch in the Wg initialization path."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_wg_tr.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={"Wc": np.random.rand(nrows, ncols) * 0.2},
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config(wg_wc_tr=0.5)
+        gisdata = _make_mock_gisdata(nrows, ncols, with_nan_border=False)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+
+        np.testing.assert_allclose(state.wg, 0.05 * 0.2)
+
+    def test_missing_ws_initialized_from_config(self, tmp_path, sample_grid_metadata):
+        """Missing Ws defaults to config.initial_conditions.Ws inside the domain, NaN outside."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_ws.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={
+                "Wc": np.random.rand(nrows, ncols) * 0.2,
+                "Wg": np.random.rand(nrows, ncols) * 0.1,
+            },
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config()
+        config.initial_conditions.Ws = 0.01
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+        assert state.ws[nrows // 2, ncols // 2] == pytest.approx(0.01)
+        assert np.all(np.isnan(state.ws[0, :]))
+
+    def test_missing_wp_initialized_from_config(self, tmp_path, sample_grid_metadata):
+        """Missing Wp, with config+gisdata, is zeros inside domain and NaN outside."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_wp.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={
+                "Wc": np.random.rand(nrows, ncols) * 0.2,
+                "Wg": np.random.rand(nrows, ncols) * 0.1,
+            },
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config()
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+        assert state.wp[nrows // 2, ncols // 2] == 0.0
+        assert np.all(np.isnan(state.wp[0, :]))
+
+    def test_groundwater_head_initialized_when_model_linear(self, tmp_path, sample_grid_metadata):
+        """When groundwater is Linear and h is missing, h is filled from config."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_h.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={
+                "Wc": np.random.rand(nrows, ncols) * 0.2,
+                "Wg": np.random.rand(nrows, ncols) * 0.1,
+            },
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config(gw_model="Linear")
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+        assert state.h is not None
+        assert state.h[nrows // 2, ncols // 2] == pytest.approx(5.0)
+        assert np.all(np.isnan(state.h[0, :]))
+
+    def test_groundwater_head_stays_none_when_model_is_none(self, tmp_path, sample_grid_metadata):
+        """When groundwater model is 'None', missing h remains None."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "no_h.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={"Wc": np.zeros((nrows, ncols)), "Wg": np.zeros((nrows, ncols))},
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config(gw_model="None")
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+        assert state.h is None
+
+    def test_energy_balance_ts_td_initialized(self, tmp_path, sample_grid_metadata):
+        """When energy balance is active and Ts/Td are missing, both are filled with Tconst."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "missing_ts_td.nc"
+        _write_minimal_state_nc(
+            path,
+            extra_vars={"Wc": np.zeros((nrows, ncols)), "Wg": np.zeros((nrows, ncols))},
+            nrows=nrows,
+            ncols=ncols,
+        )
+        config = _make_mock_config(energy_balance="1L")
+        gisdata = _make_mock_gisdata(nrows, ncols)
+
+        state, _, _ = load_state(path, network_size=5, config=config, gisdata=gisdata)
+        assert state.ts is not None
+        assert state.td is not None
+        assert state.ts[nrows // 2, ncols // 2] == pytest.approx(290.0)
+        assert state.td[nrows // 2, ncols // 2] == pytest.approx(290.0)
+        assert np.all(np.isnan(state.ts[0, :]))
+        assert np.all(np.isnan(state.td[0, :]))
+
+    def test_existing_h_ts_td_loaded_from_file(self, tmp_path, sample_grid_metadata):
+        """If h, Ts, Td exist in the file, they are loaded verbatim (regardless of config)."""
+        nrows, ncols = sample_grid_metadata["shape"]
+        path = tmp_path / "with_h_ts_td.nc"
+        h_in = np.full((nrows, ncols), 2.5)
+        ts_in = np.full((nrows, ncols), 295.0)
+        td_in = np.full((nrows, ncols), 294.0)
+        _write_minimal_state_nc(
+            path,
+            extra_vars={
+                "Wc": np.zeros((nrows, ncols)),
+                "Wg": np.zeros((nrows, ncols)),
+                "h": h_in,
+                "Ts": ts_in,
+                "Td": td_in,
+            },
+            nrows=nrows,
+            ncols=ncols,
+        )
+
+        state, _, _ = load_state(path, network_size=5)
+        np.testing.assert_array_equal(state.h, h_in)
+        np.testing.assert_array_equal(state.ts, ts_in)
+        np.testing.assert_array_equal(state.td, td_in)
+
+
+class TestLoadStateChunkFallback:
+    """load_state should transparently fall back to chunk files when the base path is absent."""
+
+    def test_auto_falls_back_to_first_chunk(self, tmp_path, sample_state, sample_grid_metadata, all_states_enabled):
+        """A base path that doesn't exist but has a matching _001 chunk is loaded."""
+        base_path = tmp_path / "run_states.nc"
+        time = datetime(2021, 1, 1)
+        save_state_helper(
+            state=sample_state,
+            output_path=base_path,
+            time=time,
+            grid_metadata=sample_grid_metadata,
+            network_size=5,
+            output_states=all_states_enabled,
+        )
+        # StateWriter writes to run_states_001.nc, not run_states.nc
+        assert not base_path.exists()
+        assert (tmp_path / "run_states_001.nc").exists()
+
+        # Loading via the base path must succeed by falling back to the chunk.
+        loaded_state, _, _ = load_state(base_path, network_size=5)
+        assert loaded_state.wc.shape == sample_grid_metadata["shape"]
+
+    def test_error_when_neither_base_nor_chunk_exists(self, tmp_path):
+        """Missing base file AND missing _001 chunk raises FileNotFoundError."""
+        missing = tmp_path / "nothing_here.nc"
+        with pytest.raises(FileNotFoundError):
+            load_state(missing, network_size=3)
+
+
+class TestStateWriterAdvanced:
+    """Additional StateWriter coverage for optional variables and edge cases."""
+
+    def _grid_metadata(self, nrows=6, ncols=8):
+        return {
+            "shape": (nrows, ncols),
+            "resolution": (100.0, 100.0),
+            "xllcorner": 0.0,
+            "yllcorner": 0.0,
+            "crs": "EPSG:32632",
+        }
+
+    def _output_states(self, **overrides):
+        defaults = dict(
+            discharge=True,
+            reservoir_states=False,
+            soil_capillary=True,
+            soil_gravitational=True,
+            soil_plant=False,
+            soil_surface=True,
+            surface_temperature=False,
+            ground_temperature=False,
+            aquifer_head=False,
+            et_prec=False,
+        )
+        defaults.update(overrides)
+        return OutputStates(**defaults)
+
+    def test_empty_buffer_flush_is_noop(self, tmp_path):
+        """Calling flush() with no buffered states is a no-op and does not create files."""
+        md = self._grid_metadata()
+        out = tmp_path / "empty_flush.nc"
+        writer = StateWriter(
+            output_path=out,
+            grid_metadata=md,
+            network_size=2,
+            output_states=self._output_states(),
+            flushing=-1,
+        )
+        writer.flush()  # no-op, should not raise
+        writer.close()
+        # With no states ever appended, no chunk file should have been created.
+        assert not (tmp_path / "empty_flush_001.nc").exists()
+
+    def test_existing_chunks_are_removed_on_init(self, tmp_path):
+        """StateWriter removes pre-existing chunk files matching its pattern on init."""
+        md = self._grid_metadata()
+        stale = tmp_path / "run_001.nc"
+        stale.write_bytes(b"stale")
+        assert stale.exists()
+
+        _ = StateWriter(
+            output_path=tmp_path / "run.nc",
+            grid_metadata=md,
+            network_size=1,
+            output_states=self._output_states(),
+            flushing=-1,
+        )
+        assert not stale.exists()
+
+    def test_writes_all_optional_grids_h_ts_td_et(self, tmp_path):
+        """Enabling aquifer_head/surface_temperature/ground_temperature/evapotranspiration persists them."""
+        md = self._grid_metadata()
+        out = tmp_path / "optional_grids.nc"
+        nrows, ncols = md["shape"]
+        state = SimulationState(
+            wc=np.full((nrows, ncols), 0.1),
+            wg=np.full((nrows, ncols), 0.05),
+            wp=None,
+            ws=np.full((nrows, ncols), 0.01),
+            discharge=np.array([1.0, 2.0]),
+            lateral_inflow=np.array([0.1, 0.2]),
+            h=np.full((nrows, ncols), 2.0),
+            ts=np.full((nrows, ncols), 293.0),
+            td=np.full((nrows, ncols), 292.0),
+            et=np.full((nrows, ncols), 1e-7),
+        )
+        with StateWriter(
+            output_path=out,
+            grid_metadata=md,
+            network_size=2,
+            output_states=self._output_states(
+                aquifer_head=True,
+                surface_temperature=True,
+                ground_temperature=True,
+                evapotranspiration=True,
+            ),
+            flushing=-1,
+        ) as writer:
+            writer.append_state(state, datetime(2020, 1, 1))
+
+        chunk = tmp_path / "optional_grids_001.nc"
+        assert chunk.exists()
+        with xr.open_dataset(chunk) as ds:
+            for name, attr_marker in [
+                ("h", "Groundwater Head"),
+                ("Ts", "Surface Temperature"),
+                ("Td", "Deep Soil Temperature"),
+                ("ET", "Actual Evapotranspiration Rate"),
+            ]:
+                assert name in ds.data_vars
+                assert ds[name].attrs["long_name"] == attr_marker
+
+    def test_writes_reservoir_states(self, tmp_path):
+        """Reservoir states are serialized into per-reservoir time series arrays."""
+        md = self._grid_metadata()
+        out = tmp_path / "with_reservoirs.nc"
+        nrows, ncols = md["shape"]
+        reservoirs = [
+            ReservoirState(volume=1e6, stage=10.0, inflow=5.0, outflow=4.5),
+            ReservoirState(volume=5e5, stage=7.5, inflow=2.0, outflow=1.8),
+        ]
+        state = SimulationState(
+            wc=np.zeros((nrows, ncols)),
+            wg=np.zeros((nrows, ncols)),
+            wp=None,
+            ws=np.zeros((nrows, ncols)),
+            discharge=np.zeros(2),
+            lateral_inflow=np.zeros(2),
+            reservoir_states=reservoirs,
+        )
+        with StateWriter(
+            output_path=out,
+            grid_metadata=md,
+            network_size=2,
+            output_states=self._output_states(reservoir_states=True),
+            flushing=-1,
+            reservoir_size=len(reservoirs),
+        ) as writer:
+            writer.append_state(state, datetime(2020, 1, 1))
+            writer.append_state(state, datetime(2020, 1, 1, 1))
+
+        chunk = tmp_path / "with_reservoirs_001.nc"
+        with xr.open_dataset(chunk) as ds:
+            assert "reservoir" in ds.coords
+            assert ds.sizes["reservoir"] == 2
+            for name in (
+                "reservoir_volume",
+                "reservoir_stage",
+                "reservoir_inflow",
+                "reservoir_outflow",
+            ):
+                assert name in ds.data_vars
+            np.testing.assert_allclose(ds["reservoir_volume"].values[0], [1e6, 5e5])
+            np.testing.assert_allclose(ds["reservoir_outflow"].values[0], [4.5, 1.8])
+
+    def test_multi_flush_appends_time(self, tmp_path):
+        """Two separate flushes append to the same file, growing the time dimension."""
+        md = self._grid_metadata()
+        out = tmp_path / "multi_flush.nc"
+        nrows, ncols = md["shape"]
+        with StateWriter(
+            output_path=out,
+            grid_metadata=md,
+            network_size=2,
+            output_states=self._output_states(),
+            flushing=1,  # flush after every append
+        ) as writer:
+            for i in range(3):
+                state = SimulationState(
+                    wc=np.full((nrows, ncols), 0.1 * (i + 1)),
+                    wg=np.full((nrows, ncols), 0.05),
+                    wp=None,
+                    ws=np.full((nrows, ncols), 0.01),
+                    discharge=np.array([float(i), float(i)]),
+                    lateral_inflow=np.zeros(2),
+                )
+                writer.append_state(state, datetime(2020, 1, 1) + timedelta(hours=i))
+
+        chunk = tmp_path / "multi_flush_001.nc"
+        with xr.open_dataset(chunk) as ds:
+            assert ds.sizes["time"] == 3
+            # First timestep Wc equals 0.1, last equals 0.3
+            np.testing.assert_allclose(ds["Wc"].isel(time=0).values, 0.1)
+            np.testing.assert_allclose(ds["Wc"].isel(time=-1).values, 0.3)

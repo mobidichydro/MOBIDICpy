@@ -5,6 +5,7 @@ import pytest
 
 from mobidic.core import constants as const
 from mobidic.core.energy_balance import (
+    _broadcast_to_n,
     _energy_balance_1l_numpy,
     compute_energy_balance_1l,
     diurnal_radiation_cycle,
@@ -89,6 +90,13 @@ class TestSaturationSpecificHumidity:
         q = saturation_specific_humidity(T, 1013.0)
         # Reference value from psychrometric tables ~ 0.0147
         np.testing.assert_allclose(q, 0.0147, atol=1e-3)
+
+    def test_dew_point_depression_lowers_humidity(self):
+        """A positive dew-point depression reduces the computed specific humidity."""
+        T = np.array([293.15])
+        q0 = saturation_specific_humidity(T, 1013.0, dT=0.0)
+        q_dry = saturation_specific_humidity(T, 1013.0, dT=5.0)
+        assert q_dry[0] < q0[0]
 
 
 class TestDiurnalRadiationCycle:
@@ -335,3 +343,128 @@ class TestComputeEnergyBalance1L:
         kw["reentry"] = True
         _, _, etp, _ = compute_energy_balance_1l(**kw)
         np.testing.assert_allclose(etp, 0.0, atol=1e-12)
+
+    def test_step_crossing_sunrise_reentry_uses_td_rise(self):
+        """Re-entry crossing sunrise starts the day sub-period from ``td_rise``."""
+        kw = self._make_inputs()
+        kw["ctim_s"] = 5.5 * 3600.0
+        kw["ftim_s"] = 7.0 * 3600.0
+        kw["reentry"] = True
+        # Set td_rise to a distinct value to verify it is consumed (not overwritten).
+        kw["td_rise"] = np.full_like(kw["td_rise"], 295.0)
+        ts, td, etp, td_rise = compute_energy_balance_1l(**kw)
+        # td_rise is read-only on re-entry and must be returned unchanged.
+        np.testing.assert_array_equal(td_rise, kw["td_rise"])
+        assert np.all(etp > 0.0)
+
+    def test_full_daylight_inside_step(self):
+        """Step that fully brackets the daytime window (ctim<hrise<hset<ftim).
+
+        The radiation forcing inside the day sub-period may be non-physical under
+        this configuration (the "instant" amplitude depends on ``ctim`` vs sunrise),
+        so we only assert the dispatch produces finite results with the correct shape.
+        """
+        kw = self._make_inputs()
+        kw["ctim_s"] = 5.5 * 3600.0
+        kw["ftim_s"] = 19.0 * 3600.0  # after hset
+        kw["dt"] = kw["ftim_s"] - kw["ctim_s"]
+        ts, td, etp, td_rise_new = compute_energy_balance_1l(**kw)
+        assert np.all(np.isfinite(etp))
+        assert np.all(np.isfinite(ts))
+        assert np.all(np.isfinite(td))
+        assert td_rise_new.shape == kw["td_rise"].shape
+
+    def test_night_only_before_sunrise_reentry_short_circuits(self):
+        """A full-night step before sunrise in re-entry returns inputs unchanged."""
+        kw = self._make_inputs()
+        kw["ctim_s"] = 2.0 * 3600.0
+        kw["ftim_s"] = 3.0 * 3600.0
+        kw["reentry"] = True
+        ts, td, etp, td_rise = compute_energy_balance_1l(**kw)
+        np.testing.assert_array_equal(ts, kw["ts"])
+        np.testing.assert_array_equal(td, kw["td"])
+        np.testing.assert_array_equal(td_rise, kw["td_rise"])
+        np.testing.assert_allclose(etp, 0.0, atol=1e-12)
+
+    def test_night_only_after_sunset_no_reentry(self):
+        """A post-sunset night step (non-reentry) runs the night sub-period and yields zero PET."""
+        kw = self._make_inputs()
+        kw["ctim_s"] = 20.0 * 3600.0
+        kw["ftim_s"] = 21.0 * 3600.0
+        # Not a re-entry call: must go through the night-only branch.
+        ts, td, etp, td_rise = compute_energy_balance_1l(**kw)
+        np.testing.assert_allclose(etp, 0.0, atol=1e-12)
+        # Night sub-period updates surface & deep temperatures.
+        assert ts.shape == kw["ts"].shape
+
+    def test_daily_timestep_uses_average_radiation_mode(self):
+        """When ``dt`` spans essentially a full day, radiation is decomposed in 'average' mode."""
+        kw = self._make_inputs()
+        kw["ctim_s"] = 0.0
+        kw["ftim_s"] = 86400.0
+        kw["dt"] = 86400.0
+        _, _, etp, _ = compute_energy_balance_1l(**kw)
+        assert np.all(etp > 0.0)
+
+
+class TestBroadcastToN:
+    """Tests for the internal ``_broadcast_to_n`` helper."""
+
+    def test_scalar_broadcast(self):
+        arr = _broadcast_to_n(3.14, 5)
+        assert arr.shape == (5,)
+        np.testing.assert_allclose(arr, 3.14)
+
+    def test_array_passthrough(self):
+        src = np.linspace(0.0, 1.0, 4)
+        out = _broadcast_to_n(src, 4)
+        assert out.shape == (4,)
+        np.testing.assert_allclose(out, src)
+
+    def test_shape_mismatch_raises(self):
+        """An array of the wrong shape raises ValueError."""
+        with pytest.raises(ValueError, match="Expected scalar or array of shape"):
+            _broadcast_to_n(np.zeros(3), 5)
+
+
+class TestEnergyBalance1LZeroStep:
+    """Tests for the ``step <= 0`` degenerate path in both kernels."""
+
+    def _inputs(self, n=3):
+        return {
+            "ff": 2.0 * np.pi / 86400.0,
+            "a_tem": np.full(n, 4.0),
+            "a_rad": np.full(n, 300.0),
+            "p_tem": -np.pi / 2.0 - np.pi / 6.0,
+            "p_rad": -np.pi / 2.0,
+            "c_tem": np.full(n, 290.0),
+            "c_rad": np.full(n, 100.0),
+            "td_ini": np.full(n, 290.0),
+            "tm": np.full(n, 290.0),
+            "u": np.full(n, 1.5),
+            "pair": const.P_AIR,
+            "hair": np.full(n, 0.6),
+            "t_end": 3600.0,
+            "step": 0.0,  # degenerate
+            "ch": np.full(n, 1e-3),
+            "alb": np.full(n, 0.2),
+            "kaps": 2.5,
+            "nis": 0.8e-6,
+            "tcost": 290.0,
+            "etrsuetp": 1.0,
+        }
+
+    def test_jit_zero_step_finite(self):
+        kw = self._inputs()
+        ts, td, evp = energy_balance_1l(**kw)
+        assert np.all(np.isfinite(ts))
+        assert np.all(np.isfinite(td))
+        # With step=0 the trapezoidal integration collapses to zero.
+        np.testing.assert_allclose(evp, 0.0, atol=1e-12)
+
+    def test_numpy_zero_step_finite(self):
+        kw = self._inputs()
+        ts, td, evp = _energy_balance_1l_numpy(**kw)
+        assert np.all(np.isfinite(ts))
+        assert np.all(np.isfinite(td))
+        np.testing.assert_allclose(evp, 0.0, atol=1e-12)

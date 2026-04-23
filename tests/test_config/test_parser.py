@@ -617,6 +617,19 @@ class TestPathResolution:
         expected_res_shape = (config_dir / "reservoirs.shp").resolve()
         assert Path(config.parameters.reservoirs.res_shape) == expected_res_shape
 
+    def test_load_accepts_string_path(self, minimal_config_dict, tmp_path):
+        """load_config accepts a ``str`` (not just Path) for config_path."""
+        config_path = tmp_path / "cfg.yaml"
+        with open(config_path, "w") as f:
+            yaml.dump(minimal_config_dict, f)
+        config = load_config(str(config_path))
+        assert config.basin.id == "TestBasin"
+        # All required non-Optional paths must be resolved to absolute.
+        assert Path(config.paths.gisdata).is_absolute()
+        assert Path(config.paths.states).is_absolute()
+        assert Path(config.paths.output).is_absolute()
+        assert Path(config.raster_files.dtm).is_absolute()
+
     def test_empty_string_path(self, tmp_path):
         """Test that empty string paths are handled correctly."""
         config_dir = tmp_path / "configs"

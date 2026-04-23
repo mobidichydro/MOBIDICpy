@@ -1,7 +1,7 @@
 """YAML configuration parser for MOBIDIC."""
 
 from pathlib import Path
-from typing import Annotated, Union, get_args, get_origin
+from typing import Union, get_args, get_origin
 
 import yaml
 from loguru import logger
@@ -71,73 +71,48 @@ def load_config(config_path: Union[str, Path]) -> MOBIDICConfig:
             return (config_dir / path).resolve()
 
     def is_path_field(field_info) -> bool:
-        """Check if a field is a PathField type."""
+        """Check if a field is a PathField type.
+
+        Pydantic v2 unwraps ``Annotated[...]`` metadata on non-Optional fields, so
+        ``field_info.annotation`` arrives here as either ``Union[str, Path]`` (for
+        non-Optional PathFields) or ``Optional[Annotated[Union[str, Path], ...]]``
+        (which ``get_origin`` reports as ``Union`` with ``NoneType`` stripped).
+        """
         annotation = field_info.annotation
-
-        # Handle Optional[PathField] - strip Optional first
         origin = get_origin(annotation)
-        if origin is Union:
-            args = get_args(annotation)
-            # Remove NoneType if present (for Optional fields)
-            non_none_args = [arg for arg in args if arg is not type(None)]
+        if origin is not Union:
+            return False
 
-            # If we have a single non-None arg, check if it's Annotated
-            if len(non_none_args) == 1:
-                inner_annotation = non_none_args[0]
-                inner_origin = get_origin(inner_annotation)
+        non_none_args = [arg for arg in get_args(annotation) if arg is not type(None)]
 
-                # Check if it's Annotated[Union[str, Path], ...]
-                if inner_origin is Annotated:
-                    inner_args = get_args(inner_annotation)
-                    if len(inner_args) > 0:
-                        base_type = inner_args[0]
-                        base_origin = get_origin(base_type)
-                        if base_origin is Union:
-                            base_args = get_args(base_type)
-                            if len(base_args) == 2 and str in base_args and Path in base_args:
-                                return True
+        # Non-Optional PathField: annotation is ``Union[str, Path]``.
+        if len(non_none_args) == 2 and str in non_none_args and Path in non_none_args:
+            return True
 
-            # Check if it's exactly Union[str, Path] (non-Optional case)
-            if len(non_none_args) == 2 and str in non_none_args and Path in non_none_args:
-                return True
-
-        # Handle non-Optional Annotated[Union[str, Path], ...]
-        if origin is Annotated:
-            args = get_args(annotation)
-            if len(args) > 0:
-                base_type = args[0]
-                base_origin = get_origin(base_type)
-                if base_origin is Union:
-                    base_args = get_args(base_type)
-                    if len(base_args) == 2 and str in base_args and Path in base_args:
-                        return True
+        # Optional PathField: the single inner annotation is ``Annotated[Union[str, Path], ...]``.
+        if len(non_none_args) == 1:
+            inner_args = get_args(non_none_args[0])
+            if inner_args:
+                base_args = get_args(inner_args[0])
+                if len(base_args) == 2 and str in base_args and Path in base_args:
+                    return True
 
         return False
 
     def resolve_path_fields(obj):
         """Recursively resolve all PathField attributes in a Pydantic model."""
-        if obj is None:
-            return
+        for field_name, field_info in type(obj).model_fields.items():
+            field_value = getattr(obj, field_name)
 
-        # Get model fields metadata from the class, not the instance
-        obj_class = type(obj)
-        if hasattr(obj_class, "model_fields"):
-            for field_name, field_info in obj_class.model_fields.items():
-                field_value = getattr(obj, field_name)
+            if field_value is None:
+                continue
 
-                # Skip None values
-                if field_value is None:
-                    continue
-
-                # Check if this field is a PathField
-                if is_path_field(field_info):
-                    # Resolve the path
-                    resolved = resolve_path(field_value)
-                    setattr(obj, field_name, resolved)
-                    logger.debug(f"Resolved {field_name}: {field_value} -> {resolved}")
-                # If it's a nested model, recurse
-                elif hasattr(type(field_value), "model_fields"):
-                    resolve_path_fields(field_value)
+            if is_path_field(field_info):
+                resolved = resolve_path(field_value)
+                setattr(obj, field_name, resolved)
+                logger.debug(f"Resolved {field_name}: {field_value} -> {resolved}")
+            elif hasattr(type(field_value), "model_fields"):
+                resolve_path_fields(field_value)
 
     # Recursively resolve all path fields in the config
     resolve_path_fields(config)
