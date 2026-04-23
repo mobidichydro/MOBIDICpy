@@ -81,11 +81,11 @@ Saturated-zone dynamics providing the baseflow contribution to surface runoff.
 ### [Energy Balance](energy_balance.md)
 Surface energy budget computing potential evapotranspiration and tracking surface/deep-soil temperatures.
 
-- [`compute_energy_balance_1l()`](energy_balance.md#mobidic.core.energy_balance.compute_energy_balance_1l) - Orchestrator for the 1-layer scheme over a model timestep (sunrise/sunset sub-stepping)
-- [`energy_balance_1l()`](energy_balance.md#mobidic.core.energy_balance.energy_balance_1l) - Analytical Fourier 1-layer solver
-- [`solar_position()`](energy_balance.md#mobidic.core.energy_balance.solar_position), [`solar_hours()`](energy_balance.md#mobidic.core.energy_balance.solar_hours) - Solar geometry helpers
-- [`diurnal_radiation_cycle()`](energy_balance.md#mobidic.core.energy_balance.diurnal_radiation_cycle) - Sinusoidal decomposition of daily radiation
-- [`saturation_specific_humidity()`](energy_balance.md#mobidic.core.energy_balance.saturation_specific_humidity) - Magnus formula
+- [`compute_energy_balance_1l()`](energy_balance.md#functions) - Orchestrator for the 1-layer scheme over a model timestep (sunrise/sunset sub-stepping)
+- [`energy_balance_1l()`](energy_balance.md#functions) - Analytical Fourier 1-layer solver
+- [`solar_position()`](energy_balance.md#functions), [`solar_hours()`](energy_balance.md#functions) - Solar geometry helpers
+- [`diurnal_radiation_cycle()`](energy_balance.md#functions) - Sinusoidal decomposition of daily radiation
+- [`saturation_specific_humidity()`](energy_balance.md#functions) - Magnus formula
 
 ### [Simulation](simulation.md)
 Main simulation engine and time-stepping loop.

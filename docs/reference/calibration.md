@@ -77,7 +77,7 @@ phi = results.get_objective_function_history()
 sens = results.get_parameter_sensitivities()
 ```
 
-See [Examples](../examples.md#15-glm-calibration-pest) for complete working scripts.
+See [Examples 1.5](../examples.md) for complete working scripts.
 
 
 ## Calibration setup

@@ -95,7 +95,7 @@ output_forcing_data:
 - `wind_speed` — wind speed [m/s]
 - `radiation` — incoming shortwave radiation [W/m²]
 
-Both station-based ([`MeteoData`](meteo.md#mobidic.preprocessing.meteo_preprocessing.MeteoData)) and raster-based ([`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster)) inputs are supported.
+Both station-based ([`MeteoData`](meteo.md#meteodata)) and raster-based ([`MeteoRaster`](meteo.md#meteoraster)) inputs are supported.
 
 ## Integration with the simulation loop
 
@@ -109,7 +109,7 @@ When `simulation.energy_balance == "1L"`:
 
 ## ET/PET when using raster forcing, to speed up simulations
 
-When the input [`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster) contains either `pet` or `pet_c` variable, the simulation **skips the energy balance entirely** regardless of the `simulation.energy_balance` setting, and reads the evapotranspiration values directly from the raster. In this case, the simulation **speeds up** significantly. In this mode, the temperature/humidity/wind/radiation variables are **not required** in the input file. See [Crop coefficients (Kc)](crop_coefficients.md#when-a-precomputed-pet-raster-is-used-or-in-constant-pet-mode) for details.
+When the input [`MeteoRaster`](meteo.md#meteoraster) contains either `pet` or `pet_c` variable, the simulation **skips the energy balance entirely** regardless of the `simulation.energy_balance` setting, and reads the evapotranspiration values directly from the raster. In this case, the simulation **speeds up** significantly. In this mode, the temperature/humidity/wind/radiation variables are **not required** in the input file. See [Crop coefficients (Kc)](crop_coefficients.md#when-a-precomputed-pet-raster-is-used-or-in-constant-pet-mode) for details.
 
 ## Model status
 
