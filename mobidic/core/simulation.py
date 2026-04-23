@@ -1831,32 +1831,16 @@ class Simulation:
                 flr_flat_full[ko] = flr_flat_full[ko] + baseflow_flat
                 flr = flr_flat_full.reshape((self.nrows, self.ncols), order="F")
 
-            # 6. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m)
-            # Convert to discharge for accumulation
-            flr_discharge = flr * cell_area
-            lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
-            logger.debug("Lateral inflow accumulation completed")
-
-            # Store lateral inflow in state
-            self.state.lateral_inflow = lateral_inflow
-
-            # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
-            # This prevents double-counting - flows from all contributing cells are consumed after accumulation
-            flr[self.hillslope_reach_map >= 0] = 0.0
-            # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
-
-            # Store flr and fld for next timestep's routing (at step 3)
-            flr_prev = flr.copy()
-            fld_prev = fld.copy()
-
-            # 6. Reservoir routing (if reservoirs exist)
-            # Prepare network topology for routing (may be modified if reservoirs exist)
+            # 6. Reservoir routing (if reservoirs exist) — matching MATLAB mobidic_sid.m:1536
+            # Must run BEFORE lateral-inflow accumulation so that basin cells' flr/fld are
+            # captured by the reservoir and do not double-count into reach lateral inflow.
             routing_network = self._network_topology
 
             if self.reservoirs is not None and self.state.reservoir_states is not None:
                 logger.debug("Computing reservoir routing")
 
-                # Call reservoir routing
+                # Reservoir routing zeros flr/fld in basin cells and zeros reach_discharge
+                # at the inlet reaches of each outlet.
                 (
                     self.state.reservoir_states,
                     self.state.discharge,
@@ -1876,15 +1860,8 @@ class Simulation:
                     cell_area=cell_area,
                 )
 
-                # Add reservoir outflows to lateral inflow of outlet reaches (matching MATLAB glob_route_day.m:46-53)
-                for i, reservoir in enumerate(self.reservoirs.reservoirs):
-                    outlet_reach = reservoir.outlet_reach
-                    if outlet_reach is not None:
-                        lateral_inflow[outlet_reach] += self.state.reservoir_states[i].outflow
-
                 # Clear upstream connections for outlet reaches (matching MATLAB glob_route_day.m:48-50)
                 # This prevents double-counting: the reservoir has already collected upstream volumes
-                # Create modified topology with cleared upstream connections for outlet reaches
                 routing_network = self._network_topology.copy()
                 routing_network["upstream_1_idx"] = self._network_topology["upstream_1_idx"].copy()
                 routing_network["upstream_2_idx"] = self._network_topology["upstream_2_idx"].copy()
@@ -1899,7 +1876,32 @@ class Simulation:
                         # Set upstream count to 0 (MATLAB: ram_fin(j) = 0)
                         routing_network["n_upstream"][outlet_reach] = 0
 
-            # 7. Channel routing
+            # 7. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m:26-35)
+            # Basin cells have flr=0 from reservoir routing, so they correctly contribute nothing.
+            flr_discharge = flr * cell_area
+            lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
+            logger.debug("Lateral inflow accumulation completed")
+
+            # Add reservoir outflows to lateral inflow of outlet reaches (matching MATLAB glob_route_day.m:46-53)
+            if self.reservoirs is not None and self.state.reservoir_states is not None:
+                for i, reservoir in enumerate(self.reservoirs.reservoirs):
+                    outlet_reach = reservoir.outlet_reach
+                    if outlet_reach is not None:
+                        lateral_inflow[outlet_reach] += self.state.reservoir_states[i].outflow
+
+            # Store lateral inflow in state
+            self.state.lateral_inflow = lateral_inflow
+
+            # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
+            # This prevents double-counting - flows from all contributing cells are consumed after accumulation
+            flr[self.hillslope_reach_map >= 0] = 0.0
+            # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
+
+            # Store flr and fld for next timestep's routing (at step 3)
+            flr_prev = flr.copy()
+            fld_prev = fld.copy()
+
+            # 8. Channel routing
             logger.debug("Computing channel routing")
             self.state.discharge, routing_state = linear_channel_routing(
                 network=routing_network,
