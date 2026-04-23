@@ -247,7 +247,9 @@ def _energy_balance_1l_kernel(
         den = -kaps_dz - es4tm3 - rhoaircpkh - p622 * es2
 
         d0 = (
-            2.0 * nis * (
+            2.0
+            * nis
+            * (
                 tcost / (alpha_param * alphadz2)
                 - (p622 * tm_i * (es2 - ea2) + 3.0 * sigma * (eps_soi - eps_air) * tm4 + p622 * (ea1 - es1))
                 / (den * alphadz2)
@@ -307,11 +309,7 @@ def _energy_balance_1l_kernel(
                 + e_pt * (td_ini_i * (pp3 + ppw2) + pp2 * (d2_s * sin_p_tem + d1_s * sin_p_rad))
                 - pp2 * (d2_s * sin_wttp_t + d1_s * sin_wttp_r)
             ) / denom_osc
-            ts2 = (
-                kaps_dz * td2
-                + a_rad_i * sin_wttp_r * (1.0 - alb_i)
-                + a_tem_i * sin_wttp_t * ea_term
-            ) / denom_ts
+            ts2 = (kaps_dz * td2 + a_rad_i * sin_wttp_r * (1.0 - alb_i) + a_tem_i * sin_wttp_t * ea_term) / denom_ts
 
             td_i = td1 + td2
             ts_i = ts1 + ts2
