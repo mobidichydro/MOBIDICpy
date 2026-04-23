@@ -5,6 +5,7 @@ import pytest
 
 from mobidic.core import constants as const
 from mobidic.core.energy_balance import (
+    _energy_balance_1l_numpy,
     compute_energy_balance_1l,
     diurnal_radiation_cycle,
     energy_balance_1l,
@@ -181,6 +182,79 @@ class TestEnergyBalance1L:
         assert np.all(np.isfinite(ts))
         assert np.all(np.isfinite(td))
         assert np.all(np.isfinite(evp))
+
+
+class TestEnergyBalance1LJitVsNumpy:
+    """Regression: Numba-compiled kernel must match the NumPy reference."""
+
+    def _heterogeneous_inputs(self, n: int, *, day: bool, rng: np.random.Generator):
+        """Build per-cell inputs with realistic spatial variability."""
+        tm = rng.uniform(278.0, 303.0, size=n)
+        a_tem = rng.uniform(2.0, 8.0, size=n)
+        c_tem = tm + rng.uniform(-1.0, 1.0, size=n)
+        td_ini = tm + rng.uniform(-2.0, 2.0, size=n)
+        hair = rng.uniform(0.3, 0.9, size=n)
+        ch = rng.uniform(0.8e-3, 1.5e-3, size=n)
+        alb = rng.uniform(0.1, 0.3, size=n)
+        if day:
+            a_rad = rng.uniform(300.0, 600.0, size=n)
+            c_rad = rng.uniform(80.0, 250.0, size=n)
+            u = rng.uniform(0.5, 5.0, size=n)
+        else:
+            a_rad = 0.0
+            c_rad = 0.0
+            u = 0.0
+        return {
+            "ff": 2.0 * np.pi / 86400.0,
+            "a_tem": a_tem,
+            "a_rad": a_rad,
+            "p_tem": -np.pi / 2.0 - np.pi / 6.0,
+            "p_rad": -np.pi / 2.0,
+            "c_tem": c_tem,
+            "c_rad": c_rad,
+            "td_ini": td_ini,
+            "tm": tm,
+            "u": u,
+            "pair": const.P_AIR,
+            "hair": hair,
+            "t_end": 10800.0,
+            "step": 3600.0,
+            "ch": ch,
+            "alb": alb,
+            "kaps": 2.5,
+            "nis": 0.8e-6,
+            "tcost": 290.0,
+            "etrsuetp": rng.uniform(0.4, 1.0, size=n),
+        }
+
+    def test_day_matches_numpy(self):
+        rng = np.random.default_rng(42)
+        kw = self._heterogeneous_inputs(128, day=True, rng=rng)
+        ts_ref, td_ref, evp_ref = _energy_balance_1l_numpy(**kw)
+        ts_jit, td_jit, evp_jit = energy_balance_1l(**kw)
+        np.testing.assert_allclose(ts_jit, ts_ref, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(td_jit, td_ref, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(evp_jit, evp_ref, rtol=1e-6, atol=1e-12)
+
+    def test_night_matches_numpy(self):
+        rng = np.random.default_rng(7)
+        kw = self._heterogeneous_inputs(64, day=False, rng=rng)
+        ts_ref, td_ref, evp_ref = _energy_balance_1l_numpy(**kw)
+        ts_jit, td_jit, evp_jit = energy_balance_1l(**kw)
+        np.testing.assert_allclose(ts_jit, ts_ref, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(td_jit, td_ref, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(evp_jit, evp_ref, rtol=1e-6, atol=1e-12)
+
+    def test_scalar_etrsuetp_matches_numpy(self):
+        """Scalar etrsuetp (pre-pass case) must produce the same result."""
+        rng = np.random.default_rng(123)
+        kw = self._heterogeneous_inputs(64, day=True, rng=rng)
+        kw["etrsuetp"] = 1.0
+        ts_ref, td_ref, evp_ref = _energy_balance_1l_numpy(**kw)
+        ts_jit, td_jit, evp_jit = energy_balance_1l(**kw)
+        np.testing.assert_allclose(ts_jit, ts_ref, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(td_jit, td_ref, rtol=1e-6, atol=1e-8)
+        np.testing.assert_allclose(evp_jit, evp_ref, rtol=1e-6, atol=1e-12)
 
 
 class TestComputeEnergyBalance1L:
