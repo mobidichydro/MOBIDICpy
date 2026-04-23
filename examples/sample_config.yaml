@@ -369,6 +369,7 @@ simulation:
   timestep: 900
 
   # OPTIONAL: Decimation factor from grid data space resolution to model space resolution, non dimensional
+  # WARNING. This option is experimental, use with caution for values greater than 1.
   # [positive integer number, default: 1]
   decimation: 1
 
