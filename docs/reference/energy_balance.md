@@ -1,6 +1,6 @@
 # Energy balance
 
-The energy balance module computes the surface energy budget at the land surface and calculates the **evapotranspiration (ET)** that drives the soil-water balance. Surface ($T_s$) and deep-soil ($T_d$) temperatures are calculated as additional state variables.
+The energy balance module computes the surface energy budget at the land surface and calculates the **potential evapotranspiration (PET)** before the soil-water balance calculations. Surface ($T_s$) and deep-soil ($T_d$) temperatures are calculated as additional state variables.
 
 ## Overview
 
@@ -45,7 +45,7 @@ When a Corine Land Cover raster (`raster_files.CLC`) is provided, the turbulent 
 
 $$C_H^{\text{adj}} = K_c \cdot C_H$$
 
-Bboth the sensible heat flux $H$ and the latent heat flux $LE$ share the same $C_H$ in the energy budget. See [Crop coefficients (Kc / CLC)](crop_coefficients.md) for the full description and configuration options.
+$C_H^{\text{adj}}$ is then used in the calculation of both sensible heat flux $H$ and the latent heat flux $LE$. See [Crop coefficients (Kc)](crop_coefficients.md) for the full description and configuration options.
 
 ## Configuration
 
@@ -85,7 +85,7 @@ output_states:
 
 output_forcing_data:
   meteo_data: true            # Saves precipitation, temperature_min/max, humidity,
-                              # wind_speed, radiation, and pet (or et when Kc != 1) to meteo_forcing.nc
+                              # wind_speed, radiation, and pet_c (Kc-adjusted PET) to meteo_forcing.nc
 ```
 
 **Required meteorological forcing.** When `simulation.energy_balance == "1L"`, the simulation needs the following variables in addition to precipitation:
@@ -103,13 +103,13 @@ When `simulation.energy_balance == "1L"`:
 
 1. The simulation initialises $T_s = T_d = T_{air,lin}$ on the first step (when no warm start is used) or restores them from the loaded state file. `td_rise` is initialised from $T_d$.
 2. Each timestep, the **initial step** is run with $\eta = 1$ to obtain PET and a tentative $(T_s, T_d)$.
-3. PET feeds the soil water balance, which produces the actual evapotranspiration ET.
+3. PET values are fed into the soil water balance, which produces the actual evapotranspiration ET.
 4. The **second step** is run with $\eta = \text{ET} / \text{PET}$, restarting the day sub-period from the initial `td_rise`. The result overwrites $(T_s, T_d)$ only on water-limited cells.
 5. $T_s$ and $T_d$ are written to the state file when the corresponding `output_states` flags are enabled.
 
 ## ET/PET when using raster forcing, to speed up simulations
 
-When the input [`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster) contains an `et` or `pet` variable, the simulation **skips the energy balance entirely** regardless of the `simulation.energy_balance` setting, and reads the evapotranspiration demand directly from the raster. In this case, the simulation **speeds up** significantly. In this mode, the temperature/humidity/wind/radiation variables are **not required** in the input file. See [Crop coefficients (Kc)](crop_coefficients.md#when-a-meteoraster-contains-et-andor-pet-variables) for details.
+When the input [`MeteoRaster`](meteo.md#mobidic.preprocessing.meteo_raster.MeteoRaster) contains either `pet` or `pet_c` variable, the simulation **skips the energy balance entirely** regardless of the `simulation.energy_balance` setting, and reads the evapotranspiration values directly from the raster. In this case, the simulation **speeds up** significantly. In this mode, the temperature/humidity/wind/radiation variables are **not required** in the input file. See [Crop coefficients (Kc)](crop_coefficients.md#when-a-precomputed-pet-raster-is-used-or-in-constant-pet-mode) for details.
 
 ## Model status
 

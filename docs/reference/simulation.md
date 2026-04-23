@@ -14,7 +14,7 @@ The simulation engine coordinates:
 - **Raster-based forcing**: Direct sampling from pre-interpolated grids with grid alignment validation
 - **Interpolated meteo output**: Optional export of interpolated grids for subsequent raster-based runs
 - **PET/ET calculation**: 1-layer analytical energy balance (when `simulation.energy_balance == "1L"`) or a constant 1 mm/day fallback. See the [Energy Balance reference](energy_balance.md) for details.
-- **Precomputed ET/PET fast path**: Automatically skips the energy balance when the input `MeteoRaster` already contains an `et` or `pet` variable. See the [Crop coefficients (Kc)](crop_coefficients.md) for details.
+- **Precomputed ET/PET fast path**: Automatically skips the energy balance when the input `MeteoRaster` already contains an `pet` or `pet_c` variable. See the [Crop coefficients (Kc)](crop_coefficients.md) for details.
 - **Results storage**: Time series collection and state snapshots with automatic file chunking
 - **Output generation**: NetCDF states (with chunking) and Parquet/CSV reports
 - **Restart capability**: Load and resume from previously saved states
@@ -26,14 +26,14 @@ The simulation engine coordinates:
 The main simulation loop performs the following operations for each time step:
 
 1. **Get forcing**: Precipitation from station data (interpolated to grid using IDW/nearest) or from raster data (direct sampling). When the energy balance is active, the temperature/humidity/wind/radiation grids are also fetched.
-2. **Calculate PET / ET**: Obtains the evapotranspiration demand used by the soil water balance:
-    - **Energy balance path**: if energy balance is active (`simulation.energy_balance == "1L"`, no `et`/`pet` in raster), runs the 1-layer analytical [energy balance](energy_balance.md) initial step with the soil saturation assumption. 
-    - **Raster `et` path**: if raster contains `et`, uses the provided ET directly, and skips the energy balance. 
-    - **Raster `pet` path**: if raster contains `pet`, first applies $K_c$ to the raster PET and then enters the soil water balance.
-    - **Constant fallback** (no raster ET/PET and energy balance disabled): 1 mm/day, scaled by $K_c$.
+2. **Calculate PET**: Calculate the potential evapotranspiration, subsequently used by the soil water balance:
+    - **Energy balance**: if energy balance is active (`simulation.energy_balance == "1L"`, no `pet_c`/`pet` in raster), runs the 1-layer analytical [energy balance](energy_balance.md) initial step with the soil saturation assumption.
+    - **Raster with `pet_c` variable**: if raster contains `pet_c` (Kc-adjusted PET), uses it directly (energy balance forcibly disabled; $K_c$ not re-applied).
+    - **Raster with `pet` variable**: if raster contains `pet` (reference PET), applies $K_c$ to obtain $PET_c$ and then enters the soil water balance (energy balance forcibly disabled).
+    - **Constant fallback** (no raster PETc/PET and energy balance disabled): default to 1 mm/day, scaled by $K_c$.
 3. **Save interpolated meteo** (optional): Export interpolated grids to `meteo_forcing.nc`.
 4. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep.
-5. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows.
+5. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows. Calculates actual ET from PET, updates soil moisture states, and produces new surface runoff and lateral flow.
 6. **Groundwater dynamics** (if `parameters.groundwater.model == "Linear"`): Update groundwater head from net recharge (percolation − global loss) and add the resulting baseflow to the surface runoff rate; optionally average head within each class of the `Mf` raster (multi-aquifer mode).
 7. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge.
 8. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches.
