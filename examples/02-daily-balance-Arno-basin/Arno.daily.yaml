@@ -1,5 +1,5 @@
 # MOBIDIC Configuration - Arno River Basin
-# Event simulation - November 2023
+# Daily hydrological balance simulation for the Arno River Basin, Italy.
 
 
 ######## PROJECT DATA
@@ -11,7 +11,7 @@ basin:
 
   # OPTIONAL: Descriptive name of parameter set / scenario
   # [Any string with no blank characters, eg: Blue_Nile_Scenario_24]
-  paramset_id: Event_November_2023_with_reservoirs
+  paramset_id: Daily_Balance_2017_2018
 
   baricenter:
     # REQUIRED: Longitude of basin baricenter [deg. East]
@@ -25,13 +25,13 @@ basin:
 # Paths can be absolute or relative to the position of this file
 
 paths:
-  # OPTIONAL: File where the meteo data files are stored
+  # OPTIONAL: File where the meteo data file (time-series format) is stored
   # [path to .nc file, eg: /blue_nile/meteodata/meteodata.nc]
   meteodata: meteodata/Arno_meteodata.nc
 
   # OPTIONAL: NetCDF file where the meteo data (raster format) are stored (alternative to above)
   # [path to .nc file, eg: /blue_nile/meteodata/meteoraster.nc]
-  meteoraster:
+  meteoraster: #meteodata/meteo_forcing.nc
 
   # REQUIRED: Consolidated raster dataset to be created by GIS preprocessing
   # [path to .nc file, eg: /blue_nile/geodat/gisdata.nc]
@@ -90,13 +90,13 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ks.tif]
   ks: ../datasets/Arno/raster/ks.tif
 
-  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in 1/seconds
+  # OPTIONAL: Grid of (real or ideal) aquifer conductivity, in 1/second
   # [full pathname to .tif file, eg: /blue_nile/geodat/Kf.tif]
   kf:
 
   # OPTIONAL: Grid of turbulent exchange coeff. for heat, non dimensional
   # [full pathname to .tif file, eg: /blue_nile/geodat/CH.tif]
-  CH:
+  CH: ../datasets/Arno/raster/Ch.tif
 
   # OPTIONAL: Grid of surface albedo, non dimensional
   # [full pathname to .tif file, eg: /blue_nile/geodat/Alb.tif]
@@ -108,7 +108,7 @@ raster_files:
 
   # OPTIONAL: Grid mask defining the freatic aquifer(s) extension
   # [full pathname to .tif file, eg: /blue_nile/geodat/Mf.tif]
-  Mf:
+  Mf: ../datasets/Arno/raster/Mf.tif
 
   # OPTIONAL: Grid of percolation coefficient, in one over seconds
   # [full pathname to .tif file]
@@ -125,6 +125,10 @@ raster_files:
   # OPTIONAL: Grid of hillslope flow coefficient, in one over seconds
   # [full pathname to .tif file]
   alpha: 
+
+  # OPTIONAL: Grid of Corine Land Cover (CLC) level 3 codes.
+  # [full pathname to .tif file, eg: /blue_nile/geodat/CLC.tif]
+  CLC: ../datasets/Arno/raster/clc_level3.tif
 
 raster_settings:
   # REQUIRED: Flow direction pointer type
@@ -165,20 +169,28 @@ parameters:
 
     # REQUIRED: Percolation coefficient, in 1/s
     # [positive number in float or exp notation]
-    gamma: 5.0e-04
+    gamma: 5.0e-07
 
     # REQUIRED: Adsorption coefficient, in 1/s
     # [positive number in float or exp notation]
-    kappa: 1.0e-04
+    kappa: 2.8e-06
 
     # REQUIRED: Hypodermic flow coefficient, in 1/s
     # [positive number in float or exp notation]
-    beta: 5.0e-05
+    beta: 6.0e-07
 
     # REQUIRED: Hillslope flow coefficient, in 1/s
     # [positive number in float or exp notation]
-    alpha: 8.0e-06
-  
+    alpha: 2.9e-06
+
+    # OPTIONAL: Default FAO single crop coefficient, non dimensional.
+    # [positive number, default: 1.0]
+    Kc: 1.0
+
+    # OPTIONAL: Path to a CSV file mapping CLC level 3 codes
+    # [full pathname to .csv file]
+    Kc_CLC_map:
+
   energy:
     # OPTIONAL: Deep ground temperature, in deg. Kelvin
     # [positive number in float or exp notation, default: 290.0]
@@ -207,7 +219,7 @@ parameters:
 
     # REQUIRED: Flood wave celerity in channels, in m/s
     # [positive value in float or exp notation]
-    wcel: 5.18
+    wcel: 3.00
 
     # OPTIONAL: Width of channels with first Strahler order, in meters
     # [positive value in float or exp notation, default: 1.0]
@@ -215,7 +227,7 @@ parameters:
 
     # OPTIONAL: Exponent of equation W = Br0*O^NBr, where W=Width of channels and O=Strahler order
     # [positive value > 1 in float or exp notation, default: 1.5]
-    NBr: 1.5
+    NBr: 2.0
 
     # OPTIONAL: Manning roughness coefficient for channels, in s/m^(1/3)
     # [positive value in float or exp notation, default: 0.03]
@@ -224,7 +236,7 @@ parameters:
   groundwater:
     # REQUIRED: Groundwater model type
     # [one among the following options: None, Linear]
-    model: None
+    model: Linear
 
     # OPTIONAL: Global water loss from aquifers, in m³/s
     # [positive value in float or exp notation]
@@ -282,19 +294,25 @@ parameters:
 initial_conditions:
   # OPTIONAL: Initial depth of hillslope runoff, in meters
   # [positive value in float or exp notation, default: 0.0]
-  Ws: 0.00
+  Ws: 0.01
 
   # OPTIONAL: Initial relative saturation of capillary soil, non dimensional
   # [positive value in float or exp notation in the range 0-1, default: 0.3]
-  Wcsat: 0.3
+  Wcsat: 6.0e-001
 
   # OPTIONAL: Initial relative saturation of gravitational soil, non dimensional
   # [positive value in float or exp notation in the range 0-1, default: 0.01]
-  Wgsat: 0.01
+  Wgsat: 2.0e-001
+
+  # OPTIONAL: Initial groundwater head, in meters
+  # [positive value in float or exp notation, default: 0.0]
+  groundwater_head: 0.01
 
   # OPTIONAL: Initial volume in reservoirs
   # [path to .csv file with columns 'reservoir_id' and 'volume_m3']
   reservoir_volumes: ../datasets/Arno/reservoirs/initial_conditions.csv
+
+  
 
 
 ####### SIMULATION CONTROLS
@@ -302,7 +320,7 @@ initial_conditions:
 simulation:
   # REQUIRED: Data and model time step, in seconds, same timestep as in meteodata
   # [positive value in float or exp notation, eg: 86400 for daily data]
-  timestep: 900
+  timestep: 86400
 
   # OPTIONAL: Decimation factor from grid data space resolution to model space resolution, non dimensional
   # [positive integer number, default: 1]
@@ -314,7 +332,7 @@ simulation:
 
   # REQUIRED: Type of surface energy balance scheme
   # [one among the following options 'None', '1L']
-  energy_balance: None
+  energy_balance: 1L
 
   ## OPTIONAL: Precipitation spatial interpolation method
   # [one among the following options: 'Nearest', 'IDW' (default, faster)]
@@ -357,12 +375,11 @@ output_states:
 
   # OPTIONAL: Save states of aquifers. Default: false
   # [boolean]
-  aquifer_head: false
+  aquifer_head: true
 
   # OPTIONAL: Save states of evapotranspiration. Default: false
   # [boolean]
-  evapotranspiration: false
-
+  evapotranspiration: true
 
 output_states_settings:
   # OPTIONAL: Format for state output files
@@ -371,7 +388,7 @@ output_states_settings:
 
   # OPTIONAL: Which time steps to save
   # [one among the following options: 'all', 'final', 'list', 'None' (default)]
-  output_states: final
+  output_states: all
 
   # OPTIONAL: Time interval for state output, in seconds. Used with output_states=all.
   # [positive integer. If empty, equal to timestep]

@@ -78,6 +78,9 @@ where = ["."]
 include = ["mobidic*"]
 exclude = ["tests*", "examples*", "docs*"]
 
+[tool.setuptools.package-data]
+"mobidic.data" = ["*.csv"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = [

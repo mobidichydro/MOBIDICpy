@@ -25,6 +25,8 @@ nav:
     - Soil Water Balance: reference/soil_water_balance.md
     - Routing: reference/routing.md
     - Groundwater: reference/groundwater.md
+    - Energy Balance: reference/energy_balance.md
+    - Crop Coefficients (Kc): reference/crop_coefficients.md
     - Simulation: reference/simulation.md
     - State I/O: reference/state.md
     - Report I/O: reference/report.md
@@ -78,6 +80,8 @@ plugins:
           show_submodules: false
           show_source: true
           show_docstring_description: true
+          show_root_heading: true
+          show_object_full_path: false
           docstring_style: google
           docstring_section_style: table
 

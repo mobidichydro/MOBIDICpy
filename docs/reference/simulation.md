@@ -13,37 +13,35 @@ The simulation engine coordinates:
 - **Station-based interpolation**: Grid interpolation using IDW or nearest neighbor with pre-computed weights
 - **Raster-based forcing**: Direct sampling from pre-interpolated grids with grid alignment validation
 - **Interpolated meteo output**: Optional export of interpolated grids for subsequent raster-based runs
-- **PET calculation**: Simple 1 mm/day constant rate (energy balance not yet implemented)
+- **PET/ET calculation**: 1-layer analytical energy balance (when `simulation.energy_balance == "1L"`) or a constant 1 mm/day fallback. See the [Energy Balance reference](energy_balance.md) for details.
+- **Precomputed ET/PET fast path**: Automatically skips the energy balance when the input `MeteoRaster` already contains an `pet` or `pet_c` variable. See the [Crop coefficients (Kc)](crop_coefficients.md) for details.
 - **Results storage**: Time series collection and state snapshots with automatic file chunking
 - **Output generation**: NetCDF states (with chunking) and Parquet/CSV reports
 - **Restart capability**: Load and resume from previously saved states
 
-**Current implementation**: Includes soil water balance, routing (hillslope, channel, reservoir), linear-reservoir groundwater (with multi-aquifer averaging), and state/report I/O. Energy balance and advanced groundwater models (Dupuit, MODFLOW) are not yet implemented.
-
-## Classes
-
-::: mobidic.core.simulation.Simulation
-
-::: mobidic.core.simulation.SimulationState
-
-::: mobidic.core.simulation.SimulationResults
+**Current implementation**: Includes soil water balance, routing (hillslope, channel, reservoir), linear-reservoir groundwater (with multi-aquifer averaging), the 1-layer analytical energy balance, and state/report I/O. The 5L and Snow energy schemes, and advanced groundwater models (Dupuit, MODFLOW), are not yet implemented.
 
 ## Simulation loop
 
 The main simulation loop performs the following operations for each time step:
 
-1. **Get forcing**: Precipitation from station data (interpolated to grid using IDW/nearest) or from raster data (direct sampling)
-2. **Calculate PET**: Simple 1 mm/day method (constant rate)
-3. **Save interpolated meteo** (optional): Export interpolated grids when using station-based forcing
-4. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep
-5. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows
-6. **Groundwater dynamics** (if `parameters.groundwater.model == "Linear"`): Update groundwater head from net recharge (percolation − global loss) and add the resulting baseflow to the surface runoff rate; optionally average head within each class of the `Mf` raster (multi-aquifer mode)
-7. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge, zero basin fluxes
-8. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches
-9. **Channel routing**: Linear reservoir routing through river network
-10. **Store results**: Save discharge and lateral inflow time series
-11. **Output states**: Optionally save states (with automatic chunking if needed)
-12. **Update and advance**: Store flow fields for next timestep and advance simulation time
+1. **Get forcing**: Precipitation from station data (interpolated to grid using IDW/nearest) or from raster data (direct sampling). When the energy balance is active, the temperature/humidity/wind/radiation grids are also fetched.
+2. **Calculate PET**: Calculate the potential evapotranspiration, subsequently used by the soil water balance:
+    - **Energy balance**: if energy balance is active (`simulation.energy_balance == "1L"`, no `pet_c`/`pet` in raster), runs the 1-layer analytical [energy balance](energy_balance.md) initial step with the soil saturation assumption.
+    - **Raster with `pet_c` variable**: if raster contains `pet_c` (Kc-adjusted PET), uses it directly (energy balance forcibly disabled; $K_c$ not re-applied).
+    - **Raster with `pet` variable**: if raster contains `pet` (reference PET), applies $K_c$ to obtain $PET_c$ and then enters the soil water balance (energy balance forcibly disabled).
+    - **Constant fallback** (no raster PETc/PET and energy balance disabled): default to 1 mm/day, scaled by $K_c$.
+3. **Save interpolated meteo** (optional): Export interpolated grids to `meteo_forcing.nc`.
+4. **Route previous flows**: Hillslope routing of surface runoff and lateral flow from previous timestep.
+5. **Soil water balance**: Four-reservoir hillslope water balance with routed inflows. Calculates actual ET from PET, updates soil moisture states, and produces new surface runoff and lateral flow.
+6. **Groundwater dynamics** (if `parameters.groundwater.model == "Linear"`): Update groundwater head from net recharge (percolation − global loss) and add the resulting baseflow to the surface runoff rate; optionally average head within each class of the `Mf` raster (multi-aquifer mode).
+7. **Reservoir routing** (if configured): Update reservoir volumes, calculate regulated discharge.
+8. **Accumulate to reaches**: Accumulate surface runoff contributions to river reaches.
+9. **Channel routing**: Linear reservoir routing through river network.
+10. **Energy balance second step** (if `simulation.energy_balance == "1L"`): re-solve the surface energy budget using the actual $\eta = \text{ET} / \text{PET}$ from the soil module and refine $T_s$ and $T_d$ on water-limited cells.
+11. **Store results**: Save discharge and lateral inflow time series.
+12. **Output states**: Optionally save states (with automatic chunking if needed), only for selected variables having `output_states` flags enabled.
+13. **Update and advance**: Store flow fields for next timestep and advance simulation time.
 
 **Key feature**: The simulation uses a feedback loop where flows from timestep `t` are routed through the hillslope at timestep `t+1` before entering the soil water balance. This ensures proper spatial connectivity of overland flow.
 
@@ -287,6 +285,7 @@ paths:
 ```
 
 When reservoirs are configured:
+
 - Reservoir polygons are rasterized to identify basin pixels
 - Surface runoff and lateral flow are zeroed in reservoir basins
 - Total inflow is computed from upstream discharge and basin contributions
@@ -294,7 +293,6 @@ When reservoirs are configured:
 - Stage is calculated from volume using cubic spline interpolation
 - Regulated discharge is determined from time-varying stage-discharge curves
 - Reservoir outflow is added to outlet reach lateral inflow
-- Inlet reach discharge is zeroed to prevent double-counting
 
 ### Simulation configuration
 
@@ -302,6 +300,7 @@ When reservoirs are configured:
 simulation:
   timestep: 900                      # Time step in seconds (15 minutes)
   precipitation_interp: "IDW"        # Options: "IDW", "Nearest" (for station-based forcing)
+  energy_balance: "1L"               # Options: "None", "1L"
 
 output_forcing_data:
   meteo_data: false                  # Save meteorological forcing grids
@@ -309,8 +308,9 @@ output_forcing_data:
 ```
 
 **Notes:**
+
 - `precipitation_interp` only applies when using station-based forcing (`MeteoData`)
-- When using raster-based forcing (`MeteoRaster`), interpolation is skipped entirely
+- When using raster-based forcing (`MeteoRaster`), interpolation is skipped entirely.
 
 ## Implemented modules
 
@@ -318,6 +318,15 @@ output_forcing_data:
 - [Soil Water Balance](soil_water_balance.md) - Hillslope water balance
 - [Routing](routing.md) - Hillslope, channel, and reservoir routing
 - [Groundwater](groundwater.md) - Linear-reservoir groundwater dynamics
+- [Energy Balance](energy_balance.md) - 1-layer analytical surface energy budget and PET
 - [State I/O](state.md) - NetCDF state export/import
 - [Report I/O](report.md) - Time series export/import
 
+
+## Classes
+
+::: mobidic.core.simulation.Simulation
+
+::: mobidic.core.simulation.SimulationState
+
+::: mobidic.core.simulation.SimulationResults

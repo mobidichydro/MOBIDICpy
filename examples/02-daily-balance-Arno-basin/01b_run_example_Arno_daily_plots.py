@@ -4,11 +4,11 @@ MOBIDIC Validation Python vs MATLAB discharge and lateral inflow results
 This script compares discharge and lateral inflow outputs from the Python
 implementation against the MATLAB reference implementation for the Arno River basin.
 
-It is required to run 04a_run_example_Arno_reservoirs.py first to generate the output files.
+It is required to run 01a_run_example_Arno_daily.py first to generate the output files.
 
 Usage:
-    python examples/01-event-Arno-basin/04a_run_example_Arno_reservoirs.py
-    python examples/01-event-Arno-basin/04b_run_example_Arno_reservoirs_plots.py
+    python examples/02-daily-balance-Arno-basin/01a_run_example_Arno_daily.py
+    python examples/02-daily-balance-Arno-basin/01b_run_example_Arno_daily_plots.py
 
 The script will:
 1. Load Python output files (Parquet format)
@@ -390,7 +390,9 @@ def main():
     # Define paths
     example_dir = Path(__file__).parent
     output_dir = example_dir / "output"
-    matlab_dir = Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_event_Nov_2023"
+    matlab_dir = (
+        Path(__file__).parent.parent / "datasets" / "Arno" / "matlab" / "output" / "Arno_daily_balance_2017_2018"
+    )
     data_dir = Path(__file__).parent.parent / "datasets" / "Arno" / "data"
 
     # Compare discharge
@@ -399,7 +401,7 @@ def main():
         matlab_dir=matlab_dir,
         variable_name="Discharge",
         python_pattern="discharge*.parquet",
-        matlab_filename="discharge.reservoirs.csv",
+        matlab_filename="discharge.csv",
         python_prefix="reach",
         matlab_prefix="Q_reach",
         unit="m³/s",
@@ -412,18 +414,18 @@ def main():
         matlab_dir=matlab_dir,
         variable_name="Lateral Inflow",
         python_pattern="lateral_inflow*.parquet",
-        matlab_filename="lateral_inflow.reservoirs.csv",
+        matlab_filename="lateral_inflow.csv",
         python_prefix="reach",
         matlab_prefix="qL_reach",
         unit="m³/s",
         variable_label="Lateral Inflow (m³/s)",
     )
 
-    # Compare with observed discharge at Nave di Rosano TOS01004659 (reach 278)
+    # Compare with observed discharge at Nave di Rosano (reach 278)
     observed_results = compare_observed_discharge(
         output_dir=output_dir,
         data_dir=data_dir,
-        observed_file="Q_TOS01004659_15min_2023.parquet",
+        observed_file="Q_TOS01004659_2017_2018.parquet",
         mobidic_id=278,
     )
 

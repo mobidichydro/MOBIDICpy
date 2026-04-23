@@ -1,0 +1,5 @@
+files:
+  - "**/*.md"
+ignorePatterns:
+  - pattern: "regione\\.toscana\\.it"
+    reason: "Site blocks automated requests with a navigation timeout"

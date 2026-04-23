@@ -29,7 +29,7 @@ The hydrological processes in the soil-water balance include:
 
 - **Runoff**: Outgoing runoff toward the downhill cell is evaluated as linearly dependent from surface water content through a kinematic parameter ($\alpha$).
 
-### Energy balance (not yet implemented)
+### Energy balance
 
 MOBIDIC solves water and energy balance simultaneously in the soil-vegetation subsystem. The energy module computes:
 
@@ -38,16 +38,18 @@ MOBIDIC solves water and energy balance simultaneously in the soil-vegetation su
 - Sensible heat flux ($H$)
 - Latent heat flux ($LE$) for evapotranspiration
 
-**Turbulent fluxes** are computed using bulk formulations that include both surface roughness and atmospheric stability effects (Van den Hurk and Holtslag, 1997). The energy balance is coupled with **1-D heat diffusion** into the soil, with vertical discretization using a three-point scheme.
+**Turbulent fluxes** are computed using bulk formulations that include both surface roughness and atmospheric stability effects (Van den Hurk and Holtslag, 1997). The energy balance is coupled with **1-D heat diffusion** into the soil.
 
 **Evapotranspiration**: Potential ET is computed first from the energy balance, then actual ET is calculated considering water availability in canopy, surface, and capillary soil reservoirs. Soil moisture stress on ET follows an S-curve relationship based on capillary saturation.
 
-Three energy balance configurations are available:
+Energy balance configurations:
 
 - **None**: Energy balance disabled (a constant PET rate of 1 mm/day is used)
-- **1-Layer (1L)**: Single surface layer for land surface temperature
-- **5-Layer (5L)**: Multi-layer soil temperature profile with depth
-- **Snow module**: Includes snow accumulation and melt processes
+- **1-Layer (1L)**: Single surface layer for land surface temperature, solved analytically with a Fourier decomposition of the diurnal cycle and split at sunrise/sunset boundaries within each timestep. Two passes per timestep (saturated pre-pass to obtain PET, then re-entry with the actual ET/PET ratio to refine $T_s$ and $T_d$).
+- **5-Layer (5L)**: Multi-layer soil temperature profile with depth (not yet implemented)
+- **Snow module**: Includes snow accumulation and melt processes (not yet implemented)
+
+See the [Energy Balance API reference](reference/energy_balance.md) for implementation details.
 
 ### Routing
 
@@ -133,7 +135,7 @@ The original MATLAB implementation is being systematically translated with numer
 
 ## Current Status
 
-**Version 0.2** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing) are implemented. Energy balance and advanced routing methods are under development.
+**Version 0.2** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing, 1-layer energy balance) are implemented. Advanced energy balance schemes (5L, Snow), advanced groundwater models, and advanced routing methods are under development.
 
 See the [home page](index.md) for implementation status.
 

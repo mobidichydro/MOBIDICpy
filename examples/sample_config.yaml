@@ -107,7 +107,7 @@ raster_files:
   # [full pathname to .tif file, eg: /blue_nile/geodat/Alb.tif]
   Alb:
 
-  # OPTIONAL: Grid mask defining the artesian aquifer(s) extension
+  # OPTIONAL: Grid mask defining the artesian aquifer(s) extension. Not implemented yet.
   # [full pathname to .tif file, eg: /blue_nile/geodat/Ma.tif]
   Ma:
 
@@ -129,7 +129,12 @@ raster_files:
 
   # OPTIONAL: Grid of hillslope flow coefficient, in one over seconds
   # [full pathname to .tif file]
-  alpha: 
+  alpha:
+
+  # OPTIONAL: Grid of Corine Land Cover (CLC) level 3 codes.
+  # If provided, FAO single crop coefficients (Kc) are looked up per CLC class
+  # [full pathname to .tif file, eg: /blue_nile/geodat/CLC.tif]
+  CLC:
 
 raster_settings:
   # REQUIRED: Flow direction pointer type
@@ -183,7 +188,19 @@ parameters:
     # REQUIRED: Hillslope flow coefficient, in 1/s
     # [positive number in float or exp notation]
     alpha: 2.50e-05
-  
+
+    # OPTIONAL: Default FAO single crop coefficient, non dimensional.
+    # Used where raster_files.CLC is not provided or where the CLC class is
+    # missing from the Kc/CLC mapping.
+    # [positive number, default: 1.0]
+    Kc: 1.0
+
+    # OPTIONAL: Path to a CSV file mapping CLC level 3 codes to 12 monthly Kc
+    # values (columns: clc_code, kc_jan, kc_feb, ..., kc_dec).
+    # If left blank, the default mapping is used (see data/default_kc_clc_map.csv).
+    # [full pathname to .csv file]
+    Kc_CLC_map:
+
   energy:
     # OPTIONAL: Deep ground temperature, in deg. Kelvin
     # [positive number in float or exp notation, default: 290.0]
@@ -207,7 +224,7 @@ parameters:
 
   routing:
     # REQUIRED: Type of channel routing scheme
-    # [one among the following options 'Musk', 'MuskCun', 'Lag', 'Linear']
+    # [one among the following options 'Linear']
     method: Linear
 
     # REQUIRED: Flood wave celerity in channels, in m/s
@@ -228,7 +245,7 @@ parameters:
 
   groundwater:
     # REQUIRED: Groundwater model type
-    # [one among the following options: None, Linear, Dupuit, MODFLOW]
+    # [one among the following options: None, Linear]
     model: None
 
     # OPTIONAL: Global water loss from aquifers, in m³/s
@@ -352,19 +369,20 @@ simulation:
   timestep: 900
 
   # OPTIONAL: Decimation factor from grid data space resolution to model space resolution, non dimensional
+  # WARNING. This option is experimental, use with caution for values greater than 1.
   # [positive integer number, default: 1]
   decimation: 1
 
   # REQUIRED: Type of soil hydrology scheme
-  # [one among the following options 'Bucket', 'CN']
+  # [one among the following options 'Bucket']
   soil_scheme: Bucket
 
   # REQUIRED: Type of surface energy balance scheme
-  # [one among the following options 'None', '1L', '5L', 'Snow']
+  # [one among the following options 'None', '1L']
   energy_balance: None
 
   ## OPTIONAL: Precipitation spatial interpolation method
-  # [one among the following options: 'Nearest', 'IDW' (default)]
+  # [one among the following options: 'Nearest', 'IDW' (default, faster)]
   precipitation_interp: IDW
 
 

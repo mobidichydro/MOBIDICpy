@@ -66,6 +66,7 @@ See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mo
 - Linear routing (hillslope and channel)
 - Linear reservoir groundwater model (with multi-aquifer capability)
 - Reservoir module (preprocessing, routing, time-varying regulation)
+- Energy balance — 1-layer analytical Fourier scheme (with surface and deep-soil temperature tracking)
 - Basic I/O (NetCDF states, Parquet time series, export of interpolated meteorological data)
 
 - Calibration, sensitivity, and uncertainty analysis ([PEST++](https://github.com/usgs/pestpp) coupling via [pyEMU](https://github.com/pypest/pyemu))
@@ -73,7 +74,7 @@ See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mo
 **To be implemented**
 
 - Meteorological data gap filling and quality control
-- Energy balance schemes
+- Energy balance: 5-layer scheme and Snow module
 - Advanced routing methods
 - CLI interface
 

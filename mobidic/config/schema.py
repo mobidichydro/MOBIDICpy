@@ -119,6 +119,15 @@ class RasterFiles(BaseModel):
     kappa: Optional[PathField] = Field(None, description="Grid of adsorption coefficient, in one over seconds")
     beta: Optional[PathField] = Field(None, description="Grid of hypodermic flow coefficient, in one over seconds")
     alpha: Optional[PathField] = Field(None, description="Grid of hillslope flow coefficient, in one over seconds")
+    CLC: Optional[PathField] = Field(
+        None,
+        description=(
+            "Grid of Corine Land Cover (CLC) level 3 codes. Used to map FAO "
+            "single crop coefficients (Kc) by land cover class for actual "
+            "evapotranspiration. If not provided, a single default Kc value "
+            "(parameters.soil.Kc) is applied across the whole basin."
+        ),
+    )
 
 
 class RasterSettings(BaseModel):
@@ -154,8 +163,24 @@ class SoilParameters(BaseModel):
     kappa: float = Field(..., description="Adsorption coefficient, in 1/s")
     beta: float = Field(..., description="Hypodermic flow coefficient, in 1/s")
     alpha: float = Field(..., description="Hillslope flow coefficient, in 1/s")
+    Kc: float = Field(
+        1.0,
+        description=(
+            "Default FAO single crop coefficient, non dimensional. Used where "
+            "raster_files.CLC is not provided or where the CLC class is missing "
+            "from the Kc/CLC mapping. Actual ET is approximated as Kc * ETp."
+        ),
+    )
+    Kc_CLC_map: Optional[PathField] = Field(
+        None,
+        description=(
+            "Path to a CSV file mapping CLC level 3 codes to 12 monthly Kc "
+            "values (columns: clc_code, kc_jan, kc_feb, ..., kc_dec). If left "
+            "blank, the default mapping shipped with the package is used."
+        ),
+    )
 
-    @field_validator("Wc0", "Wg0", "ks", "kf", "gamma", "kappa", "beta", "alpha")
+    @field_validator("Wc0", "Wg0", "ks", "kf", "gamma", "kappa", "beta", "alpha", "Kc")
     @classmethod
     def check_positive(cls, v: float) -> float:
         """Validate that required parameters are non-negative."""
@@ -209,7 +234,7 @@ class RoutingParameters(BaseModel):
         - n_Man: Manning roughness coefficient for channels (default: 0.03 s/m^(1/3))
     """
 
-    method: Literal["Musk", "MuskCun", "Lag", "Linear"] = Field(..., description="Type of channel routing scheme")
+    method: Literal["Linear"] = Field(..., description="Type of channel routing scheme")
     wcel: float = Field(..., description="Flood wave celerity in channels, in m/s")
     Br0: float = Field(1.0, description="Width of channels with first Strahler order, in meters")
     NBr: float = Field(
@@ -241,7 +266,7 @@ class RoutingParameters(BaseModel):
 class GroundwaterParameters(BaseModel):
     """Groundwater model parameters."""
 
-    model: Literal["None", "Linear", "Dupuit", "MODFLOW"] = Field(
+    model: Literal["None", "Linear"] = Field(
         ...,
         description=(
             "Groundwater model type. With 'Linear', the number of aquifers is "
@@ -368,10 +393,8 @@ class Simulation(BaseModel):
     decimation: int = Field(
         1, description="Decimation factor from grid data space resolution to model space resolution"
     )
-    soil_scheme: Literal["Bucket", "CN"] = Field(..., description="Type of soil hydrology scheme")
-    energy_balance: Literal["None", "1L", "5L", "Snow"] = Field(
-        ..., description="Type of surface energy balance scheme"
-    )
+    soil_scheme: Literal["Bucket"] = Field(..., description="Type of soil hydrology scheme")
+    energy_balance: Literal["None", "1L"] = Field(..., description="Type of surface energy balance scheme")
     precipitation_interp: Optional[Literal["Nearest", "IDW"]] = Field(
         "IDW", description="Precipitation interpolation method"
     )

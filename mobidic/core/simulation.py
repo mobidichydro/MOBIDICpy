@@ -3,9 +3,6 @@
 This module implements the main time-stepping loop of MOBIDIC hydrological model.
 It orchestrates the water balance calculations, routing, and I/O operations.
 
-Currently, this implements a simplified version without:
-- Energy balance (uses simple PET instead)
-
 Translated from MATLAB: mobidic_sid.m (main simulation loop)
 """
 
@@ -26,9 +23,14 @@ from mobidic.core.soil_water_balance import soil_mass_balance
 from mobidic.core.reservoir import reservoir_routing
 from mobidic.core.routing import hillslope_routing, linear_channel_routing
 from mobidic.core.groundwater import groundwater_linear
+from mobidic.core.energy_balance import compute_energy_balance_1l, solar_hours
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
+from mobidic.core.crop_coefficients import compute_kc_grid, load_kc_clc_mapping
 from mobidic.io import StateWriter
+
+# Energy-balance forcing variables required when energy_balance != "None"
+_ENERGY_VARIABLES = ["temperature_min", "temperature_max", "humidity", "wind_speed", "radiation"]
 
 
 def _create_progress_bar(current: int, total: int, bar_length: int = 20) -> str:
@@ -71,6 +73,9 @@ class SimulationState:
         lateral_inflow: np.ndarray,
         reservoir_states: list | None = None,
         h: np.ndarray | None = None,
+        ts: np.ndarray | None = None,
+        td: np.ndarray | None = None,
+        et: np.ndarray | None = None,
     ):
         """Initialize simulation state.
 
@@ -83,6 +88,9 @@ class SimulationState:
             lateral_inflow: Lateral inflow to each reach [m³/s]
             reservoir_states: List of ReservoirState objects (None if no reservoirs)
             h: Groundwater head [m] (None if groundwater is disabled)
+            ts: Surface temperature [K] (None when energy balance is disabled)
+            td: Deep-soil temperature [K] (None when energy balance is disabled)
+            et: Actual evapotranspiration rate [m/s] (None when ET output is disabled)
         """
         self.wc = wc
         self.wg = wg
@@ -92,6 +100,9 @@ class SimulationState:
         self.lateral_inflow = lateral_inflow
         self.reservoir_states = reservoir_states
         self.h = h
+        self.ts = ts
+        self.td = td
+        self.et = et
 
 
 class SimulationResults:
@@ -222,6 +233,11 @@ class Simulation:
         self.config = config
 
         # Detect forcing type and set up method
+        # _raster_et_source: "pet_c" if raster has Kc-adjusted PET (used directly),
+        # "pet" if raster has reference PET (Kc will be applied), None otherwise.
+        # When set, energy balance is forced off.
+        # "pet_c" takes priority over "pet" when both are present.
+        self._raster_et_source: str | None = None
         if isinstance(forcing, MeteoRaster):
             self.forcing_mode = "raster"
             logger.info("Using raster meteorological forcing (no interpolation)")
@@ -231,6 +247,18 @@ class Simulation:
             self._get_forcing_fn = self._get_raster_forcing
             # No interpolation weights needed
             self._interpolation_weights = None
+            # Detect precomputed PETc/PET: when present, energy balance is forced off.
+            if "pet_c" in forcing.variables:
+                self._raster_et_source = "pet_c"
+                logger.info(
+                    "Precomputed PETc found in raster forcing: energy balance will be disabled "
+                    "(Kc already embedded, not applied again)"
+                )
+            elif "pet" in forcing.variables:
+                self._raster_et_source = "pet"
+                logger.info(
+                    "Precomputed PET found in raster forcing: energy balance will be disabled (Kc will be applied)"
+                )
         else:  # MeteoData
             self.forcing_mode = "station"
             logger.info("Using station meteorological forcing (with spatial interpolation)")
@@ -281,6 +309,32 @@ class Simulation:
         self.kappa = gisdata.grids.get("kappa")
         self.beta = gisdata.grids.get("beta")
         self.alpha = gisdata.grids.get("alpha")
+        # Energy balance grids (optional rasters; fallback to scalar from config)
+        self.ch_raster = gisdata.grids.get("CH")
+        self.alb_raster = gisdata.grids.get("Alb")
+
+        # Corine Land Cover grid (optional). When present, FAO Kc values are
+        # looked up per CLC class and per month; otherwise the scalar default
+        # Kc (parameters.soil.Kc) is applied uniformly.
+        self.clc = gisdata.grids.get("CLC")
+        kc_map_path = self.config.parameters.soil.Kc_CLC_map
+        self.kc_default = float(self.config.parameters.soil.Kc)
+        if self.clc is not None:
+            self.kc_clc_mapping = load_kc_clc_mapping(kc_map_path)
+            logger.info(
+                f"FAO Kc enabled with {len(self.kc_clc_mapping)} CLC classes "
+                f"(default Kc={self.kc_default} for unmapped / missing cells)"
+            )
+        else:
+            self.kc_clc_mapping = None
+            if kc_map_path is not None:
+                logger.warning(
+                    "parameters.soil.Kc_CLC_map is set but raster_files.CLC is not: "
+                    "Kc will default uniformly to parameters.soil.Kc"
+                )
+        # Cache the most recently computed Kc grid to avoid rebuilding it when
+        # the month does not change between timesteps.
+        self._kc_grid_cache: tuple[int, np.ndarray] | None = None
 
         # Freatic aquifer mask (optional). When multiple positive classes are
         # present, enables multi-aquifer mode with per-class h averaging
@@ -316,10 +370,13 @@ class Simulation:
         # Preprocess and cache network topology for fast routing
         self._network_topology = self._preprocess_network_topology()
 
-        # Pre-compute interpolation weights for meteorological forcing (station mode only)
-        # Currently, only precipitation is used in the main loop
+        # Pre-compute interpolation weights for meteorological forcing (station mode only).
+        # Always include precipitation; add the energy variables when energy balance is active.
         if self.forcing_mode == "station":
-            self._interpolation_weights = self._precompute_interpolation_weights(["precipitation"])
+            forcing_vars = ["precipitation"]
+            if self.config.simulation.energy_balance != "None":
+                forcing_vars.extend(_ENERGY_VARIABLES)
+            self._interpolation_weights = self._precompute_interpolation_weights(forcing_vars)
         # else: self._interpolation_weights already set to None above
 
         # Time indices cache (will be populated in run() when simulation period is known)
@@ -327,6 +384,10 @@ class Simulation:
 
         # Initialize state
         self.state = None
+        # True when the state was loaded from a file (i.e. set via set_initial_state).
+        # When False at run() time, energy balance variables Ts/Td are overridden
+        # with Tair_lin at the first timestep.
+        self._state_was_loaded = False
 
         logger.info(
             f"Simulation initialized: grid={self.nrows}x{self.ncols}, "
@@ -368,6 +429,14 @@ class Simulation:
             h_init = self.config.initial_conditions.groundwater_head
             h = np.where(np.isfinite(self.dtm), h_init, np.nan)
 
+        # Initialize surface and deep-soil temperatures when energy balance is active.
+        ts = None
+        td = None
+        if self.config.simulation.energy_balance != "None":
+            tcost = self.config.parameters.energy.Tconst
+            ts = np.where(np.isfinite(self.dtm), tcost, np.nan)
+            td = np.where(np.isfinite(self.dtm), tcost, np.nan)
+
         # Initialize reservoir states if reservoirs exist
         reservoir_states = None
         if self.reservoirs is not None:
@@ -396,7 +465,7 @@ class Simulation:
             log_msg += f", h={np.nanmean(h) * 1000:.1f} mm"
         logger.success(log_msg)
 
-        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states, h=h)
+        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states, h=h, ts=ts, td=td)
 
     def set_initial_state(
         self,
@@ -432,6 +501,7 @@ class Simulation:
             # Use provided state directly
             logger.info("Setting initial state from provided SimulationState object")
             self.state = state
+            self._state_was_loaded = True
             logger.success(
                 f"Initial state set. State contains: "
                 f"Wc={np.nanmean(state.wc) * 1000:.1f} mm, "
@@ -458,6 +528,7 @@ class Simulation:
             )
 
             self.state = loaded_state
+            self._state_was_loaded = True
             logger.success(
                 f"Initial state loaded from {state_path} at time {state_time}. "
                 f"State contains: "
@@ -609,14 +680,21 @@ class Simulation:
                 # Station data is stored in mm/h (same as raster data)
                 grid_values = grid_values / 1000.0 / 3600.0
         else:
-            # Use IDW with elevation correction for temperature and other variables
-            # MATLAB calc_forcing_day.m uses different settings per variable:
+            # Use IDW with per-variable settings matching MATLAB calc_forcing_day.m:
             # - Temperature (min/max): switchregz=1, expon=2 (elevation correction, power=2)
-            # - Humidity: switchregz=0, expon=2 (no elevation correction, power=2)
-            # - Wind: switchregz=0, expon=0.5 (no elevation correction, power=0.5)
-            # - Radiation: switchregz=0, expon=2 (no elevation correction, power=2)
-            # Currently only temperature is implemented with elevation correction
-            # Use cached weights if available
+            # - Humidity:              switchregz=0, expon=2
+            # - Wind speed:            switchregz=0, expon=0.5
+            # - Radiation:             switchregz=0, expon=2
+            if variable in ("temperature_min", "temperature_max"):
+                apply_elevation = True
+                power = 2.0
+            elif variable == "wind_speed":
+                apply_elevation = False
+                power = 0.5
+            else:
+                apply_elevation = False
+                power = 2.0
+
             weights_matrix = weights_cache.get(variable) if weights_cache else None
             grid_values = station_interpolation(
                 station_x,
@@ -628,8 +706,8 @@ class Simulation:
                 self.yllcorner,
                 resolution,
                 weights_matrix=weights_matrix,
-                apply_elevation_correction=True,  # True for temperature, False for others
-                power=2.0,  # 2.0 for most, 0.5 for wind
+                apply_elevation_correction=apply_elevation,
+                power=power,
             )
 
         return grid_values
@@ -656,7 +734,7 @@ class Simulation:
         grid = self.forcing.get_timestep(time, variable)
 
         # Convert units to match _interpolate_forcing output
-        if variable == "precipitation":
+        if variable in ("precipitation", "pet", "pet_c"):
             # Convert mm/h to m/s: divide by 1000 * 3600
             grid = grid / 1000.0 / 3600.0
 
@@ -679,6 +757,24 @@ class Simulation:
         pet = calculate_pet((self.nrows, self.ncols), self.dt, pet_rate_mm_day=1.0)
 
         return pet
+
+    def _get_kc(self, time: datetime) -> np.ndarray | float:
+        """Return the FAO Kc factor for the current timestep.
+
+        Uses the CLC raster and the monthly Kc mapping when available,
+        otherwise returns the scalar default Kc. The result is cached per
+        month since the mapping only changes at month boundaries.
+        """
+        if self.clc is None or self.kc_clc_mapping is None:
+            return self.kc_default
+
+        month = time.month
+        if self._kc_grid_cache is not None and self._kc_grid_cache[0] == month:
+            return self._kc_grid_cache[1]
+
+        kc = compute_kc_grid(self.clc, self.kc_clc_mapping, month, self.kc_default)
+        self._kc_grid_cache = (month, kc)
+        return kc
 
     def _prepare_grids(self) -> dict[str, np.ndarray]:
         """Prepare grids for simulation.
@@ -744,6 +840,21 @@ class Simulation:
 
         # Surface alpha parameter alpsur
         param_grids["alpsur"] = self.alpsur * param_grids["alpha"]
+
+        # Energy balance grids (only built when energy balance is active)
+        if self.config.simulation.energy_balance != "None":
+            ch_factor = self.config.parameters.multipliers.CH_factor
+            if self.ch_raster is not None:
+                param_grids["CH"] = self.ch_raster * ch_factor
+            else:
+                param_grids["CH"] = np.full((self.nrows, self.ncols), params.energy.CH) * ch_factor
+            param_grids["CH"][np.isnan(self.dtm)] = np.nan
+
+            if self.alb_raster is not None:
+                param_grids["Alb"] = self.alb_raster.copy()
+            else:
+                param_grids["Alb"] = np.full((self.nrows, self.ncols), params.energy.Alb)
+            param_grids["Alb"][np.isnan(self.dtm)] = np.nan
 
         return param_grids
 
@@ -1140,11 +1251,14 @@ class Simulation:
         n_steps = int((end_date - start_date).total_seconds() / self.dt) + 1
         logger.info(f"Number of time steps: {n_steps}")
 
-        # Pre-compute time indices for all simulation timesteps (station mode only)
-        # Currently, only precipitation is used in the main loop
+        # Pre-compute time indices for all simulation timesteps (station mode only).
+        # Include energy variables when the energy balance is active.
         simulation_times = pd.date_range(start=start_date, periods=n_steps, freq=f"{self.dt}s")
         if self.forcing_mode == "station":
-            self._time_indices_cache = self._precompute_time_indices(simulation_times, variables=["precipitation"])
+            forcing_vars = ["precipitation"]
+            if self.config.simulation.energy_balance != "None":
+                forcing_vars.extend(_ENERGY_VARIABLES)
+            self._time_indices_cache = self._precompute_time_indices(simulation_times, variables=forcing_vars)
         else:
             self._time_indices_cache = None
 
@@ -1192,6 +1306,24 @@ class Simulation:
         flr_prev = np.zeros((self.nrows, self.ncols))
         fld_prev = np.zeros((self.nrows, self.ncols))
 
+        # Energy balance preparation.
+        # Skip energy balance when ET or PET is provided by the raster forcing.
+        # simulation.energy_balance has no effect when _raster_et_source is set.
+        energy_active = self.config.simulation.energy_balance == "1L" and self._raster_et_source is None
+        solar_cache: dict[int, tuple[float, float]] = {}
+        td_rise_full = None  # Td evaluated at sunrise (per cell), updated by pre-pass each step
+        if energy_active:
+            lat = self.config.basin.baricenter.lat
+            lon = self.config.basin.baricenter.lon
+            kaps = self.config.parameters.energy.kaps
+            nis = self.config.parameters.energy.nis
+            tcost = self.config.parameters.energy.Tconst
+            pair = const.P_AIR
+            ch_flat_full = self.param_grids["CH"].ravel("F")[ko]
+            alb_flat_full = self.param_grids["Alb"].ravel("F")[ko]
+            td_rise_full = self.state.td.copy() if self.state.td is not None else None
+            logger.info("Energy balance scheme: 1L")
+
         # Calculate progress logging interval: either 20 steps total or every 30 seconds
         # Use whichever results in fewer log messages
         steps_per_intervals = max(1, n_steps // 20)
@@ -1233,8 +1365,14 @@ class Simulation:
 
             from mobidic.io import MeteoWriter
 
-            # Define which variables to save
+            # Define which variables to save (precipitation + energy variables when active).
+            # Skip energy variables when the energy balance is bypassed (e.g. PET from raster).
+            # The saved ET field is PETc (Kc-adjusted potential ET from the energy-balance
+            # first pass, before the soil water balance) -> stored as "pet_c".
             meteo_variables = ["precipitation"]
+            if energy_active:
+                meteo_variables.extend(_ENERGY_VARIABLES)
+                meteo_variables.append("pet_c")
 
             meteo_writer = MeteoWriter(
                 output_path=output_dir / "meteo_forcing.nc",
@@ -1279,12 +1417,192 @@ class Simulation:
                     f"Precipitation: mean={np.mean(precip_valid):.4f} mm/h, max={np.max(precip_valid):.4f} mm/h"
                 )
 
-            # 2. Calculate PET
-            pet = self._calculate_pet(current_time)
+            # 2. Calculate PET (and run energy balance pre-pass when active)
+            energy_pre_state: dict | None = None
+
+            # Build the effective turbulent-exchange coefficient CH*Kc used by
+            # the energy-balance. Translated from MATLAB  CH(ko).*Kc_FAO_map(ko)
+            # in mobidic_sid.m. Kc is applied inside the energy balance rather than as a
+            # post-hoc scaling of PET, since CH affects both the sensible and
+            # latent heat fluxes in the nonlinear Ts solution.
+            kc_now = self._get_kc(current_time)
+            ch_eff_ko = None
+            if energy_active:
+                if isinstance(kc_now, np.ndarray):
+                    kc_ko = kc_now.ravel("F")[ko]
+                    ch_eff_ko = ch_flat_full * kc_ko
+                elif kc_now != 1.0:
+                    ch_eff_ko = ch_flat_full * float(kc_now)
+                else:
+                    ch_eff_ko = ch_flat_full
+
+            if energy_active:
+                # Fetch energy forcing variables (units from interpolation/raster:
+                # temperatures in degC, humidity in %, radiation in W/m^2, wind in m/s).
+                tmax_grid = (
+                    self._get_forcing_fn(
+                        current_time,
+                        "temperature_max",
+                        weights_cache=self._interpolation_weights,
+                        time_step_index=step,
+                    )
+                    + 273.15
+                )
+                tmin_grid = (
+                    self._get_forcing_fn(
+                        current_time,
+                        "temperature_min",
+                        weights_cache=self._interpolation_weights,
+                        time_step_index=step,
+                    )
+                    + 273.15
+                )
+                rh_grid = (
+                    self._get_forcing_fn(
+                        current_time,
+                        "humidity",
+                        weights_cache=self._interpolation_weights,
+                        time_step_index=step,
+                    )
+                    / 100.0
+                )
+                wind_grid = self._get_forcing_fn(
+                    current_time,
+                    "wind_speed",
+                    weights_cache=self._interpolation_weights,
+                    time_step_index=step,
+                )
+                rs_grid = self._get_forcing_fn(
+                    current_time,
+                    "radiation",
+                    weights_cache=self._interpolation_weights,
+                    time_step_index=step,
+                )
+
+                # First-step override: replace Ts/Td with Tair_lin if state was not loaded
+                # (matching MATLAB mobidic_sid.m behaviour).
+                if step == 0 and not self._state_was_loaded:
+                    tair_lin_grid = (tmax_grid + tmin_grid) / 2.0
+                    self.state.ts = np.where(np.isfinite(self.dtm), tair_lin_grid, np.nan)
+                    self.state.td = np.where(np.isfinite(self.dtm), tair_lin_grid, np.nan)
+                    td_rise_full = self.state.td.copy()
+
+                # Solar hours (cached per Julian day)
+                jday = current_time.timetuple().tm_yday
+                if jday not in solar_cache:
+                    solar_cache[jday] = solar_hours(lat, lon, jday)
+                hrise_h, hset_h = solar_cache[jday]
+                hrise_s = hrise_h * 3600.0
+                hset_s = hset_h * 3600.0
+                ctim_s = current_time.hour * 3600 + current_time.minute * 60 + current_time.second
+                ftim_s = ctim_s + self.dt
+
+                # Extract ko-flat inputs
+                ts_init_ko = self.state.ts.ravel("F")[ko].copy()
+                td_init_ko = self.state.td.ravel("F")[ko].copy()
+                td_rise_ko = td_rise_full.ravel("F")[ko].copy()
+                tmax_ko = tmax_grid.ravel("F")[ko]
+                tmin_ko = tmin_grid.ravel("F")[ko]
+                rh_ko = rh_grid.ravel("F")[ko]
+                wind_ko = wind_grid.ravel("F")[ko]
+                rs_ko = rs_grid.ravel("F")[ko]
+
+                # Pre-pass with etrsuetp=1 (saturated soil assumption)
+                ts_pre_ko, td_pre_ko, etp_ko, td_rise_new_ko = compute_energy_balance_1l(
+                    ts=ts_init_ko,
+                    td=td_init_ko,
+                    td_rise=td_rise_ko,
+                    rs=rs_ko,
+                    u=wind_ko,
+                    tair_max=tmax_ko,
+                    tair_min=tmin_ko,
+                    qair=rh_ko,
+                    ch=ch_eff_ko,
+                    alb=alb_flat_full,
+                    kaps=kaps,
+                    nis=nis,
+                    tcost=tcost,
+                    pair=pair,
+                    ctim_s=ctim_s,
+                    ftim_s=ftim_s,
+                    hrise_s=hrise_s,
+                    hset_s=hset_s,
+                    etrsuetp=1.0,
+                    dt=self.dt,
+                    reentry=False,
+                )
+
+                # Build PET grid in m/s (etp_ko is in [m] over the timestep)
+                pet_full = np.zeros(self.nrows * self.ncols)
+                pet_full[ko] = etp_ko / self.dt
+                pet = pet_full.reshape((self.nrows, self.ncols), order="F")
+
+                # Cache pre-pass quantities for re-entry after the soil balance
+                energy_pre_state = {
+                    "ts_init": ts_init_ko,
+                    "td_init": td_init_ko,
+                    "td_rise_new": td_rise_new_ko,
+                    "ts_pre": ts_pre_ko,
+                    "td_pre": td_pre_ko,
+                    "etp": etp_ko,
+                    "rs": rs_ko,
+                    "u": wind_ko,
+                    "tmax": tmax_ko,
+                    "tmin": tmin_ko,
+                    "rh": rh_ko,
+                    "ctim_s": ctim_s,
+                    "ftim_s": ftim_s,
+                    "hrise_s": hrise_s,
+                    "hset_s": hset_s,
+                }
+            elif self._raster_et_source == "pet_c":
+                # PETc (Kc-adjusted) from raster: use directly, Kc already embedded
+                pet = self._get_forcing_fn(
+                    current_time,
+                    "pet_c",
+                    weights_cache=self._interpolation_weights,
+                    time_step_index=step,
+                )
+            elif self._raster_et_source == "pet":
+                # Reference PET from raster: apply Kc to obtain PETc
+                pet = self._get_forcing_fn(
+                    current_time,
+                    "pet",
+                    weights_cache=self._interpolation_weights,
+                    time_step_index=step,
+                )
+                if isinstance(kc_now, np.ndarray):
+                    pet = pet * kc_now
+                elif kc_now != 1.0:
+                    pet = pet * float(kc_now)
+            else:
+                pet = self._calculate_pet(current_time)
+                # Apply Kc as post-hoc scaling when energy balance is not active
+                if isinstance(kc_now, np.ndarray):
+                    pet = pet * kc_now
+                elif kc_now != 1.0:
+                    pet = pet * float(kc_now)
 
             # 3. Save interpolated meteorological data (if enabled)
+            # When energy balance is active, the Kc-adjusted potential ET computed by the
+            # energy-balance first pass (PETc), is saved before the soil water balance runs.
             if meteo_writer is not None:
-                meteo_writer.append(current_time, precipitation=precip)
+                meteo_kwargs = {"precipitation": precip}
+                if energy_active and energy_pre_state is not None:
+                    pet_c_grid_full = np.full(self.nrows * self.ncols, np.nan)
+                    pet_c_grid_full[ko] = energy_pre_state["etp"] / self.dt
+                    pet_c_grid_full = pet_c_grid_full.reshape((self.nrows, self.ncols), order="F")
+                    meteo_kwargs.update(
+                        {
+                            "temperature_max": tmax_grid - 273.15,
+                            "temperature_min": tmin_grid - 273.15,
+                            "humidity": rh_grid * 100.0,
+                            "wind_speed": wind_grid,
+                            "radiation": rs_grid,
+                            "pet_c": pet_c_grid_full,
+                        }
+                    )
+                meteo_writer.append(current_time, **meteo_kwargs)
 
             # 4. Hillslope routing of previous timestep's flows (matching MATLAB mobidic_sid.m:1621-1625)
             # This must happen BEFORE soil mass balance to provide upstream contributions
@@ -1409,11 +1727,66 @@ class Simulation:
             surface_runoff = surface_runoff_full.reshape((self.nrows, self.ncols), order="F")
             lateral_flow_depth = lateral_flow_depth_full.reshape((self.nrows, self.ncols), order="F")
 
+            # Build actual ET rate grid [m/s] for state output
+            if self.config.output_states.evapotranspiration:
+                et_full = np.full(self.nrows * self.ncols, np.nan)
+                et_full[ko] = et_flat / self.dt
+                self.state.et = et_full.reshape((self.nrows, self.ncols), order="F")
+
             # 5. Convert outputs from depth [m] to rate [m/s] (matching MATLAB mobidic_sid.m:1684)
             # flr: surface runoff rate [m/s] - analogous to MATLAB flr after division by dt
             # fld: lateral flow rate [m/s] - analogous to MATLAB fld after division by dt
             flr = surface_runoff / self.dt
             fld = lateral_flow_depth / self.dt
+
+            # 5a. Energy balance re-entry: refine Ts/Td using actual ET/PET ratio
+            if energy_active and energy_pre_state is not None:
+                etp_ko = energy_pre_state["etp"]
+                safe_etp = np.where(etp_ko > 0.0, etp_ko, 1.0)
+                etrsuetp_ko = np.where(etp_ko > 0.0, np.minimum(et_flat / safe_etp, 1.0), 0.0)
+
+                # Re-run with corrected etrsuetp; restart from initial Ts/Td and updated td_rise
+                ts_re_ko, td_re_ko, _, _ = compute_energy_balance_1l(
+                    ts=energy_pre_state["ts_init"],
+                    td=energy_pre_state["td_init"],
+                    td_rise=energy_pre_state["td_rise_new"],
+                    rs=energy_pre_state["rs"],
+                    u=energy_pre_state["u"],
+                    tair_max=energy_pre_state["tmax"],
+                    tair_min=energy_pre_state["tmin"],
+                    qair=energy_pre_state["rh"],
+                    ch=ch_eff_ko,
+                    alb=alb_flat_full,
+                    kaps=kaps,
+                    nis=nis,
+                    tcost=tcost,
+                    pair=pair,
+                    ctim_s=energy_pre_state["ctim_s"],
+                    ftim_s=energy_pre_state["ftim_s"],
+                    hrise_s=energy_pre_state["hrise_s"],
+                    hset_s=energy_pre_state["hset_s"],
+                    etrsuetp=etrsuetp_ko,
+                    dt=self.dt,
+                    reentry=True,
+                )
+
+                # Use re-entry result where the soil was unsaturated; pre-pass otherwise
+                needs_re = etrsuetp_ko < 1.0
+                ts_final_ko = np.where(needs_re, ts_re_ko, energy_pre_state["ts_pre"])
+                td_final_ko = np.where(needs_re, td_re_ko, energy_pre_state["td_pre"])
+
+                # Write back to state
+                ts_flat_full = self.state.ts.ravel("F")
+                td_flat_full = self.state.td.ravel("F")
+                ts_flat_full[ko] = ts_final_ko
+                td_flat_full[ko] = td_final_ko
+                self.state.ts = ts_flat_full.reshape((self.nrows, self.ncols), order="F")
+                self.state.td = td_flat_full.reshape((self.nrows, self.ncols), order="F")
+
+                # Persist td_rise for next timestep
+                td_rise_full_flat = td_rise_full.ravel("F")
+                td_rise_full_flat[ko] = energy_pre_state["td_rise_new"]
+                td_rise_full = td_rise_full_flat.reshape((self.nrows, self.ncols), order="F")
 
             # 5b. Groundwater dynamics
             # Linear reservoir model: baseflow is added to surface runoff
@@ -1458,32 +1831,16 @@ class Simulation:
                 flr_flat_full[ko] = flr_flat_full[ko] + baseflow_flat
                 flr = flr_flat_full.reshape((self.nrows, self.ncols), order="F")
 
-            # 6. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m)
-            # Convert to discharge for accumulation
-            flr_discharge = flr * cell_area
-            lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
-            logger.debug("Lateral inflow accumulation completed")
-
-            # Store lateral inflow in state
-            self.state.lateral_inflow = lateral_inflow
-
-            # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
-            # This prevents double-counting - flows from all contributing cells are consumed after accumulation
-            flr[self.hillslope_reach_map >= 0] = 0.0
-            # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
-
-            # Store flr and fld for next timestep's routing (at step 3)
-            flr_prev = flr.copy()
-            fld_prev = fld.copy()
-
-            # 6. Reservoir routing (if reservoirs exist)
-            # Prepare network topology for routing (may be modified if reservoirs exist)
+            # 6. Reservoir routing (if reservoirs exist) — matching MATLAB mobidic_sid.m:1536
+            # Must run BEFORE lateral-inflow accumulation so that basin cells' flr/fld are
+            # captured by the reservoir and do not double-count into reach lateral inflow.
             routing_network = self._network_topology
 
             if self.reservoirs is not None and self.state.reservoir_states is not None:
                 logger.debug("Computing reservoir routing")
 
-                # Call reservoir routing
+                # Reservoir routing zeros flr/fld in basin cells and zeros reach_discharge
+                # at the inlet reaches of each outlet.
                 (
                     self.state.reservoir_states,
                     self.state.discharge,
@@ -1503,15 +1860,8 @@ class Simulation:
                     cell_area=cell_area,
                 )
 
-                # Add reservoir outflows to lateral inflow of outlet reaches (matching MATLAB glob_route_day.m:46-53)
-                for i, reservoir in enumerate(self.reservoirs.reservoirs):
-                    outlet_reach = reservoir.outlet_reach
-                    if outlet_reach is not None:
-                        lateral_inflow[outlet_reach] += self.state.reservoir_states[i].outflow
-
                 # Clear upstream connections for outlet reaches (matching MATLAB glob_route_day.m:48-50)
                 # This prevents double-counting: the reservoir has already collected upstream volumes
-                # Create modified topology with cleared upstream connections for outlet reaches
                 routing_network = self._network_topology.copy()
                 routing_network["upstream_1_idx"] = self._network_topology["upstream_1_idx"].copy()
                 routing_network["upstream_2_idx"] = self._network_topology["upstream_2_idx"].copy()
@@ -1526,7 +1876,32 @@ class Simulation:
                         # Set upstream count to 0 (MATLAB: ram_fin(j) = 0)
                         routing_network["n_upstream"][outlet_reach] = 0
 
-            # 7. Channel routing
+            # 7. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m:26-35)
+            # Basin cells have flr=0 from reservoir routing, so they correctly contribute nothing.
+            flr_discharge = flr * cell_area
+            lateral_inflow = self._accumulate_lateral_inflow(flr_discharge)
+            logger.debug("Lateral inflow accumulation completed")
+
+            # Add reservoir outflows to lateral inflow of outlet reaches (matching MATLAB glob_route_day.m:46-53)
+            if self.reservoirs is not None and self.state.reservoir_states is not None:
+                for i, reservoir in enumerate(self.reservoirs.reservoirs):
+                    outlet_reach = reservoir.outlet_reach
+                    if outlet_reach is not None:
+                        lateral_inflow[outlet_reach] += self.state.reservoir_states[i].outflow
+
+            # Store lateral inflow in state
+            self.state.lateral_inflow = lateral_inflow
+
+            # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
+            # This prevents double-counting - flows from all contributing cells are consumed after accumulation
+            flr[self.hillslope_reach_map >= 0] = 0.0
+            # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
+
+            # Store flr and fld for next timestep's routing (at step 3)
+            flr_prev = flr.copy()
+            fld_prev = fld.copy()
+
+            # 8. Channel routing
             logger.debug("Computing channel routing")
             self.state.discharge, routing_state = linear_channel_routing(
                 network=routing_network,

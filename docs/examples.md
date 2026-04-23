@@ -1,8 +1,9 @@
 # Examples
 
-This page provides practical examples demonstrating the main features of MOBIDICpy. All example scripts are available in the `examples/01-event-Arno-basin/` directory of the repository.
+This page provides practical examples demonstrating the main features of MOBIDICpy. All example scripts are available in the `examples/` directory of the repository.
 
-## Arno River basin (November 2023 flood event)
+
+## 1) Arno River basin (November 2023 flood event)
 
 All examples use data from the Arno River basin for a flood event that occurred in November 2023. The dataset is located in `examples/datasets/Arno_event_Nov_2023/` and includes raster data (DEM, flow direction, soil parameters), the river network shapefile, meteorological forcing (.mat), observed discharge, and reservoir data.
 
@@ -10,7 +11,7 @@ Configuration files for each workflow are in `examples/01-event-Arno-basin/`.
 
 ---
 
-## 01a — Basic simulation
+## 1.1a — Basic simulation
 
 The complete MOBIDIC workflow from raw data to final outputs.
 
@@ -47,7 +48,7 @@ results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
 
 ---
 
-## 01b — Validation: Python vs MATLAB
+## 1.1b — Validation: Python vs MATLAB
 
 Validates the Python implementation against MATLAB reference outputs.
 
@@ -59,7 +60,7 @@ Compares discharge time series produced by MOBIDICpy against the MATLAB referenc
 
 ---
 
-## 02 — Station vs raster forcing comparison
+## 1.2 — Station vs raster forcing comparison
 
 Compare station-based forcing (with spatial interpolation) against pre-interpolated raster forcing.
 
@@ -92,7 +93,7 @@ results2 = sim2.run(start_date, end_date)
 
 ---
 
-## 03 — Simulation restart capability
+## 1.3 — Simulation restart capability
 
 Run a simulation in two stages and compare against a continuous run.
 
@@ -129,7 +130,7 @@ results_2 = sim2.run(start_date=restart_point, end_date=end_date)
 
 ---
 
-## 04a — Reservoir routing
+## 1.4a — Reservoir routing
 
 Simulate reservoirs with time-varying regulation curves.
 
@@ -168,7 +169,7 @@ output_states:
 
 ---
 
-## 04b — Reservoir validation plots
+## 1.4b — Reservoir validation plots
 
 Validates reservoir results against MATLAB reference outputs.
 
@@ -178,7 +179,7 @@ Validates reservoir results against MATLAB reference outputs.
 
 ---
 
-## 05 — GLM calibration (PEST++)
+## 1.5 — GLM calibration (PEST++)
 
 Gradient-based model calibration using `pestpp-glm` (Gauss-Levenberg-Marquardt).
 
@@ -229,7 +230,7 @@ sens = results.get_parameter_sensitivities()  # Jacobian-based sensitivities
 
 ---
 
-## 06 — IES ensemble calibration (PEST++)
+## 1.6 — IES ensemble calibration (PEST++)
 
 Ensemble-based calibration using `pestpp-ies` (Iterative Ensemble Smoother).
 
@@ -278,7 +279,7 @@ phi_history = results.get_objective_function_history()
 
 ---
 
-## 07 — Morris global sensitivity analysis (PEST++)
+## 1.7 — Morris global sensitivity analysis (PEST++)
 
 Global sensitivity analysis using `pestpp-sen` with the Morris OAT method.
 
@@ -439,6 +440,71 @@ $$DDF(t) = k_a \cdot k \cdot a \cdot t^n$$
 
 ---
 
+---
+
+## 2) Arno River basin (daily water balance 2017–2018)
+
+All examples in this group use data from the Arno River basin for a continuous hydrological simulations covering two years (2017–2018), at a daily timestep. Configuration files are in `examples/02-daily-balance-Arno-basin/`.
+
+---
+
+## 2.1a — Daily balance simulation
+
+Full MOBIDICpy workflow for a daily continuous hydrological balance simulation, including energy balance, groundwater, and reservoirs.
+
+**Script**: `examples/02-daily-balance-Arno-basin/01a_run_example_Arno_daily.py`
+
+```python
+from pathlib import Path
+from mobidic import load_config, run_preprocessing, save_gisdata, save_network, load_gisdata, MeteoData, Simulation
+
+config_file = Path("examples/02-daily-balance-Arno-basin/Arno.daily.yaml")
+config = load_config(config_file)
+
+# Preprocessing (skipped if output already exists)
+if not config.paths.gisdata.exists() or not config.paths.network.exists():
+    gisdata = run_preprocessing(config)
+    save_gisdata(gisdata, config.paths.gisdata)
+    save_network(gisdata.network, config.paths.network, format="parquet")
+else:
+    gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+
+# Convert meteorological data from MATLAB to NetCDF
+meteo_data = MeteoData.from_mat("examples/datasets/Arno/matlab/meteodata/Arno_daily_balance_2017_2018.mat")
+meteo_data.to_netcdf(config.paths.meteodata)
+
+# Load forcing and run simulation
+forcing = MeteoData.from_netcdf(config.paths.meteodata)
+sim = Simulation(gisdata, forcing, config)
+results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
+```
+
+**What it demonstrates:**
+
+- Daily timestep simulation (86400 s) over a two-year period (2017–2018)
+- Energy balance scheme (`1L`) for PET computation
+- Linear groundwater model
+- Reservoir routing with seasonal regulation
+
+---
+
+## 2.1b — Validation: Python vs MATLAB and observed data
+
+Validates daily simulation outputs against MATLAB reference and observed discharge.
+
+**Script**: `examples/02-daily-balance-Arno-basin/01b_run_example_Arno_daily_plots.py`
+
+Compares discharge and lateral inflow produced by MOBIDICpy against MATLAB reference outputs in `examples/datasets/Arno/matlab/output/Arno_daily_balance_2017_2018/`. Also compares simulated discharge at reach 278 (Nave di Rosano) against observed data (`Q_TOS01004659_2017_2018.parquet`).
+
+**Requirements**: Run `01a_run_example_Arno_daily.py` first.
+
+**What it demonstrates:**
+
+- Time series and scatter-plot comparison against MATLAB reference (discharge and lateral inflow)
+- Observed vs simulated discharge comparison (uncalibrated)
+
+---
+
 ## Additional resources
 
 ### How to run the examples
@@ -467,7 +533,21 @@ python examples/01-event-Arno-basin/06_calibrate_Arno_ies.py
 
 # Morris sensitivity analysis (requires PEST++ binaries)
 python examples/01-event-Arno-basin/07_sensitivity_Arno_Morris.py
+
+# Daily balance simulation (2017-2018)
+python examples/02-daily-balance-Arno-basin/01a_run_example_Arno_daily.py
+
+# Daily balance validation plots (requires 02a output)
+python examples/02-daily-balance-Arno-basin/01b_run_example_Arno_daily_plots.py
 ```
+
+### Data sources
+The Arno River basin datasets used in these examples were obtained from the following sources:
+- DEM, soil parameters, Corine Land Cover, and river network shapefile: Tuscany Regional Geoportal ([GEOscopio](https://www.regione.toscana.it/-/geoscopio)).
+- Flow direction and flow accumulation rasters were derived from the DEM by GIS processing.
+- Discharge observations and meteorological forcing: Tuscany Regional Functional Centre ([Centro Funzionale Regionale, CFR](https://www.cfr.toscana.it/)), and Hydrological Service of Tuscany ([Servizio Idrologico della Toscana, SIR](https://www.sir.toscana.it/)).
+
+
 
 ### See also
 

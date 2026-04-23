@@ -221,6 +221,13 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
             "description": "Binary mask defining freatic aquifer extension (0=no, 1=yes)",
             "grid_mapping": "crs",
         }
+    if "CLC" in gisdata.grids:
+        ds["CLC"].attrs = {
+            "long_name": "Corine Land Cover (CLC) level 3 code",
+            "units": "1",
+            "description": "CLC level 3 class code, used to map FAO Kc values",
+            "grid_mapping": "crs",
+        }
 
     # Save to NetCDF
     encoding = {var: {"zlib": True, "complevel": 4} for var in ds.data_vars}
@@ -326,6 +333,7 @@ def load_gisdata(gisdata_path: str | Path, network_path: str | Path) -> "GISData
         "beta",
         "alpha",
         "alpsur",
+        "CLC",
     ]
 
     for var in grid_vars:
