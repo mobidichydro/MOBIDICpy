@@ -1,5 +1,5 @@
 files:
-  - path: "**/*.md"
-    ignored:
-      - pattern: "regione\\.toscana\\.it"
-        reason: "Site blocks automated requests with a navigation timeout"
+  - "**/*.md"
+ignorePatterns:
+  - pattern: "regione\\.toscana\\.it"
+    reason: "Site blocks automated requests with a navigation timeout"
