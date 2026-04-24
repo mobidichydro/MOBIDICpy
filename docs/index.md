@@ -48,7 +48,7 @@ sim = mobidic.Simulation(gisdata, forcing, config)
 results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
 ```
 
-See [examples/01-event-Arno-basin/01a_run_example_Arno.py](https://github.com/mobidichydro/mobidicpy/blob/main/examples/01-event-Arno-basin/01a_run_example_Arno.py) for a complete working example with visualization.
+See [Examples](examples.md) page for practical usage examples.
 
 ## Features
 
