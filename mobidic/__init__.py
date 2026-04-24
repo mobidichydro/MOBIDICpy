@@ -1,6 +1,6 @@
 """MOBIDIC - Distributed and continuous hydrological balance model."""
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 from mobidic.config import MOBIDICConfig
 from mobidic.config import load_config
