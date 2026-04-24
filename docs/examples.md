@@ -544,7 +544,7 @@ python examples/02-daily-balance-Arno-basin/01b_run_example_Arno_daily_plots.py
 ### Data sources
 The Arno River basin datasets used in these examples were obtained from the following sources:
 - DEM, soil parameters, Corine Land Cover, and river network shapefile: Tuscany Regional Geoportal ([GEOscopio](https://www.regione.toscana.it/-/geoscopio)).
-- Flow direction and flow accumulation rasters were derived from the DEM by GIS processing.
+- Flow direction and flow accumulation rasters were derived from the DEM using [GRASS](https://grass.osgeo.org/) function `r.watershed`.
 - Discharge observations and meteorological forcing: Tuscany Regional Functional Centre ([Centro Funzionale Regionale, CFR](https://www.cfr.toscana.it/)), and Hydrological Service of Tuscany ([Servizio Idrologico della Toscana, SIR](https://www.sir.toscana.it/)).
 
 
