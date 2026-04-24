@@ -247,10 +247,10 @@ python examples/02-daily-balance-Arno-basin/01b_run_example_Arno_daily_plots.py
 
 ## Additional resources
 
-- **User guide**: See `docs/` for detailed documentation
-- **API reference**: See `docs/api/` for function descriptions
-- **PEST++ documentation**: [PEST++ Users Guide](https://github.com/usgs/pestpp)
-- **GitHub issues**: Report bugs or request features
+- **User guide**: See [Documentation](https://mobidichydro.github.io/MOBIDICpy/) for detailed documentation
+- **API reference**: See [API Reference](https://mobidichydro.github.io/MOBIDICpy/latest/reference/) for function descriptions
+- **PEST++ documentation**: [PEST++ Github repository](https://github.com/usgs/pestpp)
+- **GitHub issues**: [Report bugs or request features](https://github.com/mobidichydro/MOBIDICpy/issues)
 
 
 ### Data sources
@@ -262,4 +262,4 @@ The Arno River basin datasets used in these examples were obtained from the foll
 
 ## Citation
 
-If you use MOBIDICpy in your research, please cite it using the metadata in [`CITATION.cff`](../CITATION.cff)
+If you use MOBIDICpy in your research, please cite it using the metadata in [`CITATION.cff`](https://github.com/mobidichydro/MOBIDICpy/blob/main/CITATION.cff)

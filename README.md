@@ -19,7 +19,7 @@
 
 MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo – distributed and continuous hydrological balance model) is a physically-based distributed hydrological model that simulates water and energy balances of the hydrological cycle at the catchment scale, and compute runoff generation and propagation through the river network.
 
-MOBIDICpy is a Python implementation of the MOBIDIC model, originally developed in MATLAB by Castelli et al. See [References](#references) for more details.
+MOBIDICpy is a Python implementation of the MOBIDIC model, originally developed in MATLAB by Castelli et al. See [References](https://github.com/mobidichydro/MOBIDICpy#references) for more details.
 
 ## Installation
 
@@ -56,7 +56,7 @@ python -m mkdocs serve
 
 ## Examples
 
-Examples are available in the [`examples`](examples/) directory. 
+Examples are available in the [`examples`](https://github.com/mobidichydro/MOBIDICpy/blob/main/examples) directory. 
 
 ## Documentation
 
@@ -65,7 +65,7 @@ The project's full documentation is available [here](https://mobidichydro.github
 ## Contributing
 
 If you want to contribute to the development of MOBIDICpy,
-have a look at the [contribution guidelines](CONTRIBUTING.md).
+have a look at the [contribution guidelines](https://github.com/mobidichydro/MOBIDICpy/blob/main/CONTRIBUTING.md).
 
 ## Credits
 
@@ -75,7 +75,7 @@ This package was created using the [NLeSC/python-template](https://github.com/NL
 
 Copyright (c) 2026 University of Florence (Italy), Department of Civil and Environmental Engineering ([DICEA](https://www.dicea.unifi.it/)).
 
-Licensed under the [Apache License, Version 2.0](LICENSE).
+Licensed under the [Apache License, Version 2.0](https://github.com/mobidichydro/MOBIDICpy/blob/main/LICENSE).
 
 
 ## References
