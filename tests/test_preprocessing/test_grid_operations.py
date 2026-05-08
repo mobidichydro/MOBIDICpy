@@ -122,12 +122,16 @@ class TestDegradeFlowDirection:
         # Degrade with factor 2
         deg_dir, deg_acc = decimate_flow_direction(flow_dir, flow_acc, factor=2)
 
-        # Expected output
+        # Expected output (Grass r.watershed: 1=NE, 2=N, 6=S; image orientation).
+        # Bottom row of coarse cells cannot drain south (out of bounds), so the
+        # invalid-direction handler picks the first valid neighbor in code order;
+        # for (1,0) that's NE (code 1) at (0,1); for (1,1) NE is out of bounds so
+        # it falls through to N (code 2) at (0,1).
         assert deg_dir.shape == (2, 2)
         assert deg_dir[0, 0] == 6  # Top-left flows south
         assert deg_dir[0, 1] == 6  # Top-right flows south
-        assert deg_dir[1, 0] == 2  # Bottom-left flows north (to top-left)
-        assert deg_dir[1, 1] == 1  # Bottom-right flows northeast (to top-left)
+        assert deg_dir[1, 0] == 1  # Bottom-left -> NE (top-right coarse cell)
+        assert deg_dir[1, 1] == 2  # Bottom-right -> N (top-right coarse cell)
 
         assert deg_acc.shape == (2, 2)
         np.testing.assert_allclose(deg_acc[0, 0], 0.5)

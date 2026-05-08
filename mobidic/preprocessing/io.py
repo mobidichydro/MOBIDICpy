@@ -114,7 +114,7 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
         "long_name": "Flow Direction",
         "units": "1",
         "description": "Flow direction in MOBIDIC notation (1-8)",
-        "notation": "MOBIDIC: 1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E",
+        "notation": "MOBIDIC: 1=SW, 2=S, 3=SE, 4=E, 5=NE, 6=N, 7=NW, 8=W (north up; row+1=N)",
         "grid_mapping": "crs",
     }
     ds["flow_acc"].attrs = {
