@@ -7,61 +7,37 @@ The grid operations module provides functions for processing and transforming gr
 Grid operations are essential for:
 
 - **Multi-resolution modeling**: Coarsen high-resolution DEMs, flow direction, and accumulation grids
-- **Flow direction processing**: Handle different flow direction notation systems (Grass vs Arc)
+- **Flow direction processing**: Handle different flow direction notation systems (Grass `r.watershed` vs ArcGIS)
 - **Preprocessing**: Prepare gridded data for hydrological modeling
 
 All functions handle NaN values.
 
 ## Flow direction notations
 
-MOBIDICpy supports three flow direction notation systems. All diagrams below are
+MOBIDICpy supports two flow direction notation systems. All diagrams below are
 shown in geographic orientation (north up).
 
 ### Grass notation (1-8)
 
-Standard GRASS r.watershed convention: codes 1-8 placed counter-clockwise starting
-from NE.
+Standard GRASS `r.watershed` convention: codes 1-8 placed counter-clockwise starting
+from NE. 
+To use this notation, the option `raster_settings.flow_dir_type` in the YAML configuration file must be set to "Grass".
 
-```
-┌───┬───┬───┐
-│ 3 │ 2 │ 1 │   1 = NE   5 = SW
-├───┼───┼───┤   2 = N    6 = S
-│ 4 │ X │ 8 │   3 = NW   7 = SE
-├───┼───┼───┤   4 = W    8 = E
-│ 5 │ 6 │ 7 │
-└───┴───┴───┘
-```
+![Grass flow direction notation](../assets/flow-direction-grass.svg){ .notation-diagram }
 
 ### Arc notation (powers of 2)
 
-Standard ESRI ArcGIS convention: powers of 2 placed clockwise starting from E.
+Standard ESRI ArcGIS convention: powers of 2 placed clockwise starting from E. 
+To use this notation, the option `raster_settings.flow_dir_type` in the YAML configuration file must be set to "Arc".
 
-```
-┌─────┬─────┬─────┐
-│ 32  │  64 │ 128 │   1 =   E    16  = W
-├─────┼─────┼─────┤   2 =  SE    32  = NW
-│ 16  │  X  │  1  │   4 =   S    64  = N
-├─────┼─────┼─────┤   8 =  SW    128 = NE
-│  8  │  4  │  2  │
-└─────┴─────┴─────┘
-```
+![Arc flow direction notation](../assets/flow-direction-arc.svg){ .notation-diagram }
 
 ### MOBIDIC notation (1-8)
 
-MOBIDIC's internal D8 encoding: codes 1-8 placed counter-clockwise starting from
-SW. This is the notation produced by `convert_to_mobidic_notation()` and consumed
-by the routing kernels.
+The flow directions, either in Grass or Arc notation, are then internally converted to
+MOBIDIC's D8 encoding as follows:
 
-```
-┌───┬───┬───┐
-│ 7 │ 6 │ 5 │   1 = SW   5 = NE
-├───┼───┼───┤   2 = S    6 = N
-│ 8 │ X │ 4 │   3 = SE   7 = NW
-├───┼───┼───┤   4 = E    8 = W
-│ 1 │ 2 │ 3 │
-└───┴───┴───┘
-```
-
+![MOBIDIC flow direction notation](../assets/flow-direction-mobidic.svg){ .notation-diagram }
 
 ## Technical details
 
