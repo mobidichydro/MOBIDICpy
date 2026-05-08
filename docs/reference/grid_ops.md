@@ -12,6 +12,83 @@ Grid operations are essential for:
 
 All functions handle NaN values.
 
+## Flow direction notations
+
+MOBIDICpy supports three flow direction notation systems. All diagrams below are
+shown in geographic orientation (north up).
+
+### Grass notation (1-8)
+
+Standard GRASS r.watershed convention: codes 1-8 placed counter-clockwise starting
+from NE.
+
+```
+┌───┬───┬───┐
+│ 3 │ 2 │ 1 │   1 = NE   5 = SW
+├───┼───┼───┤   2 = N    6 = S
+│ 4 │ X │ 8 │   3 = NW   7 = SE
+├───┼───┼───┤   4 = W    8 = E
+│ 5 │ 6 │ 7 │
+└───┴───┴───┘
+```
+
+### Arc notation (powers of 2)
+
+Standard ESRI ArcGIS convention: powers of 2 placed clockwise starting from E.
+
+```
+┌─────┬─────┬─────┐
+│ 32  │  64 │ 128 │   1 =   E    16  = W
+├─────┼─────┼─────┤   2 =  SE    32  = NW
+│ 16  │  X  │  1  │   4 =   S    64  = N
+├─────┼─────┼─────┤   8 =  SW    128 = NE
+│  8  │  4  │  2  │
+└─────┴─────┴─────┘
+```
+
+### MOBIDIC notation (1-8)
+
+MOBIDIC's internal D8 encoding: codes 1-8 placed counter-clockwise starting from
+SW. This is the notation produced by `convert_to_mobidic_notation()` and consumed
+by the routing kernels.
+
+```
+┌───┬───┬───┐
+│ 7 │ 6 │ 5 │   1 = SW   5 = NE
+├───┼───┼───┤   2 = S    6 = N
+│ 8 │ X │ 4 │   3 = SE   7 = NW
+├───┼───┼───┤   4 = E    8 = W
+│ 1 │ 2 │ 3 │
+└───┴───┴───┘
+```
+
+
+## Technical details
+
+### Degradation algorithm
+
+1. Divides the input grid into blocks of size `factor × factor`
+2. For regular rasters: computes mean of valid cells in each block
+3. For flow direction: finds the cell with maximum flow accumulation in each block, determines the dominant flow direction
+4. Applies `min_valid_fraction` threshold to avoid blocks with too few valid cells
+
+### Flow direction degradation
+
+The algorithm preserves drainage patterns by:
+
+1. Finding the fine cell with maximum flow accumulation in each coarse block
+2. Determining which coarse neighbor the drainage flows to
+3. Assigning the appropriate flow direction code
+4. Normalizing flow accumulation by `factor × factor` to maintain consistent scaling
+
+## Notes
+
+- All functions return new arrays and transforms without modifying inputs
+- NaN values are properly propagated and excluded from calculations
+- Flow direction values must be in the valid range for the specified notation
+- Invalid flow direction values (e.g., not in Grass 1-8 or Arc powers-of-2) are converted to NaN
+
+
 ## Functions
 
 ### Resolution decimation
@@ -90,87 +167,3 @@ flow_dir_mobidic = convert_to_mobidic_notation(
     from_notation="Arc"
 )
 ```
-
-## Flow direction notations
-
-MOBIDICpy supports three flow direction notation systems:
-
-### Grass notation (1-8)
-
-Sequential numbering from 1 to 8, starting from East and going counter-clockwise:
-
-```
-┌───┬───┬───┐
-│ 7 │ 6 │ 5 │
-├───┼───┼───┤
-│ 8 │ X │ 4 │
-├───┼───┼───┤
-│ 1 │ 2 │ 3 │
-└───┴───┴───┘
-```
-
-### Arc notation (Power of 2)
-
-Powers of 2 from 1 to 128, starting from East and going counter-clockwise:
-
-```
-┌─────┬─────┬─────┐
-│ 128 │  64 │ 32  │
-├─────┼─────┼─────┤
-│  1  │  X  │ 16  │
-├─────┼─────┼─────┤
-│  2  │  4  │  8  │
-└─────┴─────┴─────┘
-```
-
-### MOBIDIC notation (1-8)
-
-MOBIDIC uses a transformed version of Grass notation with a 180-degree rotation. This is the notation used internally by the model:
-
-```
-┌───┬───┬───┐
-│ 3 │ 2 │ 1 │
-├───┼───┼───┤
-│ 4 │ X │ 8 │
-├───┼───┼───┤
-│ 5 │ 6 │ 7 │
-└───┴───┴───┘
-```
-
-**Mapping from Grass to MOBIDIC:**
-- Grass 1→5, 2→6, 3→7, 4→8, 5→1, 6→2, 7→3, 8→4
-
-**Direction meanings in MOBIDIC notation:**
-- 1: up-right (row -1, col +1)
-- 2: up (row -1, col 0)
-- 3: up-left (row -1, col -1)
-- 4: left (row 0, col -1)
-- 5: down-left (row +1, col -1)
-- 6: down (row +1, col 0)
-- 7: down-right (row +1, col +1)
-- 8: right (row 0, col +1)
-
-## Technical details
-
-### Degradation algorithm
-
-1. Divides the input grid into blocks of size `factor × factor`
-2. For regular rasters: computes mean of valid cells in each block
-3. For flow direction: finds the cell with maximum flow accumulation in each block, determines the dominant flow direction
-4. Applies `min_valid_fraction` threshold to avoid blocks with too few valid cells
-
-### Flow direction degradation
-
-The algorithm preserves drainage patterns by:
-
-1. Finding the fine cell with maximum flow accumulation in each coarse block
-2. Determining which coarse neighbor the drainage flows to
-3. Assigning the appropriate flow direction code
-4. Normalizing flow accumulation by `factor²` to maintain consistent scaling
-
-## Notes
-
-- All functions return new arrays and transforms without modifying inputs
-- NaN values are properly propagated and excluded from calculations
-- Flow direction values must be in the valid range for the specified notation
-- Invalid flow direction values (e.g., not in Grass 1-8 or Arc powers-of-2) are converted to NaN
