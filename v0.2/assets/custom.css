@@ -3,6 +3,12 @@ code.highlight {
     font-size: 18px;
 }
 
+.notation-diagram {
+    display: block;
+    margin: 1rem auto;
+    max-width: 22rem;
+}
+
 /* Theme-dependent logo on home page */
 [data-md-color-scheme="default"] .theme-logo {
     content: url("logo_mobidic_color.svg");
