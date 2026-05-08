@@ -98,16 +98,20 @@ def hillslope_routing(
         Each cell contains ONLY flow from immediate upstream neighbors (NOT its own flow).
 
     Notes:
-        Flow direction coding (D8) - MOBIDIC convention from MATLAB stack8point.m:
-            MOBIDIC notation (1-8):
-            7  6  5
-            8  ·  4
-            1  2  3
+        Flow direction coding (D8) - MOBIDIC convention from MATLAB stack8point.m.
+        Rasters are loaded with `np.flipud` (in `grid_to_matrix`) so that increasing
+        row index corresponds to moving NORTH; the codes/offsets below assume that
+        orientation.
 
-        Direction number -> (row_offset, col_offset) in matrix coordinates:
-            1: (-1, -1) northwest,  2: (-1, 0) north,    3: (-1, 1) northeast,
-            4: (0, 1) east,         5: (1, 1) southeast, 6: (1, 0) south,
-            7: (1, -1) southwest,   8: (0, -1) west
+            MOBIDIC notation (1-8, CCW from SW; north up):
+            7  6  5         (NW  N  NE)
+            8  ·  4         (W       E)
+            1  2  3         (SW  S  SE)
+
+        Direction number -> compass direction -> (row_offset, col_offset):
+            1: SW (-1, -1),   2: S  (-1,  0),   3: SE (-1, +1),
+            4: E  ( 0, +1),   5: NE (+1, +1),   6: N  (+1,  0),
+            7: NW (+1, -1),   8: W  ( 0, -1)
 
         Special values:
             0: Outlet cell (no downstream neighbor)
