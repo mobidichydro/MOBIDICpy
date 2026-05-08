@@ -107,11 +107,12 @@ def decimate_flow_direction(
         Flow accumulation is normalized by factor **2 to account for cell size change.
 
     Notes:
-        This function assumes flow_dir uses Grass 1-8 notation:
+        This function operates on flow_dir BEFORE conversion to MOBIDIC notation,
+        so input is expected in standard GRASS r.watershed 1-8 notation:
             1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E
 
     Examples:
-        >>> flow_dir = np.array([[2, 2], [2, 2]])  # All cells flow north
+        >>> flow_dir = np.array([[2, 2], [2, 2]])  # All cells flow north (Grass code 2)
         >>> flow_acc = np.array([[1, 1], [3, 4]])  # Different accumulation
         >>> dec_dir, dec_acc = decimate_flow_direction(flow_dir, flow_acc, factor=2)
     """
@@ -137,10 +138,11 @@ def decimate_flow_direction(
     flow_dir_decimated = np.full((nrv, ncv), np.nan, dtype=float)
     flow_acc_decimated = np.full((nrv, ncv), np.nan, dtype=float)
 
-    # Direction offsets for Grass 1-8 notation to MOBIDIC notation
-    # 1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E
+    # Direction offsets indexed by code-1, in standard GRASS r.watershed notation
+    # (1=NE, 2=N, 3=NW, 4=W, 5=SW, 6=S, 7=SE, 8=E). Offsets are matrix-coord
+    # (row, col) where row+1 = down (image orientation, before any flipud).
     di = np.array([-1, -1, -1, 0, 1, 1, 1, 0])  # row offset
-    dj = np.array([-1, 0, 1, 1, 1, 0, -1, -1])  # column offset
+    dj = np.array([1, 0, -1, -1, -1, 0, 1, 1])  # column offset
 
     # Minimum number of valid cells required
     min_valid_cells = int(factor * factor * min_valid_fraction)
@@ -204,17 +206,17 @@ def decimate_flow_direction(
                 flow_dir_decimated[i, j] = -999
                 continue
 
-            # Map coarse cell offset to direction (1-8)
-            # coarse_di, coarse_dj -> direction
+            # Map coarse cell offset to direction (1-8) in standard GRASS r.watershed
+            # convention (image orientation, row+1 = down).
             offset_to_dir = {
-                (-1, -1): 1,  # NE (IP=-1, JP=-1 -> -11 -> case 1)
-                (-1, 0): 2,  # N  (IP=-1, JP=0  -> -10 -> case 2)
-                (-1, 1): 3,  # NW (IP=-1, JP=1  -> -9  -> case 3)
-                (0, 1): 4,  # W  (IP=0,  JP=1  -> 1   -> case 4)
-                (1, 1): 5,  # SW (IP=1,  JP=1  -> 11  -> case 5)
-                (1, 0): 6,  # S  (IP=1,  JP=0  -> 10  -> case 6)
-                (1, -1): 7,  # SE (IP=1,  JP=-1 -> 9   -> case 7)
-                (0, -1): 8,  # E  (IP=0,  JP=-1 -> -1  -> case 8)
+                (-1, 1): 1,  # NE
+                (-1, 0): 2,  # N
+                (-1, -1): 3,  # NW
+                (0, -1): 4,  # W
+                (1, -1): 5,  # SW
+                (1, 0): 6,  # S
+                (1, 1): 7,  # SE
+                (0, 1): 8,  # E
             }
 
             flow_dir_decimated[i, j] = offset_to_dir.get((coarse_di, coarse_dj), -999)
@@ -253,9 +255,13 @@ def convert_to_mobidic_notation(
 ) -> np.ndarray:
     """Convert flow direction from Grass or Arc notation to MOBIDIC notation.
 
-    MOBIDIC uses a transformed version of the Grass notation with a 180-degree rotation.
-    This transformation is applied in MATLAB's buildgis_mysql_include.m:
-        AI=[1 2 3 4 5 6 7 8]; MD=[5 6 7 8 1 2 3 4];
+    Translates standard GRASS r.watershed (1-8) or ESRI ArcGIS (powers of 2) flow
+    direction codes to MOBIDIC's internal D8 encoding. The renumbering is
+    direction-preserving (each input code maps to the MOBIDIC code with the same
+    physical compass direction). The mapping matches MATLAB's
+    buildgis_mysql_include.m:
+        GRASS:  AI=[1 2 3 4 5 6 7 8];        MD=[5 6 7 8 1 2 3 4];
+        ArcGIS: AI=[1 2 4 8 16 32 64 128];   MD=[4 3 2 1 8 7 6 5];
 
     Args:
         flow_dir: 2D numpy array with flow directions (NaN for nodata).
@@ -265,25 +271,36 @@ def convert_to_mobidic_notation(
         Flow direction array converted to MOBIDIC notation (1-8).
 
     Notes:
-        Transformation mappings:
-            - GRASS -> MOBIDIC: 1->5, 2->6, 3->7, 4->8, 5->1, 6->2, 7->3, 8->4
-            - Arc values are first converted to Grass, then to MOBIDIC
+        Standard GRASS r.watershed convention (1-8, CCW from NE; north up):
 
-        Notation comparison:
-            GRASS:              MOBIDIC:
-              7 6 5               3 2 1
-              8   4               4   8
-              1 2 3               5 6 7
+            3 2 1            1 = NE       5 = SW
+            4 . 8            2 = N        6 = S
+            5 6 7            3 = NW       7 = SE
+                             4 = W        8 = E
 
-        MOBIDIC directions:
-            1: up-right      (row -1, col +1)
-            2: up            (row -1, col  0)
-            3: up-left       (row -1, col -1)
-            4: left          (row  0, col -1)
-            5: down-left     (row +1, col -1)
-            6: down          (row +1, col  0)
-            7: down-right    (row +1, col +1)
-            8: right         (row  0, col +1)
+        Standard ESRI ArcGIS convention (powers of 2, CW from E; north up):
+
+             32  64 128       1   = E       16  = W
+             16   .   1       2   = SE      32  = NW
+              8   4   2       4   = S       64  = N
+                              8   = SW      128 = NE
+
+        MOBIDIC convention (1-8, CCW from SW; north up):
+
+            7 6 5            1 = SW       5 = NE
+            8 . 4            2 = S        6 = N
+            1 2 3            3 = SE       7 = NW
+                             4 = E        8 = W
+
+        Direction-preserving mapping:
+            GRASS  -> MOBIDIC:  1->5, 2->6, 3->7, 4->8, 5->1, 6->2, 7->3, 8->4
+            ArcGIS -> MOBIDIC:  1->4, 2->3, 4->2, 8->1, 16->8, 32->7, 64->6, 128->5
+
+        Array orientation: rasters are loaded by `grid_to_matrix()` with `np.flipud`
+        so that increasing row index corresponds to moving NORTH. With that
+        orientation, MOBIDIC code k drains to the neighbor at offset
+        (di, dj) where di = `[-1,-1,-1,0,1,1,1,0][k-1]` and
+        dj = `[-1,0,1,1,1,0,-1,-1][k-1]`. For example, code 5 (NE) -> (+1, +1).
 
     Examples:
         >>> flow_dir_grass = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 1]])
@@ -298,7 +315,7 @@ def convert_to_mobidic_notation(
     grass_to_mobidic = {1: 5, 2: 6, 3: 7, 4: 8, 5: 1, 6: 2, 7: 3, 8: 4}
 
     # Arc to GRASS mapping
-    arc_to_grass = {1: 8, 2: 1, 4: 2, 8: 3, 16: 4, 32: 5, 64: 6, 128: 7}
+    arc_to_grass = {1: 8, 2: 7, 4: 6, 8: 5, 16: 4, 32: 3, 64: 2, 128: 1}
 
     # Create output array
     converted = flow_dir.copy()
