@@ -15,15 +15,17 @@ class TestHillslopeRouting:
         # Create 3x3 grid where all cells drain to center
         lateral_flow = np.ones((3, 3)) * 0.1
 
-        # All cells flow to center (1,1)
-        # MOBIDIC notation (1-8): 1=northwest, 2=north, 3=northeast, 4=east,
-        #                         5=southeast, 6=south, 7=southwest, 8=west
-        # Direction 2 = up (north), 6 = down (south), 4 = right (east), 8 = left (west)
+        # All cells flow to center (1,1).
+        # MOBIDIC notation (1-8, CCW from SW; row+1 = north):
+        #   1=SW, 2=S, 3=SE, 4=E, 5=NE, 6=N, 7=NW, 8=W
+        # Codes are direction-of-flow; offsets (di, dj) in matrix coords:
+        #   1->(-1,-1), 2->(-1,0), 3->(-1,1), 4->(0,1),
+        #   5->(1,1),   6->(1,0),  7->(1,-1), 8->(0,-1)
         flow_direction = np.array(
             [
-                [5, 6, 7],  # top row: (0,0)->down-right, (0,1)->down, (0,2)->down-left
-                [4, 0, 8],  # middle: (1,0)->right, (1,1)=outlet, (1,2)->left
-                [3, 2, 1],  # bottom: (2,0)->up-right, (2,1)->up, (2,2)->up-left
+                [5, 6, 7],  # row 0 (south side): (0,0)->NE, (0,1)->N, (0,2)->NW
+                [4, 0, 8],  # row 1 (middle):    (1,0)->E,  (1,1)=outlet, (1,2)->W
+                [3, 2, 1],  # row 2 (north side): (2,0)->SE, (2,1)->S, (2,2)->SW
             ]
         )
 
