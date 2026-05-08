@@ -229,7 +229,8 @@ def map_hillslope_to_reach(
 
     logger.debug(f"Lookup table built: {len(cell_to_reach)} reach cells")
 
-    # Direction offsets for MOBIDIC notation (1-8)
+    # Direction offsets for MOBIDIC notation (1-8, CCW from SW; north up).
+    # Code k (1..8) -> (di[k-1], dj[k-1]); e.g. 1=SW -> (-1,-1), 5=NE -> (+1,+1).
     di = np.array([-1, -1, -1, 0, 1, 1, 1, 0])  # row offset (matches i8)
     dj = np.array([-1, 0, 1, 1, 1, 0, -1, -1])  # column offset (matches j8)
 
