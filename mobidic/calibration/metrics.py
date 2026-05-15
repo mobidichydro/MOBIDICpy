@@ -5,6 +5,7 @@ to PEST++ as pseudo-observations for custom objective functions.
 """
 
 import numpy as np
+import HydroErr as he
 
 
 def nse(simulated: np.ndarray, observed: np.ndarray) -> float:
@@ -126,6 +127,15 @@ def kge(simulated: np.ndarray, observed: np.ndarray) -> float:
 
     return 1.0 - np.sqrt((r - 1) ** 2 + (alpha - 1) ** 2 + (beta - 1) ** 2)
 
+def kge_2012(simulated: np.ndarray, observed: np.ndarray) -> float:
+    """Kling-Gupta Efficiency (2012)"""
+    return he.kge_2012(simulated, observed)
+
+def mle(simulated: np.ndarray, observed: np.ndarray) -> float:
+    """Mean Logarith Error"""
+    return he.mle(simulated, observed)
+
+
 
 # Registry mapping metric names to (function, target_value)
 METRIC_REGISTRY: dict[str, tuple] = {
@@ -135,6 +145,8 @@ METRIC_REGISTRY: dict[str, tuple] = {
     "peak_error": (peak_error, 0.0),
     "rmse": (rmse, 0.0),
     "kge": (kge, 1.0),
+    "kge_2012": (kge_2012, 1.0), 
+    "mle": (mle, 0.0),   
 }
 
 
