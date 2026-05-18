@@ -94,6 +94,8 @@ observations:
   - name: gauge
     obs_file: obs.csv
     reach_id: 42
+    weight: 1.0e-3
+    time_column: time
     value_column: discharge
     metrics:
       - {metric: kge_2012, target: 1.0, weight: 1.0}
