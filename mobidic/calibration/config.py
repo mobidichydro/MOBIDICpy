@@ -50,7 +50,12 @@ class CalibrationParameter(BaseModel):
 class MetricConfig(BaseModel):
     """Configuration for a derived metric used as pseudo-observation."""
 
-    metric: str = Field(..., description="Metric name (nse, nse_log, pbias, peak_error, rmse, kge, kge_2012, etc.)")
+    metric: str = Field(
+        ...,
+        description="Metric name. Custom: nse, nse_log, pbias, peak_error. "
+        "Plus all HydroErr metrics (rmse, kge, kge_2009, kge_2012, mle, mae, mape, "
+        "r_squared, pearson_r, ve, d, d1, ...). See METRIC_REGISTRY for the full list.",
+    )
     target: float = Field(..., description="Target value PEST++ tries to match (e.g., 1.0 for NSE)")
     weight: float = Field(1.0, description="Observation weight for this metric")
 
@@ -58,9 +63,10 @@ class MetricConfig(BaseModel):
     @classmethod
     def check_metric_name(cls, v: str) -> str:
         """Validate metric name is supported."""
-        supported = {"nse", "nse_log", "pbias", "peak_error", "rmse", "kge", "kge_2012", "mle"}
-        if v not in supported:
-            raise ValueError(f"Unsupported metric '{v}'. Supported: {sorted(supported)}")
+        from mobidic.calibration.metrics import METRIC_REGISTRY
+
+        if v not in METRIC_REGISTRY:
+            raise ValueError(f"Unsupported metric '{v}'. Supported: {sorted(METRIC_REGISTRY.keys())}")
         return v
 
     @field_validator("weight")
