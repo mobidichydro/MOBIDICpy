@@ -74,17 +74,20 @@ parameters:
 ######## OBSERVATIONS
 
 # REQUIRED: Observation time series for PEST++ calibration.
+# One observation group is created for each entry in this list in PEST++. Pseudo-observations are treated as distinct groups.
+# The relative weight of each group must be carefully chosen to balance the contribution of each group to the objective function. 
+# The individual contributions to the objective function can be checked in the .iobj file (GLM) or .phi.group.csv (IES).
 observations:
   - name: Q_278
     obs_file: "../datasets/Arno/data/Q_TOS01004659_15min_2023.csv" # REQUIRED: Path to observation data file [path to .csv file]
     reach_id: 278 # REQUIRED: River reach ID to compare with observations [positive integer matching a reach ID in the network]
-    weight: 1.0 # OPTIONAL: Weight for this observation group [positive float, default: 1.0]
+    weight: 1e-3 # OPTIONAL: Weight assigned to each observation row in obs_file [positive float, default: 1.0]
     time_column: time # REQUIRED: Name of the time column in the observation file [string matching a column name in obs_file]
     value_column: Q # REQUIRED: Name of the value column in the observation file [string matching a column name in obs_file]
     
     # OPTIONAL: Derived metrics as pseudo-observations
     metrics:
-      - metric: nse   # REQUIRED: Metric type (HydroErr package metric names) [nse | peak_error | ...]
+      - metric: nse   # REQUIRED: Metric type (HydroErr package metric names) [nse | kge | peak_error | ...]
         target: 1.0   # REQUIRED: Target value for this metric pseudo-observation [float]
         weight: 2.0  # REQUIRED: Weight for this metric pseudo-observation [positive float]
       - metric: peak_error

@@ -2,9 +2,17 @@
 
 Metrics are computed from simulated and observed time series and can be passed
 to PEST++ as pseudo-observations for custom objective functions.
+
+Includes custom implementations (nse, nse_log, pbias, peak_error) and the full
+catalog of HydroErr metrics exposed via the ``he`` module
+(see https://hydroerr.readthedocs.io/en/stable/list_of_metrics.html).
 """
 
 import numpy as np
+import HydroErr as he
+
+
+######## CUSTOM METRIC IMPLEMENTATIONS ########
 
 
 def nse(simulated: np.ndarray, observed: np.ndarray) -> float:
@@ -80,62 +88,104 @@ def peak_error(simulated: np.ndarray, observed: np.ndarray) -> float:
     return (np.max(simulated) - obs_peak) / obs_peak
 
 
-def rmse(simulated: np.ndarray, observed: np.ndarray) -> float:
-    """Root Mean Square Error.
+######## HYDROERR METRIC CATALOG ########
+# Maps each HydroErr function name to its perfect-match target value.
+_HYDROERR_TARGETS: dict[str, float] = {
+    # Efficiency / agreement / correlation metrics (perfect = 1.0)
+    "nse": 1.0,
+    "nse_mod": 1.0,
+    "nse_rel": 1.0,
+    "kge_2009": 1.0,
+    "kge_2012": 1.0,
+    "lm_index": 1.0,
+    "ve": 1.0,
+    "d": 1.0,
+    "d1": 1.0,
+    "d1_p": 1.0,
+    "dmod": 1.0,
+    "dr": 1.0,
+    "drel": 1.0,
+    "r_squared": 1.0,
+    "pearson_r": 1.0,
+    "spearman_r": 1.0,
+    "acc": 1.0,
+    "mb_r": 1.0,
+    "watt_m": 1.0,
+    "g_mean_diff": 1.0,
+    # Error metrics (perfect = 0.0)
+    "rmse": 0.0,
+    "mae": 0.0,
+    "me": 0.0,
+    "mse": 0.0,
+    "mle": 0.0,
+    "male": 0.0,
+    "mape": 0.0,
+    "mapd": 0.0,
+    "maape": 0.0,
+    "mase": 0.0,
+    "mdae": 0.0,
+    "mde": 0.0,
+    "mdse": 0.0,
+    "msle": 0.0,
+    "rmsle": 0.0,
+    "smape1": 0.0,
+    "smape2": 0.0,
+    "ed": 0.0,
+    "ned": 0.0,
+    "irmse": 0.0,
+    "nrmse_iqr": 0.0,
+    "nrmse_mean": 0.0,
+    "nrmse_range": 0.0,
+    "mean_var": 0.0,
+    # Spectral metrics (perfect = 0.0)
+    "sa": 0.0,
+    "sc": 0.0,
+    "sga": 0.0,
+    "sid": 0.0,
+    # H-series error metrics (perfect = 0.0)
+    "h1_mhe": 0.0,
+    "h1_mahe": 0.0,
+    "h1_rmshe": 0.0,
+    "h2_mhe": 0.0,
+    "h2_mahe": 0.0,
+    "h2_rmshe": 0.0,
+    "h3_mhe": 0.0,
+    "h3_mahe": 0.0,
+    "h3_rmshe": 0.0,
+    "h4_mhe": 0.0,
+    "h4_mahe": 0.0,
+    "h4_rmshe": 0.0,
+    "h5_mhe": 0.0,
+    "h5_mahe": 0.0,
+    "h5_rmshe": 0.0,
+    "h6_mhe": 0.0,
+    "h6_mahe": 0.0,
+    "h6_rmshe": 0.0,
+    "h7_mhe": 0.0,
+    "h7_mahe": 0.0,
+    "h7_rmshe": 0.0,
+    "h8_mhe": 0.0,
+    "h8_mahe": 0.0,
+    "h8_rmshe": 0.0,
+    "h10_mhe": 0.0,
+    "h10_mahe": 0.0,
+    "h10_rmshe": 0.0,
+}
 
-    Perfect score: 0.0
 
-    Args:
-        simulated: Simulated values.
-        observed: Observed values.
-
-    Returns:
-        RMSE value.
-    """
-    return float(np.sqrt(np.mean((simulated - observed) ** 2)))
-
-
-def kge(simulated: np.ndarray, observed: np.ndarray) -> float:
-    """Kling-Gupta Efficiency.
-
-    KGE = 1 - sqrt((r - 1)^2 + (alpha - 1)^2 + (beta - 1)^2)
-    where r = correlation, alpha = std(sim)/std(obs), beta = mean(sim)/mean(obs)
-    Perfect score: 1.0
-
-    Args:
-        simulated: Simulated values.
-        observed: Observed values.
-
-    Returns:
-        KGE value (range: -inf to 1.0).
-    """
-    obs_mean = np.mean(observed)
-    sim_mean = np.mean(simulated)
-    obs_std = np.std(observed)
-    sim_std = np.std(simulated)
-
-    if obs_std == 0 or obs_mean == 0:
-        return np.nan
-
-    # Correlation
-    r = np.corrcoef(simulated, observed)[0, 1]
-    # Variability ratio
-    alpha = sim_std / obs_std
-    # Bias ratio
-    beta = sim_mean / obs_mean
-
-    return 1.0 - np.sqrt((r - 1) ** 2 + (alpha - 1) ** 2 + (beta - 1) ** 2)
-
-
-# Registry mapping metric names to (function, target_value)
+# Registry mapping metric names to (function, target_value).
+# Add custom implementations
 METRIC_REGISTRY: dict[str, tuple] = {
     "nse": (nse, 1.0),
     "nse_log": (nse_log, 1.0),
     "pbias": (pbias, 0.0),
     "peak_error": (peak_error, 0.0),
-    "rmse": (rmse, 0.0),
-    "kge": (kge, 1.0),
+    "kge": (he.kge_2012, 1.0),
 }
+
+# Add HydroErr metrics
+for _name, _target in _HYDROERR_TARGETS.items():
+    METRIC_REGISTRY.setdefault(_name, (getattr(he, _name), _target))
 
 
 def compute_metrics(

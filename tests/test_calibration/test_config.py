@@ -106,6 +106,19 @@ class TestMetricConfig:
             m = MetricConfig(metric=metric, target=0.0)
             assert m.metric == metric
 
+    def test_hydroerr_metric_names_accepted(self):
+        """Names sourced from HydroErr (beyond the original hardcoded list) must validate."""
+        for metric in ["kge_2009", "kge_2012", "mle", "mae", "r_squared", "pearson_r", "ve", "d"]:
+            m = MetricConfig(metric=metric, target=1.0)
+            assert m.metric == metric
+
+    def test_validator_uses_registry(self):
+        """The validator must accept every name in METRIC_REGISTRY (no drift)."""
+        from mobidic.calibration.metrics import METRIC_REGISTRY
+
+        for metric in METRIC_REGISTRY:
+            MetricConfig(metric=metric, target=0.0)
+
 
 # ---- ObservationGroup tests ----
 

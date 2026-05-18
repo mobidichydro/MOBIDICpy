@@ -117,7 +117,7 @@ Requires optional dependencies: `pip install "mobidicpy[calibration]" && get-pes
 - [`CalibrationResults`](calibration.md#mobidic.calibration.results.CalibrationResults) - Parses PEST++ output files (parameters, objective function, sensitivities)
 - [`CalibrationConfig`](calibration.md#mobidic.calibration.config.CalibrationConfig) - Pydantic model for calibration configuration
 - [`load_calibration_config()`](calibration.md#mobidic.calibration.config.load_calibration_config) - Load calibration configuration from YAML
-- [`nse()`](calibration.md#mobidic.calibration.metrics.nse), [`kge()`](calibration.md#mobidic.calibration.metrics.kge), [`pbias()`](calibration.md#mobidic.calibration.metrics.pbias), [`rmse()`](calibration.md#mobidic.calibration.metrics.rmse) - Hydrological performance metrics
+- [`compute_metrics()`](calibration.md#mobidic.calibration.metrics.compute_metrics) - Hydrological performance metrics (i.e., NSE, KGE, RMSE, and all the metrics in the [HydroErr](https://hydroerr.readthedocs.io/en/stable/list_of_metrics.html) package)
 - [`load_observations()`](calibration.md#mobidic.calibration.observation.load_observations) - Load observation time series from CSV
 
 ## Quick import
