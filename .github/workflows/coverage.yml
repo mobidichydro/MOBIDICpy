@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra calibration
       - name: Run tests with coverage
         run: |
           uv run python -m coverage run

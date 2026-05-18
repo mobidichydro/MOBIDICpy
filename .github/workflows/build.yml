@@ -40,7 +40,7 @@ jobs:
           which python
           python --version
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra calibration
       - name: Run unit tests
         run: uv run python -m pytest -v
 
