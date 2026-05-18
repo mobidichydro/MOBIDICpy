@@ -22,7 +22,7 @@ from pathlib import Path
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
-from mobidic.calibration import PestSetup, kge, nse
+from mobidic.calibration import PestSetup, compute_metrics
 from mobidic.calibration.config import CalibrationConfig, load_calibration_config
 from mobidic import (
     load_config,
@@ -161,8 +161,9 @@ common_index = df_sim.index.intersection(df_obs.index)
 sim_aligned = df_sim.loc[common_index]
 obs_aligned = df_obs.loc[common_index]
 
-nse_val = nse(sim_aligned.values, obs_aligned.values)
-kge_val = kge(sim_aligned.values, obs_aligned.values)
+scores = compute_metrics(sim_aligned.values, obs_aligned.values, ["nse", "kge"])
+nse_val = scores["nse"]
+kge_val = scores["kge"]
 
 fig1, ax1 = plt.subplots(figsize=(12, 4))
 ax1.plot(common_index, obs_aligned, "b-", linewidth=1.5, alpha=0.8, label="Observed")
