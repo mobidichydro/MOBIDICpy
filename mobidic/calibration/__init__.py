@@ -16,13 +16,8 @@ from mobidic.calibration.config import (
     load_calibration_config,
 )
 from mobidic.calibration.metrics import (
+    METRIC_REGISTRY,
     compute_metrics,
-    kge,
-    nse,
-    nse_log,
-    pbias,
-    peak_error,
-    rmse,
 )
 from mobidic.calibration.observation import (
     align_observations_to_simulation,
@@ -46,11 +41,6 @@ __all__ = [
     "load_observations",
     "align_observations_to_simulation",
     # Metrics
-    "nse",
-    "nse_log",
-    "pbias",
-    "peak_error",
-    "rmse",
-    "kge",
     "compute_metrics",
+    "METRIC_REGISTRY",
 ]
