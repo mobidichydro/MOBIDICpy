@@ -363,6 +363,13 @@ output_states:
   # [boolean]
   evapotranspiration: false
 
+  # OPTIONAL: Save surface runoff rate. Default: true
+  # [boolean]
+  surface_runoff: true
+
+  # OPTIONAL: Save hypodermic (lateral subsurface) flux. Default: true
+  # [boolean]
+  hypodermic_flux: true
 
 output_states_settings:
   # OPTIONAL: Format for state output files
