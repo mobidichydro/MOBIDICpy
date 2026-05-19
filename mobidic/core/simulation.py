@@ -1123,8 +1123,10 @@ class Simulation:
         # Get sorted reach indices by calc_order
         sorted_reach_idx = network.sort_values("calc_order").index.values.astype(np.int32)
 
-        # Extract K (lag time as storage coefficient)
-        K = network["lag_time_s"].values
+        # Apply celerity multiplier:
+        # wcel_effective = wcel * cel_factor, therefore K_effective = lag_time_s / cel_factor
+        cel_factor = self.config.parameters.multipliers.cel_factor
+        K = network["lag_time_s"].values / cel_factor
 
         topology = {
             "upstream_1_idx": upstream_1_idx,
