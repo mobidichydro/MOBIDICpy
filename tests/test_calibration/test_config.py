@@ -46,7 +46,7 @@ class TestCalibrationParameter:
         with pytest.raises(ValidationError, match="lower_bound"):
             CalibrationParameter(
                 name="test",
-                parameter_key="a.b",
+                parameter_key="parameters.multipliers.ks_factor",
                 initial_value=1.0,
                 lower_bound=100.0,
                 upper_bound=1.0,
@@ -56,7 +56,7 @@ class TestCalibrationParameter:
         with pytest.raises(ValidationError, match="initial_value"):
             CalibrationParameter(
                 name="test",
-                parameter_key="a.b",
+                parameter_key="parameters.multipliers.ks_factor",
                 initial_value=200.0,
                 lower_bound=0.01,
                 upper_bound=100.0,
@@ -66,7 +66,7 @@ class TestCalibrationParameter:
         with pytest.raises(ValidationError, match="positive"):
             CalibrationParameter(
                 name="test",
-                parameter_key="a.b",
+                parameter_key="parameters.multipliers.ks_factor",
                 initial_value=0.5,
                 lower_bound=-1.0,
                 upper_bound=100.0,
@@ -76,13 +76,73 @@ class TestCalibrationParameter:
     def test_fixed_transform_accepted(self):
         p = CalibrationParameter(
             name="fixed_param",
-            parameter_key="a.b",
+            parameter_key="parameters.routing.wcel",
             initial_value=5.0,
             lower_bound=1.0,
             upper_bound=10.0,
             transform="fixed",
         )
         assert p.transform == "fixed"
+
+    def test_unknown_top_level_key_rejected(self):
+        with pytest.raises(ValidationError, match="not a field of"):
+            CalibrationParameter(
+                name="test",
+                parameter_key="not_a_section.foo",
+                initial_value=1.0,
+                lower_bound=0.1,
+                upper_bound=10.0,
+            )
+
+    def test_unknown_nested_key_rejected(self):
+        with pytest.raises(ValidationError, match="not a field of"):
+            CalibrationParameter(
+                name="test",
+                parameter_key="parameters.multipliers.does_not_exist",
+                initial_value=1.0,
+                lower_bound=0.1,
+                upper_bound=10.0,
+            )
+
+    def test_nested_model_leaf_rejected(self):
+        with pytest.raises(ValidationError, match="nested model"):
+            CalibrationParameter(
+                name="test",
+                parameter_key="parameters.multipliers",
+                initial_value=1.0,
+                lower_bound=0.1,
+                upper_bound=10.0,
+            )
+
+    def test_non_numeric_leaf_rejected(self):
+        with pytest.raises(ValidationError, match="numeric"):
+            CalibrationParameter(
+                name="test",
+                parameter_key="parameters.routing.method",
+                initial_value=1.0,
+                lower_bound=0.1,
+                upper_bound=10.0,
+            )
+
+    def test_empty_path_rejected(self):
+        with pytest.raises(ValidationError, match="valid dot-notation path"):
+            CalibrationParameter(
+                name="test",
+                parameter_key="",
+                initial_value=1.0,
+                lower_bound=0.1,
+                upper_bound=10.0,
+            )
+
+    def test_trailing_dot_rejected(self):
+        with pytest.raises(ValidationError, match="valid dot-notation path"):
+            CalibrationParameter(
+                name="test",
+                parameter_key="parameters.multipliers.",
+                initial_value=1.0,
+                lower_bound=0.1,
+                upper_bound=10.0,
+            )
 
 
 # ---- MetricConfig tests ----
@@ -199,8 +259,20 @@ class TestCalibrationConfig:
         with pytest.raises(ValidationError, match="Duplicate parameter names"):
             self._make_minimal_config(
                 parameters=[
-                    {"name": "p1", "parameter_key": "a.b", "initial_value": 1, "lower_bound": 0.1, "upper_bound": 10},
-                    {"name": "p1", "parameter_key": "c.d", "initial_value": 2, "lower_bound": 0.1, "upper_bound": 10},
+                    {
+                        "name": "p1",
+                        "parameter_key": "parameters.multipliers.ks_factor",
+                        "initial_value": 1,
+                        "lower_bound": 0.1,
+                        "upper_bound": 10,
+                    },
+                    {
+                        "name": "p1",
+                        "parameter_key": "parameters.routing.wcel",
+                        "initial_value": 2,
+                        "lower_bound": 0.1,
+                        "upper_bound": 10,
+                    },
                 ]
             )
 
