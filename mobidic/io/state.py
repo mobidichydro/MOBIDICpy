@@ -255,6 +255,18 @@ def load_state(
         logger.warning("lateral_inflow not found in state file, initializing with zeros")
         lateral_inflow = np.zeros(network_size)
 
+    # Surface runoff (flr) and lateral subsurface flow (fld)
+    if "flr" in ds:
+        flr = ds["flr"].values
+    else:
+        logger.warning("flr not found in state file, initializing with zeros")
+        flr = np.zeros((nrows, ncols))
+    if "fld" in ds:
+        fld = ds["fld"].values
+    else:
+        logger.warning("fld not found in state file, initializing with zeros")
+        fld = np.zeros((nrows, ncols))
+
     # Extract time
     time = pd.Timestamp(ds["time"].values).to_pydatetime()
 
@@ -279,7 +291,7 @@ def load_state(
     # Import here to avoid circular import
     from mobidic.core.simulation import SimulationState
 
-    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, h=h, ts=ts, td=td)
+    state = SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, h=h, ts=ts, td=td, flr=flr, fld=fld)
 
     logger.success(f"State loaded: time={time.isoformat()}, grid={nrows}x{ncols}, reaches={len(discharge)}")
 
@@ -521,6 +533,8 @@ class StateWriter:
             ts=state.ts.copy() if state.ts is not None else None,
             td=state.td.copy() if state.td is not None else None,
             et=state.et.copy() if state.et is not None else None,
+            flr=state.flr.copy() if state.flr is not None else None,
+            fld=state.fld.copy() if state.fld is not None else None,
         )
 
         # Add to buffer
@@ -607,6 +621,22 @@ class StateWriter:
                     [s.et if s.et is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
                 )
                 data_vars["ET"] = (["time", "y", "x"], et_data)
+
+        # Surface runoff (flr) and hypodermic (lateral subsurface) flow (fld)
+        if self.output_states.surface_runoff:
+            has_flr = any(s.flr is not None for s in self.buffer)
+            if has_flr:
+                flr_data = np.array(
+                    [s.flr if s.flr is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["flr"] = (["time", "y", "x"], flr_data)
+        if self.output_states.hypodermic_flux:
+            has_fld = any(s.fld is not None for s in self.buffer)
+            if has_fld:
+                fld_data = np.array(
+                    [s.fld if s.fld is not None else np.full((self.nrows, self.ncols), np.nan) for s in self.buffer]
+                )
+                data_vars["fld"] = (["time", "y", "x"], fld_data)
 
         # Network variables
         if self.output_states.discharge:
@@ -711,6 +741,22 @@ class StateWriter:
                 "long_name": "Actual Evapotranspiration Rate",
                 "units": "m s-1",
                 "description": "Actual evapotranspiration as bounded by soil water availability",
+                "grid_mapping": "crs",
+            }
+
+        if "flr" in flush_ds:
+            flush_ds["flr"].attrs = {
+                "long_name": "Surface runoff flux",
+                "units": "m s-1",
+                "description": "Surface runoff flux",
+                "grid_mapping": "crs",
+            }
+
+        if "fld" in flush_ds:
+            flush_ds["fld"].attrs = {
+                "long_name": "Hypodermic flux",
+                "units": "m s-1",
+                "description": "Hypodermic (lateral subsurface) flux",
                 "grid_mapping": "crs",
             }
 

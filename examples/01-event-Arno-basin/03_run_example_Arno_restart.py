@@ -315,7 +315,6 @@ axes[1].set_ylabel("Absolute Difference (m³/s)")
 axes[1].set_title(f"Difference between continuous and restarted runs at reach {reach_id}")
 axes[1].grid(True, alpha=0.3)
 axes[1].legend()
-axes[1].set_yscale("log")
 
 # Plot 3: Network-wide statistics
 q_mean_cont = np.mean(discharge_continuous, axis=1)

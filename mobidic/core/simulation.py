@@ -76,6 +76,8 @@ class SimulationState:
         ts: np.ndarray | None = None,
         td: np.ndarray | None = None,
         et: np.ndarray | None = None,
+        flr: np.ndarray | None = None,
+        fld: np.ndarray | None = None,
     ):
         """Initialize simulation state.
 
@@ -91,6 +93,8 @@ class SimulationState:
             ts: Surface temperature [K] (None when energy balance is disabled)
             td: Deep-soil temperature [K] (None when energy balance is disabled)
             et: Actual evapotranspiration rate [m/s] (None when ET output is disabled)
+            flr: Surface runoff flux [m/s]
+            fld: Hypodermic (lateral subsurface) flux [m/s]
         """
         self.wc = wc
         self.wg = wg
@@ -103,6 +107,8 @@ class SimulationState:
         self.ts = ts
         self.td = td
         self.et = et
+        self.flr = flr
+        self.fld = fld
 
 
 class SimulationResults:
@@ -423,6 +429,10 @@ class Simulation:
         discharge = np.zeros(len(self.network))
         lateral_inflow = np.zeros(len(self.network))
 
+        # Initialize surface runoff (flr) and hypodermic flow (fld)
+        flr = np.zeros((self.nrows, self.ncols))
+        fld = np.zeros((self.nrows, self.ncols))
+
         # Initialize groundwater head when Linear groundwater model is active
         h = None
         if self.config.parameters.groundwater.model == "Linear":
@@ -465,7 +475,9 @@ class Simulation:
             log_msg += f", h={np.nanmean(h) * 1000:.1f} mm"
         logger.success(log_msg)
 
-        return SimulationState(wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states, h=h, ts=ts, td=td)
+        return SimulationState(
+            wc, wg, wp, ws, discharge, lateral_inflow, reservoir_states, h=h, ts=ts, td=td, flr=flr, fld=fld
+        )
 
     def set_initial_state(
         self,
@@ -1300,11 +1312,10 @@ class Simulation:
         ko = np.where(ko.ravel("F"))[0]
         logger.debug(f"Contributing pixels (ko): {len(ko)} of {self.nrows * self.ncols} total cells")
 
-        # Initialize flow variables for hillslope routing feedback (matching MATLAB mobidic_sid.m:1621-1625)
-        # flr_prev: surface runoff from previous timestep [m/s] - will be routed to create pir
-        # fld_prev: lateral flow from previous timestep [m/s] - will be routed to create pid
-        flr_prev = np.zeros((self.nrows, self.ncols))
-        fld_prev = np.zeros((self.nrows, self.ncols))
+        if self.state.flr is None:
+            self.state.flr = np.zeros((self.nrows, self.ncols))
+        if self.state.fld is None:
+            self.state.fld = np.zeros((self.nrows, self.ncols))
 
         # Energy balance preparation.
         # Skip energy balance when ET or PET is provided by the raster forcing.
@@ -1604,17 +1615,19 @@ class Simulation:
                     )
                 meteo_writer.append(current_time, **meteo_kwargs)
 
-            # 4. Hillslope routing of previous timestep's flows (matching MATLAB mobidic_sid.m:1621-1625)
-            # This must happen BEFORE soil mass balance to provide upstream contributions
+            # 4. Hillslope routing of the previous timestep's flows.
             logger.debug("Routing previous timestep's flows through hillslope")
 
+            flr_for_routing = self.state.flr.copy()
+            flr_for_routing[self.hillslope_reach_map >= 0] = 0.0
+
             # Convert to discharge for routing
-            flr_prev_discharge = flr_prev * cell_area
-            fld_prev_discharge = fld_prev * cell_area
+            flr_in_discharge = flr_for_routing * cell_area
+            fld_in_discharge = self.state.fld * cell_area
 
             # Route through hillslope
-            pir_discharge = hillslope_routing(flr_prev_discharge, self.flow_dir)
-            pid_discharge = hillslope_routing(fld_prev_discharge, self.flow_dir)
+            pir_discharge = hillslope_routing(flr_in_discharge, self.flow_dir)
+            pid_discharge = hillslope_routing(fld_in_discharge, self.flow_dir)
             logger.debug("Hillslope routing completed")
 
             # Convert back to rates
@@ -1876,6 +1889,10 @@ class Simulation:
                         # Set upstream count to 0 (MATLAB: ram_fin(j) = 0)
                         routing_network["n_upstream"][outlet_reach] = 0
 
+            # Save surface runoff and lateral subsurface flow
+            self.state.flr = flr.copy()
+            self.state.fld = fld.copy()
+
             # 7. Accumulate lateral inflow to reaches from surface runoff (matching MATLAB glob_route_day.m:26-35)
             # Basin cells have flr=0 from reservoir routing, so they correctly contribute nothing.
             flr_discharge = flr * cell_area
@@ -1891,15 +1908,6 @@ class Simulation:
 
             # Store lateral inflow in state
             self.state.lateral_inflow = lateral_inflow
-
-            # Zero out flr for ALL cells that contributed to reaches (matching MATLAB glob_route_day.m line 33)
-            # This prevents double-counting - flows from all contributing cells are consumed after accumulation
-            flr[self.hillslope_reach_map >= 0] = 0.0
-            # Note: fld is NOT zeroed - lateral flow continues to route between hillslope cells
-
-            # Store flr and fld for next timestep's routing (at step 3)
-            flr_prev = flr.copy()
-            fld_prev = fld.copy()
 
             # 8. Channel routing
             logger.debug("Computing channel routing")
