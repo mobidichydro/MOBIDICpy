@@ -1,12 +1,67 @@
 """Pydantic models for PEST++ calibration configuration."""
 
 import os
+import types
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, Union, get_args, get_origin
 
 import pandas as pd
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+def _unwrap_optional(annotation: object) -> object:
+    """Strip a single layer of Optional/Union-with-None wrapping."""
+    origin = get_origin(annotation)
+    if origin is Union or origin is types.UnionType:
+        non_none = [a for a in get_args(annotation) if a is not type(None)]
+        if len(non_none) == 1:
+            return non_none[0]
+    return annotation
+
+
+def _validate_mobidic_parameter_path(dot_path: str) -> None:
+    """Verify dot-notation path resolves to a numeric field in MOBIDICConfig.
+
+    Walks the Pydantic schema field-by-field to ensure every segment exists,
+    and that the leaf type is float or int (i.e. a calibratable scalar).
+    """
+    from mobidic.config.schema import MOBIDICConfig
+
+    parts = dot_path.split(".")
+    if not parts or not all(p for p in parts):
+        raise ValueError(
+            f"parameter_key '{dot_path}' is not a valid dot-notation path "
+            "(expected non-empty dot-separated segments, e.g. 'parameters.multipliers.ks_factor')"
+        )
+
+    current: object = MOBIDICConfig
+    for i, part in enumerate(parts):
+        if not (isinstance(current, type) and issubclass(current, BaseModel)):
+            joined = ".".join(parts[:i]) or "<root>"
+            raise ValueError(
+                f"parameter_key '{dot_path}': cannot descend into '{part}' because "
+                f"'{joined}' is not a Pydantic model in MOBIDICConfig schema"
+            )
+        if part not in current.model_fields:
+            joined = ".".join(parts[:i]) or "<root>"
+            valid = sorted(current.model_fields.keys())
+            raise ValueError(
+                f"parameter_key '{dot_path}': '{part}' is not a field of "
+                f"{current.__name__} (at '{joined}'). Valid fields: {valid}"
+            )
+        current = _unwrap_optional(current.model_fields[part].annotation)
+
+    if isinstance(current, type) and issubclass(current, BaseModel):
+        raise ValueError(
+            f"parameter_key '{dot_path}' resolves to nested model '{current.__name__}', "
+            "not a scalar field. Provide a dot-path to a numeric leaf parameter."
+        )
+    if current is not float and current is not int:
+        raise ValueError(
+            f"parameter_key '{dot_path}' resolves to type {current!r}, but calibration "
+            "parameters must point to a numeric (float or int) field in MOBIDICConfig"
+        )
 
 
 class CalibrationParameter(BaseModel):
@@ -30,6 +85,13 @@ class CalibrationParameter(BaseModel):
         """PEST++ parameter names cannot contain spaces."""
         if " " in v:
             raise ValueError("Parameter name cannot contain spaces")
+        return v
+
+    @field_validator("parameter_key")
+    @classmethod
+    def check_parameter_key_resolves(cls, v: str) -> str:
+        """Validate that parameter_key points to a numeric field in MOBIDICConfig."""
+        _validate_mobidic_parameter_path(v)
         return v
 
     @model_validator(mode="after")
