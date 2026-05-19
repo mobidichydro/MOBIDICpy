@@ -445,6 +445,14 @@ class OutputStates(BaseModel):
     evapotranspiration: Optional[bool] = Field(
         False, description="Option to save states of evapotranspiration for results analysis"
     )
+    surface_runoff: Optional[bool] = Field(
+        True,
+        description=("Option to save per-cell surface runoff rate (flr)."),
+    )
+    hypodermic_flux: Optional[bool] = Field(
+        True,
+        description=("Option to save per-cell hypodermic (lateral subsurface) flow rate (fld)."),
+    )
 
 
 class OutputStatesSettings(BaseModel):
