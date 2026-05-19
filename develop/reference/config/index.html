@@ -3657,15 +3657,7 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-632">632</a></span>
-<span class="normal"><a href="#__codelineno-0-633">633</a></span>
-<span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span>
-<span class="normal"><a href="#__codelineno-0-636">636</a></span>
-<span class="normal"><a href="#__codelineno-0-637">637</a></span>
-<span class="normal"><a href="#__codelineno-0-638">638</a></span>
-<span class="normal"><a href="#__codelineno-0-639">639</a></span>
-<span class="normal"><a href="#__codelineno-0-640">640</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-640">640</a></span>
 <span class="normal"><a href="#__codelineno-0-641">641</a></span>
 <span class="normal"><a href="#__codelineno-0-642">642</a></span>
 <span class="normal"><a href="#__codelineno-0-643">643</a></span>
@@ -3687,37 +3679,45 @@
 <span class="normal"><a href="#__codelineno-0-659">659</a></span>
 <span class="normal"><a href="#__codelineno-0-660">660</a></span>
 <span class="normal"><a href="#__codelineno-0-661">661</a></span>
-<span class="normal"><a href="#__codelineno-0-662">662</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="k">class</span><span class="w"> </span><span class="nc">MOBIDICConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete MOBIDIC configuration.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Validate on assignment</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="p">)</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a>    <span class="n">basin</span><span class="p">:</span> <span class="n">Basin</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>    <span class="n">paths</span><span class="p">:</span> <span class="n">Paths</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>    <span class="n">vector_files</span><span class="p">:</span> <span class="n">VectorFiles</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>    <span class="n">raster_files</span><span class="p">:</span> <span class="n">RasterFiles</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="n">raster_settings</span><span class="p">:</span> <span class="n">RasterSettings</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="n">initial_conditions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">InitialConditions</span><span class="p">)</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="n">simulation</span><span class="p">:</span> <span class="n">Simulation</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStates</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStates</span><span class="p">)</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">output_states_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStatesSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStatesSettings</span><span class="p">)</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">output_report</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReport</span><span class="p">)</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">output_report_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReportSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReportSettings</span><span class="p">)</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">output_forcing_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputForcingData</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputForcingData</span><span class="p">)</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">hyetograph</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HyetographConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph generation configuration (optional)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">advanced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Advanced</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Advanced</span><span class="p">)</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_hyetograph_config_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MOBIDICConfig&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that hyetograph config section is provided when paths.hyetograph is specified.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>                <span class="s2">&quot;The &#39;hyetograph&#39; configuration section must be provided when &#39;paths.hyetograph&#39; is specified.&quot;</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>            <span class="p">)</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="k">return</span> <span class="bp">self</span>
+<span class="normal"><a href="#__codelineno-0-662">662</a></span>
+<span class="normal"><a href="#__codelineno-0-663">663</a></span>
+<span class="normal"><a href="#__codelineno-0-664">664</a></span>
+<span class="normal"><a href="#__codelineno-0-665">665</a></span>
+<span class="normal"><a href="#__codelineno-0-666">666</a></span>
+<span class="normal"><a href="#__codelineno-0-667">667</a></span>
+<span class="normal"><a href="#__codelineno-0-668">668</a></span>
+<span class="normal"><a href="#__codelineno-0-669">669</a></span>
+<span class="normal"><a href="#__codelineno-0-670">670</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="k">class</span><span class="w"> </span><span class="nc">MOBIDICConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete MOBIDIC configuration.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Validate on assignment</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="p">)</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">basin</span><span class="p">:</span> <span class="n">Basin</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">paths</span><span class="p">:</span> <span class="n">Paths</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">vector_files</span><span class="p">:</span> <span class="n">VectorFiles</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">raster_files</span><span class="p">:</span> <span class="n">RasterFiles</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">raster_settings</span><span class="p">:</span> <span class="n">RasterSettings</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">initial_conditions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">InitialConditions</span><span class="p">)</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="n">simulation</span><span class="p">:</span> <span class="n">Simulation</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStates</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStates</span><span class="p">)</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="n">output_states_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStatesSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStatesSettings</span><span class="p">)</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="n">output_report</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReport</span><span class="p">)</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="n">output_report_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReportSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReportSettings</span><span class="p">)</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">output_forcing_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputForcingData</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputForcingData</span><span class="p">)</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="n">hyetograph</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HyetographConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph generation configuration (optional)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">advanced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Advanced</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Advanced</span><span class="p">)</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_hyetograph_config_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MOBIDICConfig&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that hyetograph config section is provided when paths.hyetograph is specified.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>                <span class="s2">&quot;The &#39;hyetograph&#39; configuration section must be provided when &#39;paths.hyetograph&#39; is specified.&quot;</span>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>            <span class="p">)</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6143,7 +6143,15 @@
 <span class="normal"><a href="#__codelineno-0-444">444</a></span>
 <span class="normal"><a href="#__codelineno-0-445">445</a></span>
 <span class="normal"><a href="#__codelineno-0-446">446</a></span>
-<span class="normal"><a href="#__codelineno-0-447">447</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputStates</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#__codelineno-0-450">450</a></span>
+<span class="normal"><a href="#__codelineno-0-451">451</a></span>
+<span class="normal"><a href="#__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#__codelineno-0-455">455</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputStates</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output state options.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-421" name="__codelineno-0-421"></a>
 <a id="__codelineno-0-422" name="__codelineno-0-422"></a>    <span class="n">discharge</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save states of river network for results analysis&quot;</span><span class="p">)</span>
@@ -6172,6 +6180,14 @@
 <a id="__codelineno-0-445" name="__codelineno-0-445"></a>    <span class="n">evapotranspiration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
 <a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save states of evapotranspiration for results analysis&quot;</span>
 <a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="p">)</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="n">surface_runoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>        <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>        <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Option to save per-cell surface runoff rate (flr).&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>    <span class="p">)</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>    <span class="n">hypodermic_flux</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>        <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="n">description</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Option to save per-cell hypodermic (lateral subsurface) flow rate (fld).&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6224,15 +6240,7 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-450">450</a></span>
-<span class="normal"><a href="#__codelineno-0-451">451</a></span>
-<span class="normal"><a href="#__codelineno-0-452">452</a></span>
-<span class="normal"><a href="#__codelineno-0-453">453</a></span>
-<span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span>
-<span class="normal"><a href="#__codelineno-0-456">456</a></span>
-<span class="normal"><a href="#__codelineno-0-457">457</a></span>
-<span class="normal"><a href="#__codelineno-0-458">458</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-458">458</a></span>
 <span class="normal"><a href="#__codelineno-0-459">459</a></span>
 <span class="normal"><a href="#__codelineno-0-460">460</a></span>
 <span class="normal"><a href="#__codelineno-0-461">461</a></span>
@@ -6300,83 +6308,91 @@
 <span class="normal"><a href="#__codelineno-0-523">523</a></span>
 <span class="normal"><a href="#__codelineno-0-524">524</a></span>
 <span class="normal"><a href="#__codelineno-0-525">525</a></span>
-<span class="normal"><a href="#__codelineno-0-526">526</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputStatesSettings</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output state file settings.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a>    <span class="n">output_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;netCDF&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;netCDF&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Format for state output files&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;final&quot;</span><span class="p">,</span> <span class="s2">&quot;list&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Which time steps to save: &#39;all&#39;, &#39;final&#39;, &#39;list&#39;, or &#39;None&#39; (no states saved). Default: None&quot;</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>    <span class="p">)</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="n">output_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time interval for state output, in seconds&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="n">output_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of datetime strings (YYYY-MM-DD HH:MM:SS) to save (used when output_states=&#39;list&#39;)&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="p">)</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>    <span class="n">flushing</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>        <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;How often to flush states to disk during simulation. &quot;</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="s2">&quot;Positive integer N = flush every N timesteps, -1 = flush only at end&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="p">)</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="n">max_file_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="mf">500.0</span><span class="p">,</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Maximum file size for state output files, in megabytes (MB). &quot;</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="s2">&quot;When a file reaches this size, a new chunk file will be created. Default: 500 MB&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="p">)</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_interval&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that output_interval is positive if provided.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_interval must be positive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="k">return</span> <span class="n">v</span>
+<span class="normal"><a href="#__codelineno-0-526">526</a></span>
+<span class="normal"><a href="#__codelineno-0-527">527</a></span>
+<span class="normal"><a href="#__codelineno-0-528">528</a></span>
+<span class="normal"><a href="#__codelineno-0-529">529</a></span>
+<span class="normal"><a href="#__codelineno-0-530">530</a></span>
+<span class="normal"><a href="#__codelineno-0-531">531</a></span>
+<span class="normal"><a href="#__codelineno-0-532">532</a></span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputStatesSettings</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output state file settings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="n">output_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;netCDF&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;netCDF&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Format for state output files&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;final&quot;</span><span class="p">,</span> <span class="s2">&quot;list&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Which time steps to save: &#39;all&#39;, &#39;final&#39;, &#39;list&#39;, or &#39;None&#39; (no states saved). Default: None&quot;</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="p">)</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="n">output_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time interval for state output, in seconds&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="n">output_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of datetime strings (YYYY-MM-DD HH:MM:SS) to save (used when output_states=&#39;list&#39;)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="p">)</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="n">flushing</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>        <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;How often to flush states to disk during simulation. &quot;</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="s2">&quot;Positive integer N = flush every N timesteps, -1 = flush only at end&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="p">)</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="n">max_file_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="mf">500.0</span><span class="p">,</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Maximum file size for state output files, in megabytes (MB). &quot;</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="s2">&quot;When a file reaches this size, a new chunk file will be created. Default: 500 MB&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="p">)</span>
 <a id="__codelineno-0-480" name="__codelineno-0-480"></a>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_list&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_interval&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate_datetime_strings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that output_list contains valid datetime strings.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>            <span class="k">return</span> <span class="n">v</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">date_str</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>            <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>                <span class="c1"># Try to parse as datetime</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>                <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">date_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">))</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>                    <span class="sa">f</span><span class="s2">&quot;output_list[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] = &#39;</span><span class="si">{</span><span class="n">date_str</span><span class="si">}</span><span class="s2">&#39; is not a valid datetime. &quot;</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>                    <span class="sa">f</span><span class="s2">&quot;Expected format: &#39;YYYY-MM-DD HH:MM:SS&#39;. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="k">return</span> <span class="n">v</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;flushing&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_flushing_valid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that flushing is either -1 or a positive integer.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a>            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;flushing must be either -1 (flush at end) or a positive integer&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>        <span class="k">return</span> <span class="n">v</span>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;max_file_size&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_max_file_size_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that max_file_size is positive if provided.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a>            <span class="k">return</span> <span class="mf">500.0</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_file_size must be positive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>        <span class="k">return</span> <span class="n">v</span>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_output_settings_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputStatesSettings&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that output settings are consistent.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_states</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_list</span><span class="p">:</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_list must be provided when output_states=&#39;list&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>        <span class="k">return</span> <span class="bp">self</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that output_interval is positive if provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_interval must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_list&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate_datetime_strings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that output_list contains valid datetime strings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>            <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">date_str</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>            <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>                <span class="c1"># Try to parse as datetime</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>                <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">date_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                    <span class="sa">f</span><span class="s2">&quot;output_list[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] = &#39;</span><span class="si">{</span><span class="n">date_str</span><span class="si">}</span><span class="s2">&#39; is not a valid datetime. &quot;</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>                    <span class="sa">f</span><span class="s2">&quot;Expected format: &#39;YYYY-MM-DD HH:MM:SS&#39;. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;flushing&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_flushing_valid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that flushing is either -1 or a positive integer.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a>            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;flushing must be either -1 (flush at end) or a positive integer&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;max_file_size&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_max_file_size_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that max_file_size is positive if provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>            <span class="k">return</span> <span class="mf">500.0</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_file_size must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_output_settings_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputStatesSettings&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that output settings are consistent.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_states</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_list</span><span class="p">:</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_list must be provided when output_states=&#39;list&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6413,23 +6429,23 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-501" name="__codelineno-0-501"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;flushing&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_flushing_valid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that flushing is either -1 or a positive integer.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a>        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;flushing must be either -1 (flush at end) or a positive integer&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#__codelineno-0-513">513</a></span>
+<span class="normal"><a href="#__codelineno-0-514">514</a></span>
+<span class="normal"><a href="#__codelineno-0-515">515</a></span>
+<span class="normal"><a href="#__codelineno-0-516">516</a></span>
+<span class="normal"><a href="#__codelineno-0-517">517</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;flushing&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_flushing_valid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that flushing is either -1 or a positive integer.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a>        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;flushing must be either -1 (flush at end) or a positive integer&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6456,19 +6472,19 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-473">473</a></span>
-<span class="normal"><a href="#__codelineno-0-474">474</a></span>
-<span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_interval&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that output_interval is positive if provided.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_interval must be positive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#__codelineno-0-487">487</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_interval&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that output_interval is positive if provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_interval must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6495,23 +6511,23 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-511">511</a></span>
-<span class="normal"><a href="#__codelineno-0-512">512</a></span>
-<span class="normal"><a href="#__codelineno-0-513">513</a></span>
-<span class="normal"><a href="#__codelineno-0-514">514</a></span>
-<span class="normal"><a href="#__codelineno-0-515">515</a></span>
-<span class="normal"><a href="#__codelineno-0-516">516</a></span>
-<span class="normal"><a href="#__codelineno-0-517">517</a></span>
-<span class="normal"><a href="#__codelineno-0-518">518</a></span>
-<span class="normal"><a href="#__codelineno-0-519">519</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;max_file_size&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_max_file_size_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that max_file_size is positive if provided.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a>        <span class="k">return</span> <span class="mf">500.0</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_file_size must be positive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-519">519</a></span>
+<span class="normal"><a href="#__codelineno-0-520">520</a></span>
+<span class="normal"><a href="#__codelineno-0-521">521</a></span>
+<span class="normal"><a href="#__codelineno-0-522">522</a></span>
+<span class="normal"><a href="#__codelineno-0-523">523</a></span>
+<span class="normal"><a href="#__codelineno-0-524">524</a></span>
+<span class="normal"><a href="#__codelineno-0-525">525</a></span>
+<span class="normal"><a href="#__codelineno-0-526">526</a></span>
+<span class="normal"><a href="#__codelineno-0-527">527</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;max_file_size&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_max_file_size_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that max_file_size is positive if provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a>        <span class="k">return</span> <span class="mf">500.0</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_file_size must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6534,17 +6550,17 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-521">521</a></span>
-<span class="normal"><a href="#__codelineno-0-522">522</a></span>
-<span class="normal"><a href="#__codelineno-0-523">523</a></span>
-<span class="normal"><a href="#__codelineno-0-524">524</a></span>
-<span class="normal"><a href="#__codelineno-0-525">525</a></span>
-<span class="normal"><a href="#__codelineno-0-526">526</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_output_settings_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputStatesSettings&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that output settings are consistent.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_states</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_list</span><span class="p">:</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_list must be provided when output_states=&#39;list&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="k">return</span> <span class="bp">self</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-529">529</a></span>
+<span class="normal"><a href="#__codelineno-0-530">530</a></span>
+<span class="normal"><a href="#__codelineno-0-531">531</a></span>
+<span class="normal"><a href="#__codelineno-0-532">532</a></span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_output_settings_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputStatesSettings&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that output settings are consistent.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_states</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_list</span><span class="p">:</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output_list must be provided when output_states=&#39;list&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a>    <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6571,15 +6587,7 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span>
-<span class="normal"><a href="#__codelineno-0-489">489</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-489">489</a></span>
 <span class="normal"><a href="#__codelineno-0-490">490</a></span>
 <span class="normal"><a href="#__codelineno-0-491">491</a></span>
 <span class="normal"><a href="#__codelineno-0-492">492</a></span>
@@ -6589,25 +6597,33 @@
 <span class="normal"><a href="#__codelineno-0-496">496</a></span>
 <span class="normal"><a href="#__codelineno-0-497">497</a></span>
 <span class="normal"><a href="#__codelineno-0-498">498</a></span>
-<span class="normal"><a href="#__codelineno-0-499">499</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_list&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_datetime_strings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that output_list contains valid datetime strings.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="k">return</span> <span class="n">v</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">date_str</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-492" name="__codelineno-0-492"></a>            <span class="c1"># Try to parse as datetime</span>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a>            <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">date_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">))</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a>                <span class="sa">f</span><span class="s2">&quot;output_list[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] = &#39;</span><span class="si">{</span><span class="n">date_str</span><span class="si">}</span><span class="s2">&#39; is not a valid datetime. &quot;</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a>                <span class="sa">f</span><span class="s2">&quot;Expected format: &#39;YYYY-MM-DD HH:MM:SS&#39;. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a>    <span class="k">return</span> <span class="n">v</span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;output_list&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_datetime_strings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that output_list contains valid datetime strings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">date_str</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>            <span class="c1"># Try to parse as datetime</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>            <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">date_str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                <span class="sa">f</span><span class="s2">&quot;output_list[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] = &#39;</span><span class="si">{</span><span class="n">date_str</span><span class="si">}</span><span class="s2">&#39; is not a valid datetime. &quot;</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>                <span class="sa">f</span><span class="s2">&quot;Expected format: &#39;YYYY-MM-DD HH:MM:SS&#39;. Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6650,19 +6666,19 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-529">529</a></span>
-<span class="normal"><a href="#__codelineno-0-530">530</a></span>
-<span class="normal"><a href="#__codelineno-0-531">531</a></span>
-<span class="normal"><a href="#__codelineno-0-532">532</a></span>
-<span class="normal"><a href="#__codelineno-0-533">533</a></span>
-<span class="normal"><a href="#__codelineno-0-534">534</a></span>
-<span class="normal"><a href="#__codelineno-0-535">535</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-529" name="__codelineno-0-529"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputReport</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output report options.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="n">discharge</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save discharge hydrograph at selected reach IDs&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="n">lateral_inflow</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save lateral inflow hydrograph at selected reach IDs&quot;</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="p">)</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#__codelineno-0-540">540</a></span>
+<span class="normal"><a href="#__codelineno-0-541">541</a></span>
+<span class="normal"><a href="#__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#__codelineno-0-543">543</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputReport</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output report options.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="n">discharge</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save discharge hydrograph at selected reach IDs&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">lateral_inflow</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save lateral inflow hydrograph at selected reach IDs&quot;</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6715,15 +6731,7 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-538">538</a></span>
-<span class="normal"><a href="#__codelineno-0-539">539</a></span>
-<span class="normal"><a href="#__codelineno-0-540">540</a></span>
-<span class="normal"><a href="#__codelineno-0-541">541</a></span>
-<span class="normal"><a href="#__codelineno-0-542">542</a></span>
-<span class="normal"><a href="#__codelineno-0-543">543</a></span>
-<span class="normal"><a href="#__codelineno-0-544">544</a></span>
-<span class="normal"><a href="#__codelineno-0-545">545</a></span>
-<span class="normal"><a href="#__codelineno-0-546">546</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-546">546</a></span>
 <span class="normal"><a href="#__codelineno-0-547">547</a></span>
 <span class="normal"><a href="#__codelineno-0-548">548</a></span>
 <span class="normal"><a href="#__codelineno-0-549">549</a></span>
@@ -6741,33 +6749,41 @@
 <span class="normal"><a href="#__codelineno-0-561">561</a></span>
 <span class="normal"><a href="#__codelineno-0-562">562</a></span>
 <span class="normal"><a href="#__codelineno-0-563">563</a></span>
-<span class="normal"><a href="#__codelineno-0-564">564</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputReportSettings</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output report file settings.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">output_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;Parquet&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Parquet&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Format for report output files&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="n">report_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time interval for report output, in seconds&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="n">reach_selection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="s2">&quot;list&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>        <span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Method for selecting reaches to output&quot;</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="p">)</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">sel_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to JSON file containing reach IDs to output&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>    <span class="n">sel_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of reach IDs to output&quot;</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-546" name="__codelineno-0-546"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputReportSettings</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output report file settings.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-548" name="__codelineno-0-548"></a>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;report_interval&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that report_interval is positive if provided.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;report_interval must be positive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">output_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;Parquet&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;Parquet&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Format for report output files&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="n">report_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time interval for report output, in seconds&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="n">reach_selection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="s2">&quot;list&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>        <span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Method for selecting reaches to output&quot;</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>    <span class="p">)</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="n">sel_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to JSON file containing reach IDs to output&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="n">sel_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of reach IDs to output&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-556" name="__codelineno-0-556"></a>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_selection_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputReportSettings&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that selection method matches provided data.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;file&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_file must be provided when reach_selection=&#39;file&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_list</span><span class="p">:</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_list must be provided when reach_selection=&#39;list&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>        <span class="k">return</span> <span class="bp">self</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;report_interval&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that report_interval is positive if provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;report_interval must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_selection_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputReportSettings&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that selection method matches provided data.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;file&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_file must be provided when reach_selection=&#39;file&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_list</span><span class="p">:</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_list must be provided when reach_selection=&#39;list&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6804,19 +6820,19 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-549">549</a></span>
-<span class="normal"><a href="#__codelineno-0-550">550</a></span>
-<span class="normal"><a href="#__codelineno-0-551">551</a></span>
-<span class="normal"><a href="#__codelineno-0-552">552</a></span>
-<span class="normal"><a href="#__codelineno-0-553">553</a></span>
-<span class="normal"><a href="#__codelineno-0-554">554</a></span>
-<span class="normal"><a href="#__codelineno-0-555">555</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;report_interval&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that report_interval is positive if provided.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;report_interval must be positive&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;report_interval&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_interval_positive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that report_interval is positive if provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;report_interval must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6839,21 +6855,21 @@
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-557">557</a></span>
-<span class="normal"><a href="#__codelineno-0-558">558</a></span>
-<span class="normal"><a href="#__codelineno-0-559">559</a></span>
-<span class="normal"><a href="#__codelineno-0-560">560</a></span>
-<span class="normal"><a href="#__codelineno-0-561">561</a></span>
-<span class="normal"><a href="#__codelineno-0-562">562</a></span>
-<span class="normal"><a href="#__codelineno-0-563">563</a></span>
-<span class="normal"><a href="#__codelineno-0-564">564</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_selection_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputReportSettings&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that selection method matches provided data.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;file&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_file must be provided when reach_selection=&#39;file&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_list</span><span class="p">:</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_list must be provided when reach_selection=&#39;list&#39;&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>    <span class="k">return</span> <span class="bp">self</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_selection_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OutputReportSettings&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that selection method matches provided data.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;file&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_file must be provided when reach_selection=&#39;file&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reach_selection</span> <span class="o">==</span> <span class="s2">&quot;list&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sel_list</span><span class="p">:</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sel_list must be provided when reach_selection=&#39;list&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>    <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6896,13 +6912,13 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-567">567</a></span>
-<span class="normal"><a href="#__codelineno-0-568">568</a></span>
-<span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputForcingData</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output forcing data options.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>    <span class="n">meteo_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save meteorological forcing data to NetCDF&quot;</span><span class="p">)</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span>
+<span class="normal"><a href="#__codelineno-0-577">577</a></span>
+<span class="normal"><a href="#__codelineno-0-578">578</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="k">class</span><span class="w"> </span><span class="nc">OutputForcingData</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Output forcing data options.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a>    <span class="n">meteo_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Option to save meteorological forcing data to NetCDF&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6970,15 +6986,7 @@ h = k_a \cdot k \cdot a \cdot t^n
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-573">573</a></span>
-<span class="normal"><a href="#__codelineno-0-574">574</a></span>
-<span class="normal"><a href="#__codelineno-0-575">575</a></span>
-<span class="normal"><a href="#__codelineno-0-576">576</a></span>
-<span class="normal"><a href="#__codelineno-0-577">577</a></span>
-<span class="normal"><a href="#__codelineno-0-578">578</a></span>
-<span class="normal"><a href="#__codelineno-0-579">579</a></span>
-<span class="normal"><a href="#__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#__codelineno-0-581">581</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-581">581</a></span>
 <span class="normal"><a href="#__codelineno-0-582">582</a></span>
 <span class="normal"><a href="#__codelineno-0-583">583</a></span>
 <span class="normal"><a href="#__codelineno-0-584">584</a></span>
@@ -7017,54 +7025,62 @@ h = k_a \cdot k \cdot a \cdot t^n
 <span class="normal"><a href="#__codelineno-0-617">617</a></span>
 <span class="normal"><a href="#__codelineno-0-618">618</a></span>
 <span class="normal"><a href="#__codelineno-0-619">619</a></span>
-<span class="normal"><a href="#__codelineno-0-620">620</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="k">class</span><span class="w"> </span><span class="nc">HyetographConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Hyetograph construction configuration.</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">    Configuration for generating synthetic hyetographs from IDF (Intensity-Duration-Frequency)</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">    parameters. Used to create design storm precipitation fields for simulation.</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">    The IDF formula used is:</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">    h = k_a \\cdot k \\cdot a \\cdot t^n</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">    where:</span>
+<span class="normal"><a href="#__codelineno-0-620">620</a></span>
+<span class="normal"><a href="#__codelineno-0-621">621</a></span>
+<span class="normal"><a href="#__codelineno-0-622">622</a></span>
+<span class="normal"><a href="#__codelineno-0-623">623</a></span>
+<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+<span class="normal"><a href="#__codelineno-0-625">625</a></span>
+<span class="normal"><a href="#__codelineno-0-626">626</a></span>
+<span class="normal"><a href="#__codelineno-0-627">627</a></span>
+<span class="normal"><a href="#__codelineno-0-628">628</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="k">class</span><span class="w"> </span><span class="nc">HyetographConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Hyetograph construction configuration.</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">    Configuration for generating synthetic hyetographs from IDF (Intensity-Duration-Frequency)</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">    parameters. Used to create design storm precipitation fields for simulation.</span>
 <a id="__codelineno-0-586" name="__codelineno-0-586"></a>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">    - $h$ is precipitation depth [mm]</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">    - $k_a$ is the areal reduction factor (ARF) coefficient</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">    - $k$ is the return period factor (spatially distributed raster)</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">    - $a$ is the IDF scale parameter (spatially distributed raster)</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">    - $n$ is the IDF shape parameter (spatially distributed raster)</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">    - $t$ is duration [hours]</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">    The IDF formula used is:</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">    h = k_a \\cdot k \\cdot a \\cdot t^n</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">    where:</span>
 <a id="__codelineno-0-594" name="__codelineno-0-594"></a>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a>    <span class="n">a_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;a&#39; parameter (scale factor)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>    <span class="n">n_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;n&#39; parameter (shape/exponent)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a>    <span class="n">k_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;k&#39; parameter (return period factor)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>    <span class="n">duration_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Total duration of the hyetograph in hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>    <span class="n">ka</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Areal reduction factor (ARF) coefficient&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a>    <span class="n">hyetograph_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;chicago_decreasing&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a>        <span class="s2">&quot;chicago_decreasing&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph construction method. Currently only &#39;chicago_decreasing&#39; is implemented.&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a>    <span class="p">)</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="n">timestep_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time step for hyetograph in hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    - $h$ is precipitation depth [mm]</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">    - $k_a$ is the areal reduction factor (ARF) coefficient</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">    - $k$ is the return period factor (spatially distributed raster)</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">    - $a$ is the IDF scale parameter (spatially distributed raster)</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">    - $n$ is the IDF shape parameter (spatially distributed raster)</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">    - $t$ is duration [hours]</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>    <span class="n">a_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;a&#39; parameter (scale factor)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="n">n_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;n&#39; parameter (shape/exponent)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="n">k_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;k&#39; parameter (return period factor)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="n">duration_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Total duration of the hyetograph in hours&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="n">ka</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Areal reduction factor (ARF) coefficient&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="n">hyetograph_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;chicago_decreasing&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a>        <span class="s2">&quot;chicago_decreasing&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph construction method. Currently only &#39;chicago_decreasing&#39; is implemented.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a>    <span class="p">)</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="n">timestep_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time step for hyetograph in hours&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-613" name="__codelineno-0-613"></a>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-615" name="__codelineno-0-615"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-620" name="__codelineno-0-620"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7101,19 +7117,19 @@ h = k_a \cdot k \cdot a \cdot t^n
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-614">614</a></span>
-<span class="normal"><a href="#__codelineno-0-615">615</a></span>
-<span class="normal"><a href="#__codelineno-0-616">616</a></span>
-<span class="normal"><a href="#__codelineno-0-617">617</a></span>
-<span class="normal"><a href="#__codelineno-0-618">618</a></span>
-<span class="normal"><a href="#__codelineno-0-619">619</a></span>
-<span class="normal"><a href="#__codelineno-0-620">620</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
+<span class="normal"><a href="#__codelineno-0-623">623</a></span>
+<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+<span class="normal"><a href="#__codelineno-0-625">625</a></span>
+<span class="normal"><a href="#__codelineno-0-626">626</a></span>
+<span class="normal"><a href="#__codelineno-0-627">627</a></span>
+<span class="normal"><a href="#__codelineno-0-628">628</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7140,19 +7156,19 @@ h = k_a \cdot k \cdot a \cdot t^n
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-606">606</a></span>
-<span class="normal"><a href="#__codelineno-0-607">607</a></span>
-<span class="normal"><a href="#__codelineno-0-608">608</a></span>
-<span class="normal"><a href="#__codelineno-0-609">609</a></span>
-<span class="normal"><a href="#__codelineno-0-610">610</a></span>
-<span class="normal"><a href="#__codelineno-0-611">611</a></span>
-<span class="normal"><a href="#__codelineno-0-612">612</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-614">614</a></span>
+<span class="normal"><a href="#__codelineno-0-615">615</a></span>
+<span class="normal"><a href="#__codelineno-0-616">616</a></span>
+<span class="normal"><a href="#__codelineno-0-617">617</a></span>
+<span class="normal"><a href="#__codelineno-0-618">618</a></span>
+<span class="normal"><a href="#__codelineno-0-619">619</a></span>
+<span class="normal"><a href="#__codelineno-0-620">620</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7195,19 +7211,19 @@ h = k_a \cdot k \cdot a \cdot t^n
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
-<span class="normal"><a href="#__codelineno-0-625">625</a></span>
-<span class="normal"><a href="#__codelineno-0-626">626</a></span>
-<span class="normal"><a href="#__codelineno-0-627">627</a></span>
-<span class="normal"><a href="#__codelineno-0-628">628</a></span>
-<span class="normal"><a href="#__codelineno-0-629">629</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">class</span><span class="w"> </span><span class="nc">Advanced</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Advanced settings.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">log_level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>        <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Logging level&quot;</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="p">)</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="n">log_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to log file&quot;</span><span class="p">)</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-631">631</a></span>
+<span class="normal"><a href="#__codelineno-0-632">632</a></span>
+<span class="normal"><a href="#__codelineno-0-633">633</a></span>
+<span class="normal"><a href="#__codelineno-0-634">634</a></span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="k">class</span><span class="w"> </span><span class="nc">Advanced</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Advanced settings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>    <span class="n">log_level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Logging level&quot;</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>    <span class="p">)</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="n">log_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to log file&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
