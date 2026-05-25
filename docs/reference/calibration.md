@@ -31,10 +31,13 @@ The calibration workflow is driven by a single YAML configuration file (alongsid
 
 ```python
 from pathlib import Path
-from mobidic.calibration import PestSetup, load_calibration_config
+from mobidic import load_config
+from mobidic.calibration import PestSetup, apply_optimal_parameters, load_calibration_config
+from mobidic.calibration.parameter_mapping import apply_parameters_to_yaml
 
 # Load configuration
-calib_config = load_calibration_config("Arno.calibration.yaml")
+calib_config_path = Path("Arno.calibration.yaml")
+calib_config = load_calibration_config(calib_config_path)
 
 # Set up PEST++ files
 pest = PestSetup(calib_config)
@@ -43,10 +46,16 @@ working_dir = pest.setup()
 # Run calibration
 results = pest.run()
 
-# Extract results
+# Extract results — `optimal` is keyed by MOBIDIC dot-path (parameter_key)
 optimal = results.get_optimal_parameters()
 phi = results.get_objective_function_history()
 sens = results.get_parameter_sensitivities()
+
+# Apply optimal values to a loaded MOBIDIC config (in-place) and/or save to YAML
+config_file = Path(calib_config.mobidic_config)
+config = load_config(config_file)
+apply_optimal_parameters(config, optimal)
+apply_parameters_to_yaml(config_file, optimal, config_file.with_name(f"{config_file.stem}_optimized.yaml"))
 ```
 
 See [Examples 1.5](../examples.md) for complete working scripts.
@@ -113,6 +122,16 @@ observations:
 ## Calibration results
 
 ::: mobidic.calibration.results.CalibrationResults
+
+## Save optimal parameters
+
+After a calibration run, optimized values can be applied to a loaded
+`MOBIDICConfig` in-place with `apply_optimal_parameters`, or written to a new
+YAML file with `apply_parameters_to_yaml`.
+
+::: mobidic.calibration.parameter_mapping.apply_optimal_parameters
+
+::: mobidic.calibration.parameter_mapping.apply_parameters_to_yaml
 
 ## Configuration
 
