@@ -59,12 +59,16 @@ class CalibrationResults:
     def get_optimal_parameters(self) -> dict[str, float]:
         """Get the optimal parameter values from the calibration.
 
+        PEST lowercases all parameter names, so the mapping from PEST
+        names back to ``parameter_key`` is done case-insensitively.
+
         Returns:
             Dict mapping each parameter's ``parameter_key`` (dot-notation
             path into the MOBIDIC YAML config) to its optimal value.
-            PEST parameters that have no matching entry in
-            ``calib_config.parameters`` are returned under their raw PEST
-            name as a fallback.
+
+        Raises:
+            KeyError: If a PEST parameter has no matching entry in
+                ``calib_config.parameters``.
         """
         # Try to read from .par file (final parameter values)
         par_files = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.par"))
@@ -82,8 +86,17 @@ class CalibrationResults:
         else:
             return {}
 
-        name_to_key = {p.name: p.parameter_key for p in self.calib_config.parameters}
-        return {name_to_key.get(name, name): value for name, value in raw.items()}
+        name_to_key = {p.name.lower(): p.parameter_key for p in self.calib_config.parameters}
+        result = {}
+        for name, value in raw.items():
+            key = name_to_key.get(name.lower())
+            if key is None:
+                raise KeyError(
+                    f"PEST parameter '{name}' has no matching entry in calib_config.parameters. "
+                    f"Known parameters: {sorted(name_to_key)}"
+                )
+            result[key] = value
+        return result
 
     def get_objective_function_history(self) -> pd.DataFrame | None:
         """Get objective function values across iterations.
