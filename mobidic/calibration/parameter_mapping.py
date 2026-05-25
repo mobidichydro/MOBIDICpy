@@ -58,6 +58,24 @@ def set_dot_path(obj: dict, dot_path: str, value: Any) -> None:
     current[parts[-1]] = value
 
 
+def apply_optimal_parameters(config: Any, optimal: dict[str, float]) -> None:
+    """Apply optimized parameter values to a loaded config in-place.
+
+    Args:
+        config: A MOBIDICConfig object to modify in-place.
+        optimal: Dict mapping dot-notation YAML paths (e.g.
+            ``"parameters.multipliers.ks_factor"``) to their optimized
+            values, as returned by
+            :meth:`CalibrationResults.get_optimal_parameters`.
+    """
+    for dot_path, value in optimal.items():
+        parts = dot_path.split(".")
+        obj = config
+        for part in parts[:-1]:
+            obj = getattr(obj, part)
+        setattr(obj, parts[-1], value)
+
+
 def apply_parameters_to_yaml(
     base_yaml_path: Path,
     parameter_updates: dict[str, float],

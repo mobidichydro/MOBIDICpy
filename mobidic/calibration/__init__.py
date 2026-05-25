@@ -23,6 +23,7 @@ from mobidic.calibration.observation import (
     align_observations_to_simulation,
     load_observations,
 )
+from mobidic.calibration.parameter_mapping import apply_optimal_parameters, apply_parameters_to_yaml
 from mobidic.calibration.pest_setup import PestSetup
 from mobidic.calibration.results import CalibrationResults
 
@@ -43,4 +44,7 @@ __all__ = [
     # Metrics
     "compute_metrics",
     "METRIC_REGISTRY",
+    # Parameter mapping and export
+    "apply_optimal_parameters",
+    "apply_parameters_to_yaml",
 ]
