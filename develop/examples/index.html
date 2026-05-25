@@ -1734,30 +1734,45 @@
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># or: pip install &quot;mobidicpy[calibration]&quot; &amp;&amp; get-pestpp :pyemu</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Ensure pestpp-glm is on PATH</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mobidic.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">PestSetup</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mobidic.calibration.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_calibration_config</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Read calibration configuration</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">calib_config</span> <span class="o">=</span> <span class="n">load_calibration_config</span><span class="p">(</span><span class="s2">&quot;Arno.calibration.yaml&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mobidic</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mobidic.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">PestSetup</span><span class="p">,</span> <span class="n">apply_optimal_parameters</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mobidic.calibration.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_calibration_config</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mobidic.calibration.parameter_mapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_parameters_to_yaml</span>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Set up PEST++ and generate all working files</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">pest</span> <span class="o">=</span> <span class="n">PestSetup</span><span class="p">(</span><span class="n">calib_config</span><span class="p">)</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">working_dir</span> <span class="o">=</span> <span class="n">pest</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Read calibration configuration</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">calib_config_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;Arno.calibration.yaml&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">calib_config</span> <span class="o">=</span> <span class="n">load_calibration_config</span><span class="p">(</span><span class="n">calib_config_path</span><span class="p">)</span>
 <a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="c1"># Run pestpp-glm</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">results</span> <span class="o">=</span> <span class="n">pest</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># Extract results</span>
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">optimal</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_optimal_parameters</span><span class="p">()</span>    <span class="c1"># Optimal parameter values</span>
-<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">phi_history</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_objective_function_history</span><span class="p">()</span>  <span class="c1"># Convergence</span>
-<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">sens</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_parameter_sensitivities</span><span class="p">()</span>  <span class="c1"># Jacobian-based sensitivities</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="c1"># Set up PEST++ and generate all working files</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">pest</span> <span class="o">=</span> <span class="n">PestSetup</span><span class="p">(</span><span class="n">calib_config</span><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">working_dir</span> <span class="o">=</span> <span class="n">pest</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># Run pestpp-glm</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">results</span> <span class="o">=</span> <span class="n">pest</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="c1"># Extract results</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="n">optimal</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_optimal_parameters</span><span class="p">()</span>    <span class="c1"># {parameter_key: value} (dot-paths)</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="n">phi_history</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_objective_function_history</span><span class="p">()</span>  <span class="c1"># Objective function evolution</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="n">sens</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_parameter_sensitivities</span><span class="p">()</span>  <span class="c1"># Jacobian-based sensitivities</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="c1"># Substitute optimal parameters to the initial MOBIDIC config (in-place)</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="n">config_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">calib_config</span><span class="o">.</span><span class="n">mobidic_config</span><span class="p">)</span>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="n">apply_optimal_parameters</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">optimal</span><span class="p">)</span>
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="c1"># Save the calibrated config to a separate YAML file</span>
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="n">optimized_config_path</span> <span class="o">=</span> <span class="n">config_file</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config_file</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s2">_optimized.yaml&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a><span class="n">apply_parameters_to_yaml</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">optimal</span><span class="p">,</span> <span class="n">optimized_config_path</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>What it demonstrates:</strong></p>
 <ul>
 <li>Setting up and running <code>pestpp-glm</code> from a single configuration file</li>
 <li>Parallel model runs with configurable number of workers</li>
 <li>Extracting optimal parameters, objective function history, and sensitivities</li>
-<li>Running a validation simulation with optimal parameters</li>
+<li>Applying optimal parameters to a loaded config (<code>apply_optimal_parameters</code>) and
+  persisting them to a new YAML (<code>apply_parameters_to_yaml</code>)</li>
+<li>Running a validation simulation with the optimized config</li>
 <li>Plotting observed vs simulated discharge with NSE/KGE metrics</li>
 </ul>
 <p><strong>Output:</strong></p>
