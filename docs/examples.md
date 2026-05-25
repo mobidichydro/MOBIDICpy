@@ -194,11 +194,15 @@ make install-calib
 ```
 
 ```python
-from mobidic.calibration import PestSetup
+from pathlib import Path
+from mobidic import load_config
+from mobidic.calibration import PestSetup, apply_optimal_parameters
 from mobidic.calibration.config import load_calibration_config
+from mobidic.calibration.parameter_mapping import apply_parameters_to_yaml
 
 # Read calibration configuration
-calib_config = load_calibration_config("Arno.calibration.yaml")
+calib_config_path = Path("Arno.calibration.yaml")
+calib_config = load_calibration_config(calib_config_path)
 
 # Set up PEST++ and generate all working files
 pest = PestSetup(calib_config)
@@ -208,9 +212,18 @@ working_dir = pest.setup()
 results = pest.run()
 
 # Extract results
-optimal = results.get_optimal_parameters()    # Optimal parameter values
-phi_history = results.get_objective_function_history()  # Convergence
+optimal = results.get_optimal_parameters()    # {parameter_key: value} (dot-paths)
+phi_history = results.get_objective_function_history()  # Objective function evolution
 sens = results.get_parameter_sensitivities()  # Jacobian-based sensitivities
+
+# Substitute optimal parameters to the initial MOBIDIC config (in-place)
+config_file = Path(calib_config.mobidic_config)
+config = load_config(config_file)
+apply_optimal_parameters(config, optimal)
+
+# Save the calibrated config to a separate YAML file
+optimized_config_path = config_file.with_name(f"{config_file.stem}_optimized.yaml")
+apply_parameters_to_yaml(config_file, optimal, optimized_config_path)
 ```
 
 **What it demonstrates:**
@@ -218,7 +231,9 @@ sens = results.get_parameter_sensitivities()  # Jacobian-based sensitivities
 - Setting up and running `pestpp-glm` from a single configuration file
 - Parallel model runs with configurable number of workers
 - Extracting optimal parameters, objective function history, and sensitivities
-- Running a validation simulation with optimal parameters
+- Applying optimal parameters to a loaded config (`apply_optimal_parameters`) and
+  persisting them to a new YAML (`apply_parameters_to_yaml`)
+- Running a validation simulation with the optimized config
 - Plotting observed vs simulated discharge with NSE/KGE metrics
 
 **Output:**
