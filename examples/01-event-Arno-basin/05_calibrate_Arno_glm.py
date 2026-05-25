@@ -23,8 +23,9 @@ from pathlib import Path
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
-from mobidic.calibration import PestSetup, compute_metrics
+from mobidic.calibration import PestSetup, apply_optimal_parameters, compute_metrics
 from mobidic.calibration.config import load_calibration_config
+from mobidic.calibration.parameter_mapping import apply_parameters_to_yaml
 from mobidic import (
     load_config,
     save_gisdata,
@@ -118,18 +119,14 @@ if sens is not None:
 # =========================================================================
 print("\nRunning validation simulation with optimal parameters...")
 
-# Load main config
+# Load main config and apply optimized parameter values in-place
 config = load_config(config_file)
+apply_optimal_parameters(config, optimal)
 
-# Map PEST parameter names to YAML dot-paths and update config in-place
-param_name_to_key = {p.name: p.parameter_key for p in pest.calib_config.parameters}
-param_updates = {param_name_to_key[name]: val for name, val in optimal.items() if name in param_name_to_key}
-for dot_path, value in param_updates.items():
-    parts = dot_path.split(".")
-    obj = config
-    for part in parts[:-1]:
-        obj = getattr(obj, part)
-    setattr(obj, parts[-1], value)
+# Save calibrated config to a new YAML file
+optimized_config_path = config_file.with_name(f"{config_file.stem}.optimal_parameters.yaml")
+apply_parameters_to_yaml(config_file, optimal, optimized_config_path)
+print(f"Configuration with calibrated parameters saved to: {optimized_config_path}")
 
 # Configure logger
 configure_logger_from_config(config)
