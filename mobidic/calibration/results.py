@@ -60,7 +60,11 @@ class CalibrationResults:
         """Get the optimal parameter values from the calibration.
 
         Returns:
-            Dict mapping parameter name to optimal value.
+            Dict mapping each parameter's ``parameter_key`` (dot-notation
+            path into the MOBIDIC YAML config) to its optimal value.
+            PEST parameters that have no matching entry in
+            ``calib_config.parameters`` are returned under their raw PEST
+            name as a fallback.
         """
         # Try to read from .par file (final parameter values)
         par_files = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.par"))
@@ -71,13 +75,15 @@ class CalibrationResults:
             # Use the last .par file
             par_file = par_files[-1]
             logger.info(f"Reading optimal parameters from: {par_file}")
-            return self._parse_par_file(par_file)
+            raw = self._parse_par_file(par_file)
+        elif self.pst is not None:
+            # Fallback: read from .pst parameter_data (initial values)
+            raw = dict(zip(self.pst.parameter_data.index, self.pst.parameter_data["parval1"]))
+        else:
+            return {}
 
-        # Fallback: read from .pst parameter_data (initial values)
-        if self.pst is not None:
-            return dict(zip(self.pst.parameter_data.index, self.pst.parameter_data["parval1"]))
-
-        return {}
+        name_to_key = {p.name: p.parameter_key for p in self.calib_config.parameters}
+        return {name_to_key.get(name, name): value for name, value in raw.items()}
 
     def get_objective_function_history(self) -> pd.DataFrame | None:
         """Get objective function values across iterations.
