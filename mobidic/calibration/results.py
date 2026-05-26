@@ -252,13 +252,13 @@ class CalibrationResults:
 
     def _parse_ies_phi(self, phi_path: Path) -> pd.DataFrame:
         """Parse objective function history from IES calibration.phi.actual.csv."""
-        df = pd.read_csv(phi_path, index_col=0)
-        df.index.name = "iteration"
-        df = df.reset_index()
-        member_cols = [c for c in df.columns if c != "iteration"]
-        df["phi"] = df[member_cols].mean(axis=1)
-        df["std"] = df[member_cols].std(axis=1)
-        logger.info(f"Read IES phi history from {phi_path}: {len(df)} iterations, {len(member_cols)} ensemble members")
+        df = pd.read_csv(phi_path)
+        # Skip first 6 columns
+        num_members = len(df.columns) - 6
+        # Add phi and std columns for consistency with GLM
+        df["phi"] = df["mean"]
+        df["std"] = df["standard_deviation"]
+        logger.info(f"Read IES phi history from {phi_path}: {len(df)} iterations, {num_members} ensemble members")
         return df
 
     def _parse_iobj_phi(self, iobj_path: Path) -> pd.DataFrame:
