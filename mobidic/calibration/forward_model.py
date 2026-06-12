@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from loguru import logger
 
-from mobidic.calibration.parameter_mapping import apply_parameters_to_yaml, read_model_input_csv
+from mobidic.calibration.parameter_mapping import apply_optimal_parameters, read_model_input_csv
 
 
 def _recalculate_routing_parameters(network, config):
@@ -74,7 +74,7 @@ def run_forward_model(
         obs_data_json: JSON string with observation metadata for metric computation.
         routing_params_calibrated: If True, recalculate routing params from config.
     """
-    from mobidic.config import load_config
+    from mobidic.config import load_config, save_config
     from mobidic.core.simulation import Simulation
     from mobidic.preprocessing.io import load_gisdata
     from mobidic.preprocessing.meteo_raster import MeteoRaster
@@ -83,10 +83,13 @@ def run_forward_model(
     param_updates = read_model_input_csv(input_path)
     logger.info(f"Read {len(param_updates)} parameters from {input_path}")
 
-    # Step 2: Apply parameter updates to YAML and create modified config
+    # Step 2: Load the base config and apply parameter updates in-memory.
+    config = load_config(base_config_path)
+    apply_optimal_parameters(config, param_updates)
+
+    # Persist the effective config for inspection/debugging (paths absolute).
     modified_yaml = input_path.parent / "_modified_config.yaml"
-    apply_parameters_to_yaml(base_config_path, param_updates, modified_yaml)
-    config = load_config(modified_yaml)
+    save_config(config, modified_yaml)
 
     # Step 3: Load pre-processed data
     gisdata = load_gisdata(gisdata_path, network_path)
