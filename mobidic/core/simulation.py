@@ -327,15 +327,15 @@ class Simulation:
         self.kc_default = float(self.config.parameters.soil.Kc)
         if self.clc is not None:
             self.kc_clc_mapping = load_kc_clc_mapping(kc_map_path)
+            csv_name = Path(kc_map_path).name
             logger.info(
-                f"FAO Kc enabled with {len(self.kc_clc_mapping)} CLC classes "
-                f"(default Kc={self.kc_default} for unmapped / missing cells)"
+                f"CLC to Kc mapping enabled. Loaded file: {csv_name} containing {len(self.kc_clc_mapping)} CLC classes"
             )
         else:
             self.kc_clc_mapping = None
             if kc_map_path is not None:
                 logger.warning(
-                    "parameters.soil.Kc_CLC_map is set but raster_files.CLC is not: "
+                    "parameters.soil.Kc_CLC_map is set but raster_files.CLC is not specified: "
                     "Kc will default uniformly to parameters.soil.Kc"
                 )
         # Cache the most recently computed Kc grid to avoid rebuilding it when
