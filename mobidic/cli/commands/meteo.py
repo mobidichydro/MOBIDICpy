@@ -1,6 +1,7 @@
 """``mobidic convert-meteo`` - convert MATLAB .mat meteo data to NetCDF."""
 
 from argparse import _SubParsersAction
+from pathlib import Path
 
 from loguru import logger
 
@@ -29,8 +30,11 @@ def run(args) -> int:
 
     configure_cli_logging(log_level=args.log_level)
 
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
     add_metadata = {"basin": args.basin} if args.basin else None
-    convert_mat_to_netcdf(args.input, args.output, add_metadata=add_metadata)
+    convert_mat_to_netcdf(args.input, output_path, add_metadata=add_metadata)
 
     logger.success(f"Meteorological data written to: {args.output}")
     return 0
