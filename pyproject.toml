@@ -66,6 +66,9 @@ doc = [
     "mike >=2.0.0",
 ]
 
+[project.scripts]
+mobidic = "mobidic.cli.main:main"
+
 [project.urls]
 Repository = "https://github.com/mobidichydro/mobidicpy"
 Issues = "https://github.com/mobidichydro/mobidicpy/issues"
@@ -129,6 +132,9 @@ pydocstyle.convention = "google"
     "PT011",  # Missing `match` parameter in `pytest.raises()`
     "S101",   # Use of assert is detected
 ]
+# Lazy re-export hub: the TYPE_CHECKING block exists only to expose the
+# lazily-imported public API to type checkers / IDEs.
+"mobidic/__init__.py" = ["F401"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["mobidic"]
