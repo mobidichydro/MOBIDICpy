@@ -12,6 +12,7 @@ nav:
   - Introduction: introduction.md
   - Development: development.md
   - Examples: examples.md
+  - CLI: cli.md
   - API Reference:
     - Overview: reference/index.md
     - Configuration: reference/config.md
