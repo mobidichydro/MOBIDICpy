@@ -58,7 +58,9 @@ class TestCalibrationImportFallback:
 
             import mobidic
 
-            assert "CalibrationConfig" not in mobidic.__all__
+            # Calibration names are always advertised in __all__, but accessing
+            # one without the extra installed raises AttributeError (hasattr False).
+            assert "CalibrationConfig" in mobidic.__all__
             assert not hasattr(mobidic, "CalibrationConfig")
             # Core exports are still available.
             assert hasattr(mobidic, "load_config")
@@ -79,8 +81,8 @@ class TestCalibrationImportFallback:
         """Re-import ``mobidic`` in-process with the calibration submodule poisoned.
 
         This variant (in addition to the subprocess test above) exists so that the
-        ``except ImportError`` branch at the bottom of ``mobidic/__init__.py`` is
-        counted by the in-process coverage tracer.
+        ``except ImportError`` branch in ``mobidic.__getattr__`` is counted by the
+        in-process coverage tracer.
         """
         import importlib
 
@@ -94,7 +96,9 @@ class TestCalibrationImportFallback:
             sys.modules["mobidic.calibration"] = None  # triggers ImportError
 
             reloaded = importlib.import_module("mobidic")
-            assert "CalibrationConfig" not in reloaded.__all__
+            assert "CalibrationConfig" in reloaded.__all__
+            # Accessing the name triggers __getattr__, which hits the
+            # ``except ImportError`` branch and raises AttributeError.
             assert not hasattr(reloaded, "CalibrationConfig")
             assert hasattr(reloaded, "load_config")
         finally:
