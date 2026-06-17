@@ -12,7 +12,7 @@ make install-calib
 pip install .[calibration] && get-pestpp :pyemu
 ```
 
-Make sure the PEST++ executables (`pestpp-glm`, `pestpp-ies`, `pestpp-sen`) are on the system `PATH`.
+Make sure the PEST++ executables (i.e., `pestpp-glm`, `pestpp-ies`, `pestpp-sen`, `pestpp-swp`) are on the system `PATH`.
 
 ## Overview
 
@@ -25,6 +25,10 @@ The calibration workflow is driven by a single YAML configuration file (alongsid
 | `glm` | Gauss-Levenberg-Marquardt | Gradient-based calibration |
 | `ies` | Iterative Ensemble Smoother | Ensemble-based calibration and uncertainty |
 | `sen` | Sensitivity analysis | Global sensitivity analysis |
+| `swp` | Parameter sweep | Run simulations in parallel for different parameter sets |
+
+See [`examples/sample_calibration_config.yaml`](https://github.com/mobidichydro/mobidicpy/blob/main/examples/sample_calibration_config.yaml)
+for an example config file covering all options.
 
 
 ## Workflow example

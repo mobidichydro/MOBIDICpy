@@ -37,6 +37,7 @@ PEST_TOOL_MAP = {
     "glm": "pestpp-glm",
     "ies": "pestpp-ies",
     "sen": "pestpp-sen",
+    "swp": "pestpp-swp",
     "da": "pestpp-da",
     "opt": "pestpp-opt",
     "mou": "pestpp-mou",
@@ -68,6 +69,7 @@ class PestSetup:
         self._working_dir = None
         self._obs_data = None  # Cached observation alignment data
         self._n_obs_per_group = None
+        self._sweep_csv_name = None  # Basename of the copied sweep CSV (swp tool)
 
     @property
     def working_dir(self) -> Path:
@@ -154,6 +156,11 @@ class PestSetup:
         # Check if routing parameters are being calibrated
         routing_keys = {"parameters.routing.wcel", "parameters.routing.Br0", "parameters.routing.NBr"}
         routing_calibrated = any(p.parameter_key in routing_keys for p in cc.parameters)
+
+        # For the sweep tool, copy the parameter sweep CSV into the working dir and
+        # validate that its columns cover all calibration parameters.
+        if cc.pest_tool == "swp":
+            self._prepare_sweep_file(wd)
 
         # 1. Generate template file
         generate_template_file(cc, wd / "model_input.csv.tpl")
@@ -320,6 +327,42 @@ class PestSetup:
 
             logger.info(f"Observation group '{obs_group.name}': {n_obs} matched observations")
 
+    def _prepare_sweep_file(self, wd: Path) -> None:
+        """Copy the parameter sweep CSV into the working dir and validate its columns.
+
+        The sweep CSV (an ``.par.csv`` produced by pestpp-ies) must contain one
+        column per calibration parameter, since pestpp-swp runs the forward model
+        once per row using those columns. PEST lowercases parameter names, so the
+        column check is case-insensitive.
+
+        Populates ``self._sweep_csv_name`` with the copied file's basename.
+
+        Raises:
+            FileNotFoundError: If the sweep CSV does not exist.
+            ValueError: If any calibration parameter has no matching column.
+        """
+        cc = self.calib_config
+
+        sweep_src = Path(cc.pest_options["sweep_parameter_csv_file"])
+        if not sweep_src.is_absolute():
+            sweep_src = self.base_path / sweep_src
+        if not sweep_src.exists():
+            raise FileNotFoundError(f"sweep_parameter_csv_file not found: {sweep_src}")
+
+        # Validate that every parameter name appears as a column (case-insensitive)
+        columns = pd.read_csv(sweep_src, nrows=0).columns
+        column_set = {c.lower() for c in columns}
+        missing = [p.name for p in cc.parameters if p.name.lower() not in column_set]
+        if missing:
+            raise ValueError(
+                f"Sweep CSV '{sweep_src}' is missing columns for calibration "
+                f"parameter(s): {missing}. Available columns: {list(columns)}"
+            )
+
+        shutil.copy2(sweep_src, wd / sweep_src.name)
+        self._sweep_csv_name = sweep_src.name
+        logger.info(f"Copied parameter sweep CSV to working dir: {sweep_src.name}")
+
     def _build_pst(self, obs_names: list[str], wd: Path):
         """Build the PEST control file (.pst) using pyemu.
 
@@ -447,6 +490,10 @@ class PestSetup:
             if key in control_data_keys or key == "pst_version":
                 continue
             pst.pestpp_options[key] = value
+
+        # For the sweep tool, point PEST++ at the (copied) parameter sweep CSV
+        if cc.pest_tool == "swp":
+            pst.pestpp_options["sweep_parameter_csv_file"] = self._sweep_csv_name
 
         logger.info(
             f"Built PEST control file: {len(cc.parameters)} parameters, "

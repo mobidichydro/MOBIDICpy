@@ -259,18 +259,21 @@ class CalibrationConfig(BaseModel):
 
     observations: list[ObservationGroup] = Field(..., min_length=1, description="List of observation groups")
 
-    pest_tool: Literal["glm", "ies", "sen", "da", "opt", "mou", "sqp"] = Field("glm", description="PEST++ tool to use")
+    pest_tool: Literal["glm", "ies", "sen", "swp", "da", "opt", "mou", "sqp"] = Field(
+        "glm", description="PEST++ tool to use"
+    )
 
     case_name: Optional[str] = Field(
         None,
-        description="File name prefix for PEST++ output files (e.g. 'calibration', 'sensitivity'). "
-        "Defaults to 'sensitivity' when pest_tool='sen', 'calibration' otherwise.",
+        description="File name prefix for PEST++ output files (e.g. 'calibration', 'sensitivity', 'sweep'). "
+        "Defaults to 'sensitivity' when pest_tool='sen', 'sweep' when pest_tool='swp', 'calibration' otherwise.",
     )
 
     pest_options: Optional[dict] = Field(
         default_factory=dict,
         description="PEST++ and tool-specific options (e.g., noptmax, "
-        "relparmax, facparmax, pst_version, ies_num_reals)",
+        "relparmax, facparmax, pst_version, ies_num_reals, sweep_parameter_csv_file). "
+        "sweep_parameter_csv_file is required when pest_tool='swp'.",
     )
 
     working_dir: str = Field("pest_run", description="Working directory for PEST++ files")
@@ -279,9 +282,21 @@ class CalibrationConfig(BaseModel):
 
     @model_validator(mode="after")
     def set_case_name_default(self) -> "CalibrationConfig":
-        """Default case_name to 'sensitivity' for pestpp-sen, 'calibration' otherwise."""
+        """Default case_name per tool: 'sensitivity' (sen), 'sweep' (swp), 'calibration' otherwise."""
         if self.case_name is None:
-            self.case_name = "sensitivity" if self.pest_tool == "sen" else "calibration"
+            if self.pest_tool == "sen":
+                self.case_name = "sensitivity"
+            elif self.pest_tool == "swp":
+                self.case_name = "sweep"
+            else:
+                self.case_name = "calibration"
+        return self
+
+    @model_validator(mode="after")
+    def check_sweep_file_present(self) -> "CalibrationConfig":
+        """Require pest_options.sweep_parameter_csv_file when pest_tool='swp'."""
+        if self.pest_tool == "swp" and not (self.pest_options or {}).get("sweep_parameter_csv_file"):
+            raise ValueError("pest_options.sweep_parameter_csv_file is required when pest_tool='swp'")
         return self
 
     @model_validator(mode="after")

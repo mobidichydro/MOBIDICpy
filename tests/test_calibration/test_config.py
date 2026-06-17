@@ -294,13 +294,44 @@ class TestCalibrationConfig:
             self._make_minimal_config(observations=[])
 
     def test_all_pest_tools_accepted(self):
-        for tool in ["glm", "ies", "sen", "da", "opt", "mou", "sqp"]:
-            cc = self._make_minimal_config(pest_tool=tool)
+        for tool in ["glm", "ies", "sen", "swp", "da", "opt", "mou", "sqp"]:
+            overrides = {"pest_tool": tool}
+            if tool == "swp":
+                overrides["pest_options"] = {"sweep_parameter_csv_file": "ensemble.par.csv"}
+            cc = self._make_minimal_config(**overrides)
             assert cc.pest_tool == tool
 
     def test_invalid_pest_tool_rejected(self):
         with pytest.raises(ValidationError):
             self._make_minimal_config(pest_tool="invalid")
+
+    def test_case_name_default_glm(self):
+        cc = self._make_minimal_config(pest_tool="glm")
+        assert cc.case_name == "calibration"
+
+    def test_case_name_default_sen(self):
+        cc = self._make_minimal_config(pest_tool="sen")
+        assert cc.case_name == "sensitivity"
+
+    def test_case_name_default_swp(self):
+        cc = self._make_minimal_config(pest_tool="swp", pest_options={"sweep_parameter_csv_file": "ensemble.par.csv"})
+        assert cc.case_name == "sweep"
+
+    def test_case_name_explicit_overrides_default(self):
+        cc = self._make_minimal_config(
+            pest_tool="swp",
+            pest_options={"sweep_parameter_csv_file": "ensemble.par.csv"},
+            case_name="myrun",
+        )
+        assert cc.case_name == "myrun"
+
+    def test_swp_requires_sweep_file(self):
+        with pytest.raises(ValidationError, match="sweep_parameter_csv_file is required"):
+            self._make_minimal_config(pest_tool="swp")
+
+    def test_swp_requires_sweep_file_empty_options(self):
+        with pytest.raises(ValidationError, match="sweep_parameter_csv_file is required"):
+            self._make_minimal_config(pest_tool="swp", pest_options={"noptmax": 5})
 
     def test_calibration_period(self):
         cc = self._make_minimal_config(calibration_period={"start_date": "2023-11-01", "end_date": "2023-11-30"})
