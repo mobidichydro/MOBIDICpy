@@ -95,6 +95,14 @@ def run(args) -> int:
 
     results = pest.run(num_workers=args.workers)
 
+    if calib_config.pest_tool == "swp":
+        sweep = results.get_sweep_results()
+        if sweep is not None:
+            sweep_out = pest.working_dir / "master" / f"{calib_config.case_name}.sweep_out.csv"
+            logger.info(f"Sweep complete: {len(sweep)} runs. Output: {sweep_out}")
+        logger.success("Sweep complete.")
+        return 0
+
     optimal = results.get_optimal_parameters()
     if optimal:
         logger.info("Optimal parameters:")

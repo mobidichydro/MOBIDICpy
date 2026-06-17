@@ -70,6 +70,10 @@ class CalibrationResults:
             KeyError: If a PEST parameter has no matching entry in
                 ``calib_config.parameters``.
         """
+        if self.calib_config.pest_tool == "swp":
+            logger.info("pest_tool='swp' performs no optimization; use get_sweep_results().")
+            return {}
+
         # Try to read from .par file (final parameter values)
         par_files = sorted(self.master_dir.glob(f"{self.calib_config.case_name}.*.par"))
         if not par_files:
@@ -235,6 +239,23 @@ class CalibrationResults:
         if not results:
             return None
         return results
+
+    def get_sweep_results(self) -> pd.DataFrame | None:
+        """Read the pestpp-swp output ensemble (``{case}.sweep_out.csv``).
+
+        Each row corresponds to one forward run (one row of the input parameter
+        sweep CSV) and contains the run id, phi, and one column per observation.
+
+        Returns:
+            DataFrame of sweep outputs, or None if the file is not found.
+        """
+        path = self.master_dir / f"sweep_out.csv"
+        if not path.exists():
+            logger.warning(f"Sweep output file not found: {path}")
+            return None
+        df = pd.read_csv(path)
+        logger.info(f"Read sweep output from {path}: {len(df)} runs")
+        return df
 
     def _parse_par_file(self, par_file: Path) -> dict[str, float]:
         """Parse a PEST .par file to extract parameter values."""
