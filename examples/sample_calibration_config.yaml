@@ -1,0 +1,159 @@
+# MOBIDICpy Sample calibration configuration file
+# PEST++ integration with MOBIDICpy.
+#
+# This file documents every available calibration option. It is a reference
+# template for all PEST++ tools (glm, ies, sen, swp);
+
+######## CASE SETTINGS
+
+# OPTIONAL: File name prefix for PEST++ output files.
+# [Any string. Defaults: "sensitivity" (sen), "sweep" (swp), "calibration" (glm, ies)]
+case_name: calibration
+
+# REQUIRED: Path to the MOBIDIC simulation configuration.
+# [path to .yaml file, relative to this file, e.g.: simulation_config.yaml]
+mobidic_config: "simulation_config.yaml"
+
+
+######## SIMULATION PERIOD
+
+# REQUIRED: Full time window the forward model runs (may include warm-up).
+# [Format: "YYYY-MM-DD HH:MM:SS". Must fit within the forcing data time range]
+simulation_period:
+  start_date: "2023-10-31 00:15:00"
+  end_date: "2023-11-04 23:45:00"
+
+# OPTIONAL: Calibration period.
+# [Format: "YYYY-MM-DD HH:MM:SS". Must be within simulation_period. Observations
+#  outside this window (e.g. during warm-up) are ignored. Default: full observation period]
+calibration_period:
+  start_date: "2023-11-01 00:00:00"
+  end_date: "2023-11-04 23:45:00"
+
+# OPTIONAL: If true, the meteorological raster is produced on the first run and
+# reused in subsequent runs (faster forward runs).
+# [boolean, default: false]
+use_raster_forcing: true
+
+
+######## CALIBRATION PARAMETERS
+
+# REQUIRED: Parameters adjusted by PEST++.
+# [parameter_key uses dot notation into the MOBIDIC configuration]
+# NOTE: For pest_tool=swp, each parameter `name` must match a column in the
+#       sweep_parameter_csv_file.
+parameters:
+  - name: alpha                          # REQUIRED: Parameter name in PEST++ [no spaces]
+    parameter_key: parameters.soil.alpha # REQUIRED: Dot-notation path to a numeric MOBIDIC config field
+    initial_value: 8.0e-06               # REQUIRED: Initial parameter value (within bounds)
+    lower_bound: 1.0e-08                 # REQUIRED: Lower bound for parameter estimation
+    upper_bound: 1.0e-04                 # REQUIRED: Upper bound for parameter estimation
+    transform: log                       # REQUIRED: Parameter transformation [log | none | fixed]
+    scale: 1.0                           # OPTIONAL: Multiplication factor applied by PEST++ [positive float, default: 1.0]
+    offset: 0.0                          # OPTIONAL: Additive offset applied by PEST++ [float, default: 0.0]
+    par_group: soil                      # OPTIONAL: Parameter group name [no spaces, default: "default"]
+
+  - name: beta
+    parameter_key: parameters.soil.beta
+    initial_value: 5.0e-05
+    lower_bound: 1.0e-08
+    upper_bound: 1.0e-04
+    transform: log
+    par_group: soil
+
+  - name: wcel
+    parameter_key: parameters.routing.wcel
+    initial_value: 5.18
+    lower_bound: 1.0
+    upper_bound: 10.0
+    transform: none
+    par_group: routing
+
+  - name: ks_factor
+    parameter_key: parameters.multipliers.ks_factor
+    initial_value: 1.0
+    lower_bound: 0.01
+    upper_bound: 100.0
+    transform: log
+    par_group: soil
+
+
+######## OBSERVATIONS
+
+# REQUIRED: Observation time series for PEST++.
+# One observation group is created for each entry. The relative weight of each
+# group must balance the contribution of each group to the objective function.
+observations:
+  - name: Q_278                                    # REQUIRED: Observation group identifier [no spaces]
+    obs_file: "data/Q_TOS01004659_15min_2023.csv"  # REQUIRED: Path to observation data file [path to .csv file]
+    reach_id: 278                                  # REQUIRED: River reach ID to compare with observations [matches a reach ID in the network]
+    weight: 1e-3                                    # OPTIONAL: Weight assigned to each observation row [positive float, default: 1.0]
+    time_column: time                              # REQUIRED: Name of the time column in obs_file
+    value_column: Q                                # REQUIRED: Name of the value column in obs_file
+
+    # OPTIONAL: Derived metrics as pseudo-observations.
+    metrics:
+      - metric: nse        # REQUIRED: Metric name (custom: nse, nse_log, pbias, peak_error; plus HydroErr metrics)
+        target: 1.0        # REQUIRED: Target value PEST++ tries to match [float]
+        weight: 2.0        # REQUIRED: Weight for this metric pseudo-observation [positive float]
+      - metric: peak_error
+        target: 0.0
+        weight: 2.0
+
+
+######## PEST++ SETTINGS
+
+# OPTIONAL: PEST++ tool.
+# [glm (Gauss-Levenberg-Marquardt) | ies (ensemble smoother) |
+#  sen (global sensitivity) | swp (parameter sweep), default: glm]
+pest_tool: glm
+
+# OPTIONAL: PEST++ global and tool-specific options.
+# Only the options relevant to the selected pest_tool are used; others are ignored.
+pest_options:
+  # ---- Common ----
+  noptmax: 10      # Maximum number of optimization iterations [positive integer, default: 10]. Ignored by swp.
+  pst_version: 2   # PST control file version [1 = PEST, 2 = PEST++, default: 2]
+
+  # ---- GLM (pest_tool: glm) ----
+  relparmax: 10.0  # Maximum relative parameter change per iteration [positive float, default: 10.0]
+  facparmax: 10.0  # Maximum factor parameter change per iteration [positive float, default: 10.0]
+
+  # ---- IES (pest_tool: ies) ----
+  # ies_num_reals: 50            # Number of ensemble realizations [positive integer]
+  # ies_bad_phi: 1.0e+30         # Phi threshold above which a realization is dropped
+  # ies_parameter_ensemble: ""   # Path to a prior parameter ensemble CSV (else drawn from bounds)
+  # ies_observation_ensemble: "" # Path to an observation (noise) ensemble CSV
+  # ies_subset_size: 4           # Realizations used to test lambdas each iteration
+
+  # ---- SEN (pest_tool: sen) ----
+  # gsa_method: morris           # Global sensitivity method [morris | sobol]
+  # gsa_morris_r: 4              # Number of Morris trajectories
+  # gsa_morris_p: 5              # Number of Morris levels (grid)
+
+  # ---- SWP (pest_tool: swp) ----
+  # sweep_parameter_csv_file: "ies.2.par.csv"  REQUIRED when pest_tool=swp: Path to the parameter sweep CSV
+
+
+######## WORKING DIRECTORY
+
+# OPTIONAL: Working directory for PEST++ files.
+# [path to directory, default: "pest_run"]
+working_dir: "pest_run"
+
+
+######## PARALLEL EXECUTION
+
+# OPTIONAL: Parallel execution configuration.
+# [Local mode: manager_ip is null (starts manager + agents on this machine);
+#  Cluster mode: manager_ip set to the manager IP address (starts agents only)]
+parallel:
+  # OPTIONAL: Number of worker agents.
+  # [null = use all available CPUs, positive integer N = use N workers]
+  num_workers: 8
+  # OPTIONAL: Port for PEST++ manager-worker communication.
+  # [positive integer 1024-65535, default: 4004]
+  port: 4004
+  # OPTIONAL: IP address of the PEST++ manager for cluster mode.
+  # [null = local mode, string IP address = cluster mode]
+  manager_ip: null
