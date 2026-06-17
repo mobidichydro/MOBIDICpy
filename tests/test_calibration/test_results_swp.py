@@ -27,7 +27,7 @@ def _make_swp_config(**overrides) -> CalibrationConfig:
 
 def test_get_sweep_results_reads_csv(tmp_path):
     cfg = _make_swp_config()  # case_name defaults to "sweep"
-    (tmp_path / "sweep.sweep_out.csv").write_text(
+    (tmp_path / "sweep_out.csv").write_text(
         "run_id,input_run_id,failed_flag,phi,Q1_0000,Q1_0001\n0,0,0,1.5,0.2,0.3\n1,1,0,2.5,0.4,0.5\n",
         encoding="utf-8",
     )
