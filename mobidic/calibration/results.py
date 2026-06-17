@@ -249,7 +249,7 @@ class CalibrationResults:
         Returns:
             DataFrame of sweep outputs, or None if the file is not found.
         """
-        path = self.master_dir / f"sweep_out.csv"
+        path = self.master_dir / "sweep_out.csv"
         if not path.exists():
             logger.warning(f"Sweep output file not found: {path}")
             return None
