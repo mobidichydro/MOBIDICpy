@@ -52,7 +52,7 @@ See [Examples](examples.md) page for practical usage examples.
 
 ## Features
 
-**Currently implemented (v0.2)**
+**Currently implemented (v0.3)**
 
 - Simulation setup with YAML configuration file and parameter validation
 - GIS data I/O (raster and vector formats)
@@ -68,6 +68,7 @@ See [Examples](examples.md) page for practical usage examples.
 - Reservoir module (preprocessing, routing, time-varying regulation)
 - Energy balance — 1-layer analytical Fourier scheme (with surface and deep-soil temperature tracking)
 - Basic I/O (NetCDF states, Parquet time series, export of interpolated meteorological data)
+- CLI interface
 
 - Calibration, sensitivity, and uncertainty analysis ([PEST++](https://github.com/usgs/pestpp) coupling via [pyEMU](https://github.com/pypest/pyemu))
 
@@ -76,7 +77,7 @@ See [Examples](examples.md) page for practical usage examples.
 - Meteorological data gap filling and quality control
 - Energy balance: 5-layer scheme and Snow module
 - Advanced routing methods
-- CLI interface
+
 
 ## Documentation structure
 
@@ -110,6 +111,8 @@ Ercolani, G., Chiaradia, E. A., Gandolfi, C., Castelli, F., Masseroni, D. (2018)
 
 Masi, M., Masseroni, D., Castelli, F. (2025). Coupled hydrologic, hydraulic, and surface water quality models for pollution management in urban–rural areas. 
 Journal of Hydrology, 657, 133172. DOI: [10.1016/j.jhydrol.2025.133172](https://doi.org/10.1016/j.jhydrol.2025.133172).
+
+Masi, M., Moghaddam, M. B., Castelli, F., & Arrighi, C. (2026). Modelling nutrient loads in data-scarce large catchments using spatially regularized ensemble calibration. Science of The Total Environment, 1038, 181900. DOI: [10.1016/j.scitotenv.2026.181900](https://doi.org/10.1016/j.scitotenv.2026.181900)
 
 Yang, J., Castelli, F., Chen, Y. (2014). Multiobjective sensitivity analysis and optimization of
 distributed hydrologic model MOBIDIC. Hydrology and Earth System Sciences, 18(10), 4101–4112.

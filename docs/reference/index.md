@@ -194,7 +194,7 @@ from mobidic import (
 
 ## Development status
 
-MOBIDICpy's currently implemented features (v0.2):
+MOBIDICpy's currently implemented features (v0.3):
 
 - Configuration system
 - GIS data I/O
@@ -213,6 +213,7 @@ MOBIDICpy's currently implemented features (v0.2):
 - State I/O (NetCDF, including surface and deep-soil temperatures)
 - Report I/O (CSV/Parquet discharge time series)
 - Calibration and sensitivity analysis (PEST++ coupling via pyemu)
+- CLI interface
 
 Not yet implemented features:
 
@@ -220,4 +221,4 @@ Not yet implemented features:
 - Advanced groundwater models (Dupuit, MODFLOW)
 - Advanced routing (Muskingum-Cunge)
 - Meteorological data gap filling and quality control
-- CLI interface
+

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from mobidic.utils import configure_logger as _configure_logger
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 
 # Lazy imports (PEP 562)
 _LAZY_IMPORTS = {
