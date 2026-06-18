@@ -27,9 +27,15 @@ MOBIDICpy is a Python implementation of the MOBIDIC model, originally developed 
   <img src="https://raw.githubusercontent.com/mobidichydro/mobidicpy/main/docs/assets/mobidic_processes.png" alt="MOBIDICpy hydrological processes" width="500">
 </p>
 
-The diagram above shows the main components of the hydrological cycle as simulated by MOBIDICpy. The model discretizes the basin horizontally using a regular mesh grid and resolves vertical processes across five layers: vegetation, surface storage, a gravity-dominated soil compartment, a capillarity-dominated soil compartment, and the aquifer.
-Precipitation partitioning, evapotranspiration, and soil moisture dynamics are represented through a four-reservoir scheme comprising plant interception, surface storage, and two soil reservoirs. Following a dual-pore approach (Castillo et al., 2015), the soil is described by two nonlinear reservoirs: a gravitational reservoir, representing the larger pores from which water drains under gravity, and a capillary reservoir, representing the smaller pores that retain water through capillary forces.
+The diagram above shows the main components of the hydrological cycle as simulated by MOBIDICpy. The model discretizes the basin horizontally using a regular mesh grid and resolves vertical processes across four layers: vegetation, surface storage, soil, and aquifer.
+
+Precipitation partitioning, evapotranspiration, and soil moisture dynamics are represented through a five-reservoir scheme comprising plant interception, surface storage, and two soil reservoirs. Following a dual-pore approach (Castillo et al., 2015), the soil is described by two nonlinear reservoirs: a gravitational reservoir, representing the larger pores from which water drains under gravity, and a capillary reservoir, representing the smaller pores that retain water through capillary forces. The model also includes an aquifer reservoir to represent groundwater storage and baseflow contributions to the river network.
+
 The simulated processes include interception, evapotranspiration, infiltration, Horton and Dunne runoff, exchange between the two soil reservoirs (absorption and capillary rise), percolation, hypodermic (subsurface) flow, groundwater baseflow, and propagation through the river network via channel (and reservoir) routing.
+
+Model parameters can be calibrated against observed data through the USGS [PEST++](https://github.com/usgs/pestpp), a suite of tools for parameter estimation and uncertainty analysis. MOBIDICpy provides an interface to PEST++ with current support for Gauss-Levenberg-Marquardt (GLM) optimization, iterative ensemble smoother (IES), sensitivity analysis (SEN), and parameter sweep (SWP) tools.
+
+
 
 ## Installation
 
