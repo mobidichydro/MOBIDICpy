@@ -1512,6 +1512,26 @@
 <p><strong>MOBIDICpy</strong> represents a complete Python reimplementation of MOBIDIC, originally developed in MATLAB. This translation aims to improve usability, maintainability, and computational performance while preserving the scientific methods of the original model.</p>
 <h2 id="model-structure">Model structure</h2>
 <p>MOBIDIC operates on a distributed grid-based approach where each cell represents a computational element. The model consists of several interconnected modules:</p>
+<p align="center">
+  <img src="../assets/mobidic_processes.png" alt="MOBIDICpy hydrological processes" width="650">
+</p>
+
+<p>The figure above summarizes the hydrological processes simulated for each grid cell. The main fluxes and storages are:</p>
+<ul>
+<li><strong>Precipitation</strong> and <strong>radiation</strong> drive the water and energy balance at the surface.</li>
+<li><strong>Interception</strong>: part of precipitation is intercepted by the vegetation canopy, represented as a separate reservoir (<span class="arithmatex">\(W_p\)</span>); the excess reaches the ground as throughfall (<span class="arithmatex">\(P_T\)</span>).</li>
+<li><strong>Evapotranspiration</strong> is partitioned into: direct evaporation from canopy (<span class="arithmatex">\(E_1\)</span>), evaporation from surface water (<span class="arithmatex">\(E_2\)</span>), and evapotranspiration from capillary-soil (<span class="arithmatex">\(E_3\)</span>).</li>
+<li><strong>Infiltration</strong> feeds the gravitational reservoir, mainly depends on <span class="arithmatex">\(K_s\)</span> (saturated hydraulic conductivity).</li>
+<li><strong>Surface water storage (<span class="arithmatex">\(W_s\)</span>)</strong> represents surface depression storage that generates both Horton (infiltration-excess) and Dunne (saturation-excess) runoff (<span class="arithmatex">\(R\)</span>).</li>
+<li><strong>Gravitational soil reservoir (<span class="arithmatex">\(W_g\)</span>)</strong>: represents large pores draining under gravity, fed by infiltration and lateral inflow from upslope; it loses water through percolation, hypodermic flow, and absorption.</li>
+<li><strong>Capillary soil reservoir (<span class="arithmatex">\(W_c\)</span>)</strong>: represents small pores holding water through capillary forces, supplied by <strong>absorption</strong> (<span class="arithmatex">\(Q_{abs}\)</span>) from <span class="arithmatex">\(W_g\)</span> and depleted by soil evapotranspiration (<span class="arithmatex">\(E_3\)</span>).</li>
+<li><strong>Hypodermic (lateral subsurface) flow</strong>: downslope drainage from <span class="arithmatex">\(W_g\)</span> that feeds the river network as hillslope contribution.</li>
+<li><strong>Percolation (<span class="arithmatex">\(Q_{per}\)</span>)</strong>: drainage from <span class="arithmatex">\(W_g\)</span> recharging the groundwater reservoir.</li>
+<li><strong>Groundwater reservoir</strong>: a linear reservoir producing <strong>baseflow</strong> (<span class="arithmatex">\(q_{B}\)</span>) toward the river network.</li>
+<li><strong>Capillary rise (<span class="arithmatex">\(Q_{cap}\)</span>)</strong>: optional upward flux from the water table to the soil column (currently implemented but not active).</li>
+<li><strong>River network</strong>: collects surface runoff, hypodermic flow, and baseflow, and propagates discharge through channel (and reservoir) routing.</li>
+</ul>
+<p>The following sections describe each module in more detail.</p>
 <h3 id="soil-water-balance">Soil-water balance</h3>
 <p>The soil module uses a <strong>dual-pore storage model</strong> that discretizes soil vertically with a single layer conceptually subdivided into two nonlinear reservoirs (Castillo et al., 2015):</p>
 <ul>
@@ -1607,7 +1627,7 @@
 <li><strong>Land use change evaluation</strong>: Urbanization effects on hydrologic response (Yang et al., 2014)</li>
 <li><strong>Data assimilation</strong>: Variational data assimilation for improved flood forecasting (Ercolani and Castelli, 2017)</li>
 <li><strong>Model intercomparison</strong>: Benchmarking with other hydrological models (Castillo et al., 2015)</li>
-<li><strong>Research applications</strong>: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025)</li>
+<li><strong>Research applications</strong>: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025; Masi et al., 2026)</li>
 </ul>
 <h2 id="time-convention">Time convention</h2>
 <p>All datetimes in MOBIDICpy are <strong>timezone-naive</strong>. No timezone information is attached to any timestamp — input data, simulation times, state files, and output reports all use naive datetimes. Users must ensure that all input data (meteorological forcing, reservoir schedules, simulation start/end dates) refers to the same time reference (e.g., UTC or local time).</p>
@@ -1642,6 +1662,7 @@ DOI: <a href="https://doi.org/10.1002/2016WR019208">10.1002/2016WR019208</a>.</p
 <p>Masi, M., Arrighi, C., Piragino, F., Castelli, F. (2024). Participatory multi-criteria decision making for optimal siting of multipurpose artificial reservoirs. Journal of Environmental Management, 370, 122904. DOI: <a href="https://doi.org/10.1016/j.jenvman.2024.122904">10.1016/j.jenvman.2024.122904</a></p>
 <p>Masi, M., Masseroni, D., Castelli, F. (2025). Coupled hydrologic, hydraulic, and surface water quality models for pollution management in urban–rural areas. 
 Journal of Hydrology, 657, 133172. DOI: <a href="https://doi.org/10.1016/j.jhydrol.2025.133172">10.1016/j.jhydrol.2025.133172</a>.</p>
+<p>Masi, M., Moghaddam, M. B., Castelli, F., &amp; Arrighi, C. (2026). Modelling nutrient loads in data-scarce large catchments using spatially regularized ensemble calibration. Science of The Total Environment, 1038, 181900. DOI: <a href="https://doi.org/10.1016/j.scitotenv.2026.181900">10.1016/j.scitotenv.2026.181900</a></p>
 <p>Salvucci, G. D. (1993), An approximate solution for steady vertical flux of moisture through an unsaturated homogeneous soil, Water
 Resour. Res., 29(11), 3749–3753, DOI: <a href="https://doi.org/10.1029/93WR02068">10.1029/93WR02068</a>.</p>
 <p>Van den Hurk, B., and A. Holtslag (1997), On the bulk parameterization of surface fluxes for various conditions and parameter ranges, Boundary Layer Meteorol., 82(1), 119–133, DOI: <a href="https://doi.org/10.1023/A:1000245600901">10.1023/A:1000245600901</a>.</p>
