@@ -21,6 +21,16 @@ MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo – distributed a
 
 MOBIDICpy is a Python implementation of the MOBIDIC model, originally developed in MATLAB by Castelli et al. See [References](https://github.com/mobidichydro/MOBIDICpy#references) for more details.
 
+## Model overview
+
+<p align="left">
+  <img src="https://raw.githubusercontent.com/mobidichydro/mobidicpy/main/docs/assets/mobidic_processes.png" alt="MOBIDICpy hydrological processes" width="500">
+</p>
+
+The diagram above shows the main components of the hydrological cycle as simulated by MOBIDICpy. The model discretizes the basin horizontally using a regular mesh grid and resolves vertical processes across five layers: vegetation, surface storage, a gravity-dominated soil compartment, a capillarity-dominated soil compartment, and the aquifer.
+Precipitation partitioning, evapotranspiration, and soil moisture dynamics are represented through a four-reservoir scheme comprising plant interception, surface storage, and two soil reservoirs. Following a dual-pore approach (Castillo et al., 2015), the soil is described by two nonlinear reservoirs: a gravitational reservoir, representing the larger pores from which water drains under gravity, and a capillary reservoir, representing the smaller pores that retain water through capillary forces.
+The simulated processes include interception, evapotranspiration, infiltration, Horton and Dunne runoff, exchange between the two soil reservoirs (absorption and capillary rise), percolation, hypodermic (subsurface) flow, groundwater baseflow, and propagation through the river network via channel (and reservoir) routing.
+
 ## Installation
 
 The package can be installed locally via pip:
@@ -103,6 +113,8 @@ Ercolani, G., Chiaradia, E. A., Gandolfi, C., Castelli, F., Masseroni, D. (2018)
 
 Masi, M., Masseroni, D., Castelli, F. (2025). Coupled hydrologic, hydraulic, and surface water quality models for pollution management in urban–rural areas. 
 Journal of Hydrology, 657, 133172. DOI: [10.1016/j.jhydrol.2025.133172](https://doi.org/10.1016/j.jhydrol.2025.133172).
+
+Masi, M., Moghaddam, M. B., Castelli, F., & Arrighi, C. (2026). Modelling nutrient loads in data-scarce large catchments using spatially regularized ensemble calibration. Science of The Total Environment, 1038, 181900. DOI: [10.1016/j.scitotenv.2026.181900](https://doi.org/10.1016/j.scitotenv.2026.181900)
 
 Yang, J., Castelli, F., Chen, Y. (2014). Multiobjective sensitivity analysis and optimization of
 distributed hydrologic model MOBIDIC. Hydrology and Earth System Sciences, 18(10), 4101–4112.
