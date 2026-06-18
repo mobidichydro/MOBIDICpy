@@ -26,7 +26,7 @@ from mobidic.core.groundwater import groundwater_linear
 from mobidic.core.energy_balance import compute_energy_balance_1l, solar_hours
 from mobidic.core.interpolation import precipitation_interpolation, station_interpolation
 from mobidic.core.pet import calculate_pet
-from mobidic.core.crop_coefficients import compute_kc_grid, load_kc_clc_mapping
+from mobidic.core.crop_coefficients import compute_kc_grid, default_kc_clc_mapping_path, load_kc_clc_mapping
 from mobidic.io import StateWriter
 
 # Energy-balance forcing variables required when energy_balance != "None"
@@ -326,10 +326,13 @@ class Simulation:
         kc_map_path = self.config.parameters.soil.Kc_CLC_map
         self.kc_default = float(self.config.parameters.soil.Kc)
         if self.clc is not None:
-            self.kc_clc_mapping = load_kc_clc_mapping(kc_map_path)
-            csv_name = Path(kc_map_path).name
+            # When CLC is supplied without an explicit Kc_CLC_map, fall back to the
+            # default file provided with MOBIDICpy (kc_clc_mapping.csv).
+            kc_map_resolved = Path(kc_map_path) if kc_map_path else default_kc_clc_mapping_path()
+            self.kc_clc_mapping = load_kc_clc_mapping(kc_map_resolved)
             logger.info(
-                f"CLC to Kc mapping enabled. Loaded file: {csv_name} containing {len(self.kc_clc_mapping)} CLC classes"
+                f"CLC to Kc mapping enabled. Loaded file: {kc_map_resolved.name} "
+                f"containing {len(self.kc_clc_mapping)} CLC classes"
             )
         else:
             self.kc_clc_mapping = None
