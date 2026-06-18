@@ -10,6 +10,27 @@ MOBIDIC (MOdello di Bilancio Idrologico DIstribuito e Continuo) is a physically-
 
 MOBIDIC operates on a distributed grid-based approach where each cell represents a computational element. The model consists of several interconnected modules:
 
+<p align="center">
+  <img src="../assets/mobidic_processes.png" alt="MOBIDICpy hydrological processes" width="650">
+</p>
+
+The figure above summarizes the hydrological processes simulated for each grid cell. The main fluxes and storages are:
+
+- **Precipitation** and **radiation** drive the water and energy balance at the surface.
+- **Interception**: part of precipitation is intercepted by the vegetation canopy, represented as a separate reservoir ($W_p$); the excess reaches the ground as throughfall ($P_T$).
+- **Evapotranspiration** is partitioned into: direct evaporation from canopy ($E_1$), evaporation from surface water ($E_2$), and evapotranspiration from capillary-soil ($E_3$).
+- **Infiltration** feeds the gravitational reservoir, mainly depends on $K_s$ (saturated hydraulic conductivity).
+- **Surface water storage ($W_s$)** represents surface depression storage that generates both Horton (infiltration-excess) and Dunne (saturation-excess) runoff ($R$).
+- **Gravitational soil reservoir ($W_g$)**: represents large pores draining under gravity, fed by infiltration and lateral inflow from upslope; it loses water through percolation, hypodermic flow, and absorption.
+- **Capillary soil reservoir ($W_c$)**: represents small pores holding water through capillary forces, supplied by **absorption** ($Q_{abs}$) from $W_g$ and depleted by soil evapotranspiration ($E_3$).
+- **Hypodermic (lateral subsurface) flow**: downslope drainage from $W_g$ that feeds the river network as hillslope contribution.
+- **Percolation ($Q_{per}$)**: drainage from $W_g$ recharging the groundwater reservoir.
+- **Groundwater reservoir**: a linear reservoir producing **baseflow** ($q_{B}$) toward the river network.
+- **Capillary rise ($Q_{cap}$)**: optional upward flux from the water table to the soil column (currently implemented but not active).
+- **River network**: collects surface runoff, hypodermic flow, and baseflow, and propagates discharge through channel (and reservoir) routing.
+
+The following sections describe each module in more detail.
+
 ### Soil-water balance
 
 The soil module uses a **dual-pore storage model** that discretizes soil vertically with a single layer conceptually subdivided into two nonlinear reservoirs (Castillo et al., 2015):
@@ -114,7 +135,7 @@ MOBIDIC has been successfully applied to:
 - **Land use change evaluation**: Urbanization effects on hydrologic response (Yang et al., 2014)
 - **Data assimilation**: Variational data assimilation for improved flood forecasting (Ercolani and Castelli, 2017)
 - **Model intercomparison**: Benchmarking with other hydrological models (Castillo et al., 2015)
-- **Research applications**: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025)
+- **Research applications**: Green infrastructure performance (Ercolani et al., 2018), coupled water quality (Masi et al., 2025; Masi et al., 2026)
 
 
 ## Time convention
@@ -166,6 +187,8 @@ Masi, M., Arrighi, C., Piragino, F., Castelli, F. (2024). Participatory multi-cr
 
 Masi, M., Masseroni, D., Castelli, F. (2025). Coupled hydrologic, hydraulic, and surface water quality models for pollution management in urban–rural areas. 
 Journal of Hydrology, 657, 133172. DOI: [10.1016/j.jhydrol.2025.133172](https://doi.org/10.1016/j.jhydrol.2025.133172).
+
+Masi, M., Moghaddam, M. B., Castelli, F., & Arrighi, C. (2026). Modelling nutrient loads in data-scarce large catchments using spatially regularized ensemble calibration. Science of The Total Environment, 1038, 181900. DOI: [10.1016/j.scitotenv.2026.181900](https://doi.org/10.1016/j.scitotenv.2026.181900)
 
 Salvucci, G. D. (1993), An approximate solution for steady vertical flux of moisture through an unsaturated homogeneous soil, Water
 Resour. Res., 29(11), 3749–3753, DOI: [10.1029/93WR02068](https://doi.org/10.1029/93WR02068).
