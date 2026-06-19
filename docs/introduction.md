@@ -156,7 +156,7 @@ The original MATLAB implementation is being systematically translated with numer
 
 ## Current Status
 
-**Version 0.2** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing, 1-layer energy balance) are implemented. Advanced energy balance schemes (5L, Snow), advanced groundwater models, and advanced routing methods are under development.
+**Version 0.3** - Basic hydrological processes (infiltration, percolation, runoff generation, hillslope and linear channel routing, linear groundwater (with multi-aquifer capability), reservoir routing, 1-layer energy balance) are implemented. Advanced energy balance schemes (5L, Snow), advanced groundwater models, and advanced routing methods are under development.
 
 See the [home page](index.md) for implementation status.
 
