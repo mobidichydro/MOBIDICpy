@@ -324,13 +324,24 @@ hyetograph:
   # [positive integer, eg: 48, 96]
   duration_hours: 96
 
+  # REQUIRED: Duration of the rainfall event in hours (must be <= duration_hours).
+  # Timesteps after the rainfall event are dry, letting the flood wave propagate.
+  # [positive number, eg: 2, 5]
+  rainfall_duration: 5
+
   # OPTIONAL: Areal reduction factor (ARF) coefficient
   # [positive number in range (0, 1], default: 1.0]
-  ka: 0.8
+  ka: 1.0
 
   # OPTIONAL: Hyetograph construction method
-  # [currently only 'chicago_decreasing' is implemented, default: chicago_decreasing]
-  hyetograph_type: chicago_decreasing
+  # ['chicago' or 'rectangular', default: chicago]
+  hyetograph_type: rectangular
+
+  # REQUIRED for 'chicago' (ignored for 'rectangular'): position of the peak
+  # within the rainfall duration.
+  # [number in range [0, 1]: 0 = peak at start (decreasing), 0.5 = centered,
+  #  1 = peak at end (increasing)]
+  r_chicago: 0.2
 
   # OPTIONAL: Time step for hyetograph in hours
   # [positive integer, default: 1]
