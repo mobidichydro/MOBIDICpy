@@ -437,10 +437,12 @@ hyetograph:
   a_raster: idf/a.tif        # IDF scale parameter
   n_raster: idf/n.tif        # IDF exponent
   k_raster: idf/k30.tif      # Return period factor (30-year event)
-  duration_hours: 48
+  duration_hours: 100        # Total simulation duration
+  rainfall_duration: 5       # Rainfall event duration (<= duration_hours)
   timestep_hours: 1
-  hyetograph_type: chicago_decreasing
-  ka: 0.8                    # Areal reduction factor
+  hyetograph_type: rectangular   # 'chicago' or 'rectangular'
+  r_chicago: 0.5             # Peak position in [0, 1] (required for 'chicago')
+  ka: 1.0                    # Areal reduction factor
 ```
 
 **IDF formula:**
@@ -451,7 +453,7 @@ $$DDF(t) = k_a \cdot k \cdot a \cdot t^n$$
 
 - Generating synthetic design storms from spatially distributed IDF parameters
 - Automatic resampling of IDF rasters to match model grid
-- Chicago decreasing hyetograph method
+- Rectangular hyetograph method
 
 ---
 
