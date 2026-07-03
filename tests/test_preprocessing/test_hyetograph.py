@@ -264,8 +264,9 @@ def test_hyetograph_generate_chicago_decreasing(sample_idf_params):
     times, precip = gen.generate(
         duration_hours=24,
         start_time=datetime(2023, 11, 1),
-        method="chicago_decreasing",
+        method="chicago",
         timestep_hours=1,
+        r_chicago=0,
     )
 
     # Check dimensions
@@ -299,7 +300,8 @@ def test_hyetograph_generate_decreasing_intensity():
     times, precip = gen.generate(
         duration_hours=10,
         start_time=datetime(2023, 1, 1),
-        method="chicago_decreasing",
+        method="chicago",
+        r_chicago=0,
     )
 
     # For a single cell, intensity should decrease over time
@@ -329,8 +331,8 @@ def test_hyetograph_generate_ka_effect():
     gen_full = HyetographGenerator(params, ka=1.0)
     gen_reduced = HyetographGenerator(params, ka=0.5)
 
-    _, precip_full = gen_full.generate(5, datetime(2023, 1, 1))
-    _, precip_reduced = gen_reduced.generate(5, datetime(2023, 1, 1))
+    _, precip_full = gen_full.generate(5, datetime(2023, 1, 1), r_chicago=0)
+    _, precip_reduced = gen_reduced.generate(5, datetime(2023, 1, 1), r_chicago=0)
 
     # With ka=0.5, precipitation should be half
     assert np.allclose(precip_reduced, precip_full * 0.5, rtol=1e-10)
@@ -342,6 +344,22 @@ def test_hyetograph_generate_unsupported_method(sample_idf_params):
 
     with pytest.raises(ValueError, match="Unsupported hyetograph method"):
         gen.generate(24, datetime(2023, 1, 1), method="unsupported_method")
+
+
+def test_hyetograph_generate_chicago_requires_r(sample_idf_params):
+    """Test that Chicago method requires r_chicago."""
+    gen = HyetographGenerator(sample_idf_params)
+
+    with pytest.raises(ValueError, match="r_chicago is required"):
+        gen.generate(24, datetime(2023, 1, 1), method="chicago")
+
+
+def test_hyetograph_rainfall_duration_exceeds_total(sample_idf_params):
+    """Test that rainfall_duration cannot exceed duration_hours."""
+    gen = HyetographGenerator(sample_idf_params)
+
+    with pytest.raises(ValueError, match="cannot exceed duration_hours"):
+        gen.generate(24, datetime(2023, 1, 1), rainfall_duration=48, method="chicago", r_chicago=0)
 
 
 def test_hyetograph_generate_total_depth():
@@ -365,7 +383,7 @@ def test_hyetograph_generate_total_depth():
     gen = HyetographGenerator(params, ka=0.8)
     duration = 4  # hours
 
-    _, precip = gen.generate(duration, datetime(2023, 1, 1))
+    _, precip = gen.generate(duration, datetime(2023, 1, 1), r_chicago=0)
 
     # Total depth = ka * k * a * t^n = 0.8 * 2.0 * 30.0 * 4^0.5 = 0.8 * 2.0 * 30.0 * 2 = 96 mm
     # precip is in mm/h, so total = sum(precip) * 1 hour = sum(precip)
@@ -383,6 +401,7 @@ def test_hyetograph_to_netcdf(sample_idf_params, tmp_path):
     times, precip = gen.generate(
         duration_hours=12,
         start_time=datetime(2023, 11, 1),
+        r_chicago=0,
     )
 
     output_path = tmp_path / "test_hyetograph.nc"
@@ -415,7 +434,7 @@ def test_hyetograph_netcdf_compatible_with_meteoraster(sample_idf_params, tmp_pa
     from mobidic.preprocessing.meteo_raster import MeteoRaster
 
     gen = HyetographGenerator(sample_idf_params, ka=0.8)
-    times, precip = gen.generate(24, datetime(2023, 11, 1))
+    times, precip = gen.generate(24, datetime(2023, 11, 1), r_chicago=0)
 
     output_path = tmp_path / "hyetograph_for_simulation.nc"
     gen.to_netcdf(output_path, times=times, precipitation=precip)
@@ -433,7 +452,7 @@ def test_hyetograph_netcdf_compatible_with_meteoraster(sample_idf_params, tmp_pa
 def test_hyetograph_netcdf_cf_compliance(sample_idf_params, tmp_path):
     """Test that exported NetCDF follows CF conventions."""
     gen = HyetographGenerator(sample_idf_params, ka=0.8)
-    times, precip = gen.generate(6, datetime(2023, 11, 1))
+    times, precip = gen.generate(6, datetime(2023, 11, 1), r_chicago=0)
 
     output_path = tmp_path / "cf_hyetograph.nc"
     gen.to_netcdf(output_path, times=times, precipitation=precip)
@@ -483,6 +502,7 @@ def test_hyetograph_with_different_timestep():
         duration_hours=12,
         start_time=datetime(2023, 1, 1),
         timestep_hours=2,
+        r_chicago=0,
     )
 
     # Should have 6 timesteps (12/2 = 6)
@@ -514,10 +534,10 @@ def test_hyetograph_mass_conservation():
     duration = 6  # hours
 
     # Generate with 1-hour timestep
-    _, precip_1h = gen.generate(duration, datetime(2023, 1, 1), timestep_hours=1)
+    _, precip_1h = gen.generate(duration, datetime(2023, 1, 1), timestep_hours=1, r_chicago=0)
 
     # Generate with 2-hour timestep
-    _, precip_2h = gen.generate(duration, datetime(2023, 1, 1), timestep_hours=2)
+    _, precip_2h = gen.generate(duration, datetime(2023, 1, 1), timestep_hours=2, r_chicago=0)
 
     # Total depth should be the same (sum of precip * timestep)
     total_1h = np.sum(precip_1h[:, 2, 2]) * 1  # 1-hour timestep
@@ -534,7 +554,7 @@ def test_hyetograph_with_nan_mask(sample_idf_params):
     sample_idf_params.n[15:20, 15:20] = np.nan
 
     gen = HyetographGenerator(sample_idf_params, ka=0.8)
-    times, precip = gen.generate(6, datetime(2023, 1, 1))
+    times, precip = gen.generate(6, datetime(2023, 1, 1), r_chicago=0)
 
     # NaN values should propagate to output
     assert np.any(np.isnan(precip))
@@ -560,7 +580,7 @@ def test_hyetograph_single_hour_duration():
     )
 
     gen = HyetographGenerator(params, ka=1.0)
-    times, precip = gen.generate(1, datetime(2023, 1, 1))
+    times, precip = gen.generate(1, datetime(2023, 1, 1), r_chicago=0)
 
     # Should have 1 timestep
     assert len(times) == 1
@@ -570,6 +590,110 @@ def test_hyetograph_single_hour_duration():
     # Intensity = 30 mm / 1 hour = 30 mm/h
     expected_intensity = 1.0 * 1.0 * 30.0 * (1**0.5)  # ka * k * a * t^n
     assert np.isclose(precip[0, 2, 2], expected_intensity)
+
+
+def _uniform_params(a_val=30.0, n_val=0.5, k_val=2.0, shape=(5, 5)):
+    """Helper to create uniform IDFParameters for analytical checks."""
+    return IDFParameters(
+        a=np.ones(shape) * a_val,
+        n=np.ones(shape) * n_val,
+        k=np.ones(shape) * k_val,
+        xllcorner=0.0,
+        yllcorner=0.0,
+        cellsize=100.0,
+        crs=None,
+        shape=shape,
+    )
+
+
+def test_hyetograph_rectangular_constant_intensity():
+    """Rectangular hyetograph has constant intensity equal to DDF_total / duration."""
+    params = _uniform_params()
+    gen = HyetographGenerator(params, ka=0.8)
+    duration = 6
+
+    _, precip = gen.generate(duration, datetime(2023, 1, 1), method="rectangular")
+
+    cell = precip[:, 2, 2]
+    ddf_total = 0.8 * 2.0 * 30.0 * (duration**0.5)
+    expected_intensity = ddf_total / duration
+
+    assert np.allclose(cell, expected_intensity, rtol=1e-10)
+    # Total depth matches the DDF curve
+    assert np.isclose(np.sum(cell), ddf_total, rtol=1e-10)
+
+
+def test_hyetograph_rectangular_ignores_r_chicago():
+    """Rectangular method works without r_chicago."""
+    params = _uniform_params()
+    gen = HyetographGenerator(params, ka=1.0)
+
+    # Should not raise even though r_chicago is None
+    _, precip = gen.generate(4, datetime(2023, 1, 1), method="rectangular")
+    assert precip.shape[0] == 4
+
+
+def test_hyetograph_chicago_increasing():
+    """Chicago with r_chicago=1 produces a monotonically increasing storm."""
+    params = _uniform_params()
+    gen = HyetographGenerator(params, ka=1.0)
+
+    _, precip = gen.generate(8, datetime(2023, 1, 1), method="chicago", r_chicago=1)
+
+    cell = precip[:, 2, 2]
+    for i in range(1, len(cell)):
+        assert cell[i] >= cell[i - 1] - 1e-9, f"Intensity not increasing at step {i}"
+
+
+def test_hyetograph_chicago_centered_peak():
+    """Chicago with r_chicago=0.5 places the peak near the center."""
+    params = _uniform_params()
+    gen = HyetographGenerator(params, ka=1.0)
+
+    duration = 10
+    _, precip = gen.generate(duration, datetime(2023, 1, 1), method="chicago", r_chicago=0.5)
+
+    cell = precip[:, 2, 2]
+    peak_idx = int(np.argmax(cell))
+    # Peak should be somewhere in the interior, not at the very start or end
+    assert 0 < peak_idx < duration - 1
+
+
+def test_hyetograph_chicago_total_depth_independent_of_r():
+    """Total storm depth is conserved regardless of the peak position."""
+    params = _uniform_params()
+    gen = HyetographGenerator(params, ka=0.8)
+    duration = 6
+    ddf_total = 0.8 * 2.0 * 30.0 * (duration**0.5)
+
+    for r in (0.0, 0.25, 0.5, 0.75, 1.0):
+        _, precip = gen.generate(duration, datetime(2023, 1, 1), method="chicago", r_chicago=r)
+        assert np.isclose(np.sum(precip[:, 2, 2]), ddf_total, rtol=1e-9), f"depth mismatch for r={r}"
+
+
+def test_hyetograph_rainfall_shorter_than_duration():
+    """Timesteps after rainfall_duration are dry (zero precipitation)."""
+    params = _uniform_params()
+    gen = HyetographGenerator(params, ka=1.0)
+
+    duration = 12
+    rainfall = 4
+    _, precip = gen.generate(
+        duration,
+        datetime(2023, 1, 1),
+        rainfall_duration=rainfall,
+        method="chicago",
+        r_chicago=0,
+    )
+
+    assert precip.shape[0] == duration
+    cell = precip[:, 2, 2]
+    # Wet during rainfall, dry after
+    assert np.all(cell[:rainfall] > 0)
+    assert np.allclose(cell[rainfall:], 0.0)
+    # Total depth equals the DDF at the rainfall duration, not the full duration
+    ddf_rain = 1.0 * 2.0 * 30.0 * (rainfall**0.5)
+    assert np.isclose(np.sum(cell), ddf_rain, rtol=1e-10)
 
 
 # ============================================================================
@@ -857,6 +981,7 @@ def test_hyetograph_full_workflow_with_resampling(
     times, precip = generator.generate(
         duration_hours=24,
         start_time=datetime(2023, 11, 1),
+        r_chicago=0,
     )
 
     # Check output dimensions
