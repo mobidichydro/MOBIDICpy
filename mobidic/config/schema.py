@@ -603,11 +603,18 @@ class HyetographConfig(BaseModel):
     a_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'a' parameter (scale factor)")
     n_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'n' parameter (shape/exponent)")
     k_raster: PathField = Field(..., description="Path to GeoTIFF raster with IDF 'k' parameter (return period factor)")
-    duration_hours: int = Field(..., description="Total duration of the hyetograph in hours")
+    duration_hours: int = Field(..., description="Total duration of the simulation in hours")
+    rainfall_duration: float = Field(..., description="Duration of the rainfall event in hours (<= duration_hours)")
     ka: float = Field(1.0, description="Areal reduction factor (ARF) coefficient")
-    hyetograph_type: Literal["chicago_decreasing"] = Field(
-        "chicago_decreasing",
-        description="Hyetograph construction method. Currently only 'chicago_decreasing' is implemented.",
+    hyetograph_type: Literal["chicago", "rectangular"] = Field(
+        "chicago",
+        description="Hyetograph construction method: 'chicago' or 'rectangular'.",
+    )
+    r_chicago: Optional[float] = Field(
+        None,
+        description="Position of the peak within the rainfall duration for the Chicago method, "
+        "in [0, 1] (0 = peak at start / decreasing, 0.5 = centered, 1 = peak at end / increasing). "
+        "Required when hyetograph_type='chicago', ignored for 'rectangular'.",
     )
     timestep_hours: int = Field(1, description="Time step for hyetograph in hours")
 
@@ -619,6 +626,14 @@ class HyetographConfig(BaseModel):
             raise ValueError("Value must be a positive integer")
         return v
 
+    @field_validator("rainfall_duration")
+    @classmethod
+    def check_positive_rainfall_duration(cls, v: float) -> float:
+        """Validate that rainfall_duration is positive."""
+        if v <= 0:
+            raise ValueError("rainfall_duration must be positive")
+        return v
+
     @field_validator("ka")
     @classmethod
     def check_ka_range(cls, v: float) -> float:
@@ -626,6 +641,26 @@ class HyetographConfig(BaseModel):
         if v <= 0 or v > 1:
             raise ValueError("ka (areal reduction factor) must be in range (0, 1]")
         return v
+
+    @field_validator("r_chicago")
+    @classmethod
+    def check_r_chicago_range(cls, v: Optional[float]) -> Optional[float]:
+        """Validate that r_chicago is in range [0, 1] when provided."""
+        if v is not None and (v < 0 or v > 1):
+            raise ValueError("r_chicago must be in range [0, 1]")
+        return v
+
+    @model_validator(mode="after")
+    def check_method_consistency(self) -> "HyetographConfig":
+        """Validate method-specific requirements and duration consistency."""
+        if self.rainfall_duration > self.duration_hours:
+            raise ValueError(
+                f"rainfall_duration ({self.rainfall_duration} h) cannot exceed "
+                f"duration_hours ({self.duration_hours} h)."
+            )
+        if self.hyetograph_type == "chicago" and self.r_chicago is None:
+            raise ValueError("r_chicago is required when hyetograph_type='chicago'.")
+        return self
 
 
 class Advanced(BaseModel):
