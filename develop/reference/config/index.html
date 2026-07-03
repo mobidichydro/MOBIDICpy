@@ -1481,10 +1481,43 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mobidic.config.schema.HyetographConfig.check_method_consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_method_consistency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mobidic.config.schema.HyetographConfig.check_positive_int" class="md-nav__link">
     <span class="md-ellipsis">
       
         check_positive_int
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mobidic.config.schema.HyetographConfig.check_positive_rainfall_duration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_positive_rainfall_duration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mobidic.config.schema.HyetographConfig.check_r_chicago_range" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_r_chicago_range
       
     </span>
   </a>
@@ -2947,10 +2980,43 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mobidic.config.schema.HyetographConfig.check_method_consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_method_consistency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mobidic.config.schema.HyetographConfig.check_positive_int" class="md-nav__link">
     <span class="md-ellipsis">
       
         check_positive_int
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mobidic.config.schema.HyetographConfig.check_positive_rainfall_duration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_positive_rainfall_duration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mobidic.config.schema.HyetographConfig.check_r_chicago_range" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_r_chicago_range
       
     </span>
   </a>
@@ -3703,67 +3769,67 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-640">640</a></span>
-<span class="normal"><a href="#__codelineno-0-641">641</a></span>
-<span class="normal"><a href="#__codelineno-0-642">642</a></span>
-<span class="normal"><a href="#__codelineno-0-643">643</a></span>
-<span class="normal"><a href="#__codelineno-0-644">644</a></span>
-<span class="normal"><a href="#__codelineno-0-645">645</a></span>
-<span class="normal"><a href="#__codelineno-0-646">646</a></span>
-<span class="normal"><a href="#__codelineno-0-647">647</a></span>
-<span class="normal"><a href="#__codelineno-0-648">648</a></span>
-<span class="normal"><a href="#__codelineno-0-649">649</a></span>
-<span class="normal"><a href="#__codelineno-0-650">650</a></span>
-<span class="normal"><a href="#__codelineno-0-651">651</a></span>
-<span class="normal"><a href="#__codelineno-0-652">652</a></span>
-<span class="normal"><a href="#__codelineno-0-653">653</a></span>
-<span class="normal"><a href="#__codelineno-0-654">654</a></span>
-<span class="normal"><a href="#__codelineno-0-655">655</a></span>
-<span class="normal"><a href="#__codelineno-0-656">656</a></span>
-<span class="normal"><a href="#__codelineno-0-657">657</a></span>
-<span class="normal"><a href="#__codelineno-0-658">658</a></span>
-<span class="normal"><a href="#__codelineno-0-659">659</a></span>
-<span class="normal"><a href="#__codelineno-0-660">660</a></span>
-<span class="normal"><a href="#__codelineno-0-661">661</a></span>
-<span class="normal"><a href="#__codelineno-0-662">662</a></span>
-<span class="normal"><a href="#__codelineno-0-663">663</a></span>
-<span class="normal"><a href="#__codelineno-0-664">664</a></span>
-<span class="normal"><a href="#__codelineno-0-665">665</a></span>
-<span class="normal"><a href="#__codelineno-0-666">666</a></span>
-<span class="normal"><a href="#__codelineno-0-667">667</a></span>
-<span class="normal"><a href="#__codelineno-0-668">668</a></span>
-<span class="normal"><a href="#__codelineno-0-669">669</a></span>
-<span class="normal"><a href="#__codelineno-0-670">670</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="k">class</span><span class="w"> </span><span class="nc">MOBIDICConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete MOBIDIC configuration.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Validate on assignment</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="p">)</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="n">basin</span><span class="p">:</span> <span class="n">Basin</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>    <span class="n">paths</span><span class="p">:</span> <span class="n">Paths</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="n">vector_files</span><span class="p">:</span> <span class="n">VectorFiles</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>    <span class="n">raster_files</span><span class="p">:</span> <span class="n">RasterFiles</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="n">raster_settings</span><span class="p">:</span> <span class="n">RasterSettings</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="n">initial_conditions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">InitialConditions</span><span class="p">)</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="n">simulation</span><span class="p">:</span> <span class="n">Simulation</span>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStates</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStates</span><span class="p">)</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="n">output_states_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStatesSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStatesSettings</span><span class="p">)</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>    <span class="n">output_report</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReport</span><span class="p">)</span>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a>    <span class="n">output_report_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReportSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReportSettings</span><span class="p">)</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="n">output_forcing_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputForcingData</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputForcingData</span><span class="p">)</span>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a>    <span class="n">hyetograph</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HyetographConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph generation configuration (optional)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="n">advanced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Advanced</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Advanced</span><span class="p">)</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_hyetograph_config_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MOBIDICConfig&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that hyetograph config section is provided when paths.hyetograph is specified.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a>                <span class="s2">&quot;The &#39;hyetograph&#39; configuration section must be provided when &#39;paths.hyetograph&#39; is specified.&quot;</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a>            <span class="p">)</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="k">return</span> <span class="bp">self</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-675">675</a></span>
+<span class="normal"><a href="#__codelineno-0-676">676</a></span>
+<span class="normal"><a href="#__codelineno-0-677">677</a></span>
+<span class="normal"><a href="#__codelineno-0-678">678</a></span>
+<span class="normal"><a href="#__codelineno-0-679">679</a></span>
+<span class="normal"><a href="#__codelineno-0-680">680</a></span>
+<span class="normal"><a href="#__codelineno-0-681">681</a></span>
+<span class="normal"><a href="#__codelineno-0-682">682</a></span>
+<span class="normal"><a href="#__codelineno-0-683">683</a></span>
+<span class="normal"><a href="#__codelineno-0-684">684</a></span>
+<span class="normal"><a href="#__codelineno-0-685">685</a></span>
+<span class="normal"><a href="#__codelineno-0-686">686</a></span>
+<span class="normal"><a href="#__codelineno-0-687">687</a></span>
+<span class="normal"><a href="#__codelineno-0-688">688</a></span>
+<span class="normal"><a href="#__codelineno-0-689">689</a></span>
+<span class="normal"><a href="#__codelineno-0-690">690</a></span>
+<span class="normal"><a href="#__codelineno-0-691">691</a></span>
+<span class="normal"><a href="#__codelineno-0-692">692</a></span>
+<span class="normal"><a href="#__codelineno-0-693">693</a></span>
+<span class="normal"><a href="#__codelineno-0-694">694</a></span>
+<span class="normal"><a href="#__codelineno-0-695">695</a></span>
+<span class="normal"><a href="#__codelineno-0-696">696</a></span>
+<span class="normal"><a href="#__codelineno-0-697">697</a></span>
+<span class="normal"><a href="#__codelineno-0-698">698</a></span>
+<span class="normal"><a href="#__codelineno-0-699">699</a></span>
+<span class="normal"><a href="#__codelineno-0-700">700</a></span>
+<span class="normal"><a href="#__codelineno-0-701">701</a></span>
+<span class="normal"><a href="#__codelineno-0-702">702</a></span>
+<span class="normal"><a href="#__codelineno-0-703">703</a></span>
+<span class="normal"><a href="#__codelineno-0-704">704</a></span>
+<span class="normal"><a href="#__codelineno-0-705">705</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="k">class</span><span class="w"> </span><span class="nc">MOBIDICConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete MOBIDIC configuration.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Validate on assignment</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="p">)</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>    <span class="n">basin</span><span class="p">:</span> <span class="n">Basin</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="n">paths</span><span class="p">:</span> <span class="n">Paths</span>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a>    <span class="n">vector_files</span><span class="p">:</span> <span class="n">VectorFiles</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a>    <span class="n">raster_files</span><span class="p">:</span> <span class="n">RasterFiles</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a>    <span class="n">raster_settings</span><span class="p">:</span> <span class="n">RasterSettings</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>    <span class="n">initial_conditions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">InitialConditions</span><span class="p">)</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="n">simulation</span><span class="p">:</span> <span class="n">Simulation</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStates</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStates</span><span class="p">)</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>    <span class="n">output_states_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStatesSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStatesSettings</span><span class="p">)</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>    <span class="n">output_report</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReport</span><span class="p">)</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>    <span class="n">output_report_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReportSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReportSettings</span><span class="p">)</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>    <span class="n">output_forcing_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputForcingData</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputForcingData</span><span class="p">)</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>    <span class="n">hyetograph</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HyetographConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph generation configuration (optional)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>    <span class="n">advanced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Advanced</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Advanced</span><span class="p">)</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_hyetograph_config_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MOBIDICConfig&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that hyetograph config section is provided when paths.hyetograph is specified.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>                <span class="s2">&quot;The &#39;hyetograph&#39; configuration section must be provided when &#39;paths.hyetograph&#39; is specified.&quot;</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>            <span class="p">)</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7079,7 +7145,42 @@ h = k_a \cdot k \cdot a \cdot t^n
 <span class="normal"><a href="#__codelineno-0-625">625</a></span>
 <span class="normal"><a href="#__codelineno-0-626">626</a></span>
 <span class="normal"><a href="#__codelineno-0-627">627</a></span>
-<span class="normal"><a href="#__codelineno-0-628">628</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="k">class</span><span class="w"> </span><span class="nc">HyetographConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-628">628</a></span>
+<span class="normal"><a href="#__codelineno-0-629">629</a></span>
+<span class="normal"><a href="#__codelineno-0-630">630</a></span>
+<span class="normal"><a href="#__codelineno-0-631">631</a></span>
+<span class="normal"><a href="#__codelineno-0-632">632</a></span>
+<span class="normal"><a href="#__codelineno-0-633">633</a></span>
+<span class="normal"><a href="#__codelineno-0-634">634</a></span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span>
+<span class="normal"><a href="#__codelineno-0-636">636</a></span>
+<span class="normal"><a href="#__codelineno-0-637">637</a></span>
+<span class="normal"><a href="#__codelineno-0-638">638</a></span>
+<span class="normal"><a href="#__codelineno-0-639">639</a></span>
+<span class="normal"><a href="#__codelineno-0-640">640</a></span>
+<span class="normal"><a href="#__codelineno-0-641">641</a></span>
+<span class="normal"><a href="#__codelineno-0-642">642</a></span>
+<span class="normal"><a href="#__codelineno-0-643">643</a></span>
+<span class="normal"><a href="#__codelineno-0-644">644</a></span>
+<span class="normal"><a href="#__codelineno-0-645">645</a></span>
+<span class="normal"><a href="#__codelineno-0-646">646</a></span>
+<span class="normal"><a href="#__codelineno-0-647">647</a></span>
+<span class="normal"><a href="#__codelineno-0-648">648</a></span>
+<span class="normal"><a href="#__codelineno-0-649">649</a></span>
+<span class="normal"><a href="#__codelineno-0-650">650</a></span>
+<span class="normal"><a href="#__codelineno-0-651">651</a></span>
+<span class="normal"><a href="#__codelineno-0-652">652</a></span>
+<span class="normal"><a href="#__codelineno-0-653">653</a></span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span>
+<span class="normal"><a href="#__codelineno-0-656">656</a></span>
+<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
+<span class="normal"><a href="#__codelineno-0-659">659</a></span>
+<span class="normal"><a href="#__codelineno-0-660">660</a></span>
+<span class="normal"><a href="#__codelineno-0-661">661</a></span>
+<span class="normal"><a href="#__codelineno-0-662">662</a></span>
+<span class="normal"><a href="#__codelineno-0-663">663</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="k">class</span><span class="w"> </span><span class="nc">HyetographConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Hyetograph construction configuration.</span>
 <a id="__codelineno-0-583" name="__codelineno-0-583"></a>
 <a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">    Configuration for generating synthetic hyetographs from IDF (Intensity-Duration-Frequency)</span>
@@ -7104,29 +7205,64 @@ h = k_a \cdot k \cdot a \cdot t^n
 <a id="__codelineno-0-603" name="__codelineno-0-603"></a>    <span class="n">a_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;a&#39; parameter (scale factor)&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="n">n_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;n&#39; parameter (shape/exponent)&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="n">k_raster</span><span class="p">:</span> <span class="n">PathField</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to GeoTIFF raster with IDF &#39;k&#39; parameter (return period factor)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="n">duration_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Total duration of the hyetograph in hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="n">ka</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Areal reduction factor (ARF) coefficient&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="n">hyetograph_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;chicago_decreasing&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a>        <span class="s2">&quot;chicago_decreasing&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph construction method. Currently only &#39;chicago_decreasing&#39; is implemented.&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a>    <span class="p">)</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="n">timestep_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time step for hyetograph in hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a>        <span class="k">return</span> <span class="n">v</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="n">duration_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Total duration of the simulation in hours&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="n">rainfall_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Duration of the rainfall event in hours (&lt;= duration_hours)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="n">ka</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Areal reduction factor (ARF) coefficient&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a>    <span class="n">hyetograph_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;chicago&quot;</span><span class="p">,</span> <span class="s2">&quot;rectangular&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>        <span class="s2">&quot;chicago&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph construction method: &#39;chicago&#39; or &#39;rectangular&#39;.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="p">)</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a>    <span class="n">r_chicago</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a>        <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Position of the peak within the rainfall duration for the Chicago method, &quot;</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a>        <span class="s2">&quot;in [0, 1] (0 = peak at start / decreasing, 0.5 = centered, 1 = peak at end / increasing). &quot;</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a>        <span class="s2">&quot;Required when hyetograph_type=&#39;chicago&#39;, ignored for &#39;rectangular&#39;.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="p">)</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>    <span class="n">timestep_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Time step for hyetograph in hours&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;rainfall_duration&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_positive_rainfall_duration</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that rainfall_duration is positive.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;rainfall_duration must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;r_chicago&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_r_chicago_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that r_chicago is in range [0, 1] when provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">v</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;r_chicago must be in range [0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>        <span class="k">return</span> <span class="n">v</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_method_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HyetographConfig&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate method-specific requirements and duration consistency.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rainfall_duration</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration_hours</span><span class="p">:</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>                <span class="sa">f</span><span class="s2">&quot;rainfall_duration (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rainfall_duration</span><span class="si">}</span><span class="s2"> h) cannot exceed &quot;</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>                <span class="sa">f</span><span class="s2">&quot;duration_hours (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">duration_hours</span><span class="si">}</span><span class="s2"> h).&quot;</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>            <span class="p">)</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph_type</span> <span class="o">==</span> <span class="s2">&quot;chicago&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_chicago</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;r_chicago is required when hyetograph_type=&#39;chicago&#39;.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7163,19 +7299,62 @@ h = k_a \cdot k \cdot a \cdot t^n
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-622">622</a></span>
-<span class="normal"><a href="#__codelineno-0-623">623</a></span>
-<span class="normal"><a href="#__codelineno-0-624">624</a></span>
-<span class="normal"><a href="#__codelineno-0-625">625</a></span>
-<span class="normal"><a href="#__codelineno-0-626">626</a></span>
-<span class="normal"><a href="#__codelineno-0-627">627</a></span>
-<span class="normal"><a href="#__codelineno-0-628">628</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-637">637</a></span>
+<span class="normal"><a href="#__codelineno-0-638">638</a></span>
+<span class="normal"><a href="#__codelineno-0-639">639</a></span>
+<span class="normal"><a href="#__codelineno-0-640">640</a></span>
+<span class="normal"><a href="#__codelineno-0-641">641</a></span>
+<span class="normal"><a href="#__codelineno-0-642">642</a></span>
+<span class="normal"><a href="#__codelineno-0-643">643</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;ka&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_ka_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that ka is in valid range (0, 1].&quot;&quot;&quot;</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ka (areal reduction factor) must be in range (0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>    <span class="k">return</span> <span class="n">v</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="mobidic.config.schema.HyetographConfig.check_method_consistency" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">check_method_consistency</span><span class="p">()</span></code>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate method-specific requirements and duration consistency.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>mobidic/config/schema.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-653">653</a></span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span>
+<span class="normal"><a href="#__codelineno-0-656">656</a></span>
+<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
+<span class="normal"><a href="#__codelineno-0-659">659</a></span>
+<span class="normal"><a href="#__codelineno-0-660">660</a></span>
+<span class="normal"><a href="#__codelineno-0-661">661</a></span>
+<span class="normal"><a href="#__codelineno-0-662">662</a></span>
+<span class="normal"><a href="#__codelineno-0-663">663</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_method_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HyetographConfig&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate method-specific requirements and duration consistency.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rainfall_duration</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration_hours</span><span class="p">:</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>            <span class="sa">f</span><span class="s2">&quot;rainfall_duration (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rainfall_duration</span><span class="si">}</span><span class="s2"> h) cannot exceed &quot;</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>            <span class="sa">f</span><span class="s2">&quot;duration_hours (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">duration_hours</span><span class="si">}</span><span class="s2"> h).&quot;</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>        <span class="p">)</span>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph_type</span> <span class="o">==</span> <span class="s2">&quot;chicago&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_chicago</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;r_chicago is required when hyetograph_type=&#39;chicago&#39;.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a>    <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7202,19 +7381,97 @@ h = k_a \cdot k \cdot a \cdot t^n
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-614">614</a></span>
-<span class="normal"><a href="#__codelineno-0-615">615</a></span>
-<span class="normal"><a href="#__codelineno-0-616">616</a></span>
-<span class="normal"><a href="#__codelineno-0-617">617</a></span>
-<span class="normal"><a href="#__codelineno-0-618">618</a></span>
-<span class="normal"><a href="#__codelineno-0-619">619</a></span>
-<span class="normal"><a href="#__codelineno-0-620">620</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="nd">@classmethod</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a>    <span class="k">return</span> <span class="n">v</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-621">621</a></span>
+<span class="normal"><a href="#__codelineno-0-622">622</a></span>
+<span class="normal"><a href="#__codelineno-0-623">623</a></span>
+<span class="normal"><a href="#__codelineno-0-624">624</a></span>
+<span class="normal"><a href="#__codelineno-0-625">625</a></span>
+<span class="normal"><a href="#__codelineno-0-626">626</a></span>
+<span class="normal"><a href="#__codelineno-0-627">627</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;duration_hours&quot;</span><span class="p">,</span> <span class="s2">&quot;timestep_hours&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_positive_int</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that duration and timestep are positive.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Value must be a positive integer&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="k">return</span> <span class="n">v</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="mobidic.config.schema.HyetographConfig.check_positive_rainfall_duration" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">check_positive_rainfall_duration</span><span class="p">(</span><span class="n">v</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that rainfall_duration is positive.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>mobidic/config/schema.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-629">629</a></span>
+<span class="normal"><a href="#__codelineno-0-630">630</a></span>
+<span class="normal"><a href="#__codelineno-0-631">631</a></span>
+<span class="normal"><a href="#__codelineno-0-632">632</a></span>
+<span class="normal"><a href="#__codelineno-0-633">633</a></span>
+<span class="normal"><a href="#__codelineno-0-634">634</a></span>
+<span class="normal"><a href="#__codelineno-0-635">635</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;rainfall_duration&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_positive_rainfall_duration</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that rainfall_duration is positive.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>    <span class="k">if</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;rainfall_duration must be positive&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>    <span class="k">return</span> <span class="n">v</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="mobidic.config.schema.HyetographConfig.check_r_chicago_range" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">check_r_chicago_range</span><span class="p">(</span><span class="n">v</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that r_chicago is in range [0, 1] when provided.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>mobidic/config/schema.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-645">645</a></span>
+<span class="normal"><a href="#__codelineno-0-646">646</a></span>
+<span class="normal"><a href="#__codelineno-0-647">647</a></span>
+<span class="normal"><a href="#__codelineno-0-648">648</a></span>
+<span class="normal"><a href="#__codelineno-0-649">649</a></span>
+<span class="normal"><a href="#__codelineno-0-650">650</a></span>
+<span class="normal"><a href="#__codelineno-0-651">651</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;r_chicago&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_r_chicago_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that r_chicago is in range [0, 1] when provided.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">v</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;r_chicago must be in range [0, 1]&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="k">return</span> <span class="n">v</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7257,19 +7514,19 @@ h = k_a \cdot k \cdot a \cdot t^n
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-631">631</a></span>
-<span class="normal"><a href="#__codelineno-0-632">632</a></span>
-<span class="normal"><a href="#__codelineno-0-633">633</a></span>
-<span class="normal"><a href="#__codelineno-0-634">634</a></span>
-<span class="normal"><a href="#__codelineno-0-635">635</a></span>
-<span class="normal"><a href="#__codelineno-0-636">636</a></span>
-<span class="normal"><a href="#__codelineno-0-637">637</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="k">class</span><span class="w"> </span><span class="nc">Advanced</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Advanced settings.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>    <span class="n">log_level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>        <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Logging level&quot;</span>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>    <span class="p">)</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="n">log_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to log file&quot;</span><span class="p">)</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-666">666</a></span>
+<span class="normal"><a href="#__codelineno-0-667">667</a></span>
+<span class="normal"><a href="#__codelineno-0-668">668</a></span>
+<span class="normal"><a href="#__codelineno-0-669">669</a></span>
+<span class="normal"><a href="#__codelineno-0-670">670</a></span>
+<span class="normal"><a href="#__codelineno-0-671">671</a></span>
+<span class="normal"><a href="#__codelineno-0-672">672</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-666" name="__codelineno-0-666"></a><span class="k">class</span><span class="w"> </span><span class="nc">Advanced</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Advanced settings.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="n">log_level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Logging level&quot;</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a>    <span class="p">)</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>    <span class="n">log_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to log file&quot;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
