@@ -31,7 +31,7 @@ Use when you have pre-interpolated gridded data or want to reuse previously inte
 Use for design storm simulations with synthetic precipitation from IDF curves.
 
 - **IDF-based generation**: Constructs precipitation from spatially distributed IDF parameters (a, n, k)
-- **Chicago method**: Currently implements the Chicago decreasing hyetograph (after-peak curve)
+- **Methods**: Currently implements the Chicago and Rectangular hyetograph methods
 - **Areal reduction**: Applies areal reduction factor (ARF) coefficient for spatial averaging
 - **Auto-resampling**: IDF parameter rasters are automatically resampled to match the model grid
 - **Best for**: Design flood simulations, flood mapping, infrastructure sizing
@@ -260,10 +260,12 @@ hyetograph:
   a_raster: idf/a.tif        # IDF 'a' parameter raster
   n_raster: idf/n.tif        # IDF 'n' parameter raster
   k_raster: idf/k30.tif      # Return period factor raster (e.g., 30-year)
-  duration_hours: 48         # Storm duration
+  duration_hours: 100        # Total simulation duration
+  rainfall_duration: 5       # Rainfall event duration (<= duration_hours)
   timestep_hours: 1          # Time step
-  hyetograph_type: chicago_decreasing  # Hyetograph method
-  ka: 0.8                    # Areal reduction factor
+  hyetograph_type: rectangular   # Hyetograph method ('chicago' or 'rectangular')
+  r_chicago: 0.5             # Peak position in [0, 1] (required for 'chicago')
+  ka: 1.0                    # Areal reduction factor
 ```
 
 ### Example 7: Generate hyetograph with manual parameters
@@ -280,17 +282,19 @@ generator = HyetographGenerator.from_rasters(
     a_raster="idf/a.tif",
     n_raster="idf/n.tif",
     k_raster="idf/k30.tif",
-    ka=0.8,                    # Areal reduction factor
+    ka=1.0,                    # Areal reduction factor
     ref_raster="dem.tif"       # Reference grid for resampling
 )
 
 # Generate forcing and get MeteoRaster in one call
 forcing = generator.generate_forcing(
-    duration_hours=48,
+    duration_hours=100,
     start_time=datetime(2023, 11, 1),
     output_path="design_storm.nc",
-    method="chicago_decreasing",
+    rainfall_duration=5,
+    method="rectangular",
     timestep_hours=1,
+    r_chicago=0.5,
     add_metadata={"return_period": "30 years"}
 )
 
@@ -315,16 +319,18 @@ generator = HyetographGenerator.from_rasters(
     a_raster="idf/a.tif",
     n_raster="idf/n.tif",
     k_raster="idf/k30.tif",
-    ka=0.8,
+    ka=1.0,
     ref_raster="dem.tif"
 )
 
 # Generate time series (returns times and precipitation arrays)
 times, precipitation = generator.generate(
-    duration_hours=48,
+    duration_hours=100,
     start_time=datetime(2023, 11, 1),
-    method="chicago_decreasing",
+    rainfall_duration=5,
+    method="rectangular",
     timestep_hours=1,
+    r_chicago=0.5,
 )
 
 # Inspect generated data
