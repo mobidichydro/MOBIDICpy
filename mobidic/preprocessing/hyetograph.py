@@ -7,7 +7,8 @@ spatially distributed rasters.
 The module supports:
 - Reading IDF parameters (a, n, k) from GeoTIFF raster files
 - Resampling IDF rasters to match a reference grid (e.g., DEM)
-- Generating Chicago-type hyetograph, currently after-peak curve ('decreasing') only
+- Generating Chicago hyetographs with a configurable peak position (r_chicago) and
+  constant-intensity rectangular hyetographs
 - Outputting CF-1.12 compliant NetCDF files compatible with MeteoRaster
 
 IDF formula: h = ka * k * a * t^n (precipitation depth as function of duration)
@@ -488,7 +489,16 @@ class HyetographGenerator:
     This class constructs synthetic rainfall time series (hyetographs) from
     spatially distributed IDF parameters.
 
-    Currently implements the Chicago method (decreasing after-peak curve only).
+    Two construction methods are available:
+
+    - ``chicago``: Chicago hyetograph with a configurable peak position
+      (``r_chicago`` in [0, 1]); ``r_chicago=0`` gives a decreasing storm with the
+      peak at the start, ``0.5`` a centered peak, and ``1`` an increasing storm with
+      the peak at the end.
+    - ``rectangular``: constant-intensity storm over the rainfall duration.
+
+    The rainfall event spans ``rainfall_duration`` hours; if the total
+    ``duration_hours`` is longer, the remaining timesteps are dry (zero precipitation).
 
     The total precipitation depth for a given duration is computed as:
         DDF(t) = ka * k * a * t^n
@@ -536,7 +546,9 @@ class HyetographGenerator:
         >>> times, precip = generator.generate(
         ...     duration_hours=48,
         ...     start_time=datetime(2023, 11, 1),
-        ...     method="chicago_decreasing"
+        ...     rainfall_duration=24,
+        ...     method="chicago",
+        ...     r_chicago=0.5,
         ... )
         >>> generator.to_netcdf(
         ...     "hyetograph.nc",
@@ -701,8 +713,10 @@ class HyetographGenerator:
         logger.info("Generating hyetograph forcing from configuration")
         logger.debug(f"  Base path: {base_path}")
         logger.debug(f"  Duration: {hyeto_config.duration_hours} hours")
+        logger.debug(f"  Rainfall duration: {hyeto_config.rainfall_duration} hours")
         logger.debug(f"  Timestep: {hyeto_config.timestep_hours} hour(s)")
         logger.debug(f"  Method: {hyeto_config.hyetograph_type}")
+        logger.debug(f"  r_chicago: {hyeto_config.r_chicago}")
         logger.debug(f"  Output: {output_path}")
 
         # Create generator with IDF parameters resampled to DEM grid
@@ -718,10 +732,13 @@ class HyetographGenerator:
         add_metadata = {
             "hyetograph_method": hyeto_config.hyetograph_type,
             "duration_hours": hyeto_config.duration_hours,
+            "rainfall_duration_hours": hyeto_config.rainfall_duration,
             "timestep_hours": hyeto_config.timestep_hours,
             "areal_reduction_factor": hyeto_config.ka,
             "k_raster": str(hyeto_config.k_raster),
         }
+        if hyeto_config.r_chicago is not None:
+            add_metadata["r_chicago"] = hyeto_config.r_chicago
 
         # Add basin metadata if available
         if hasattr(config, "basin"):
@@ -735,8 +752,10 @@ class HyetographGenerator:
             duration_hours=hyeto_config.duration_hours,
             start_time=start_time,
             output_path=output_path,
+            rainfall_duration=hyeto_config.rainfall_duration,
             method=hyeto_config.hyetograph_type,
             timestep_hours=hyeto_config.timestep_hours,
+            r_chicago=hyeto_config.r_chicago,
             add_metadata=add_metadata,
             preload=preload,
         )
@@ -747,17 +766,29 @@ class HyetographGenerator:
         self,
         duration_hours: int,
         start_time: datetime,
-        method: Literal["chicago_decreasing"] = "chicago_decreasing",
+        rainfall_duration: float | None = None,
+        method: Literal["chicago", "rectangular"] = "chicago",
         timestep_hours: int = 1,
+        r_chicago: float | None = None,
     ) -> tuple[list[datetime], np.ndarray]:
         """Generate hyetograph precipitation time series.
 
+        The rainfall event spans ``rainfall_duration`` hours. If ``duration_hours``
+        is longer, the remaining timesteps are dry (zero precipitation), which is
+        useful to let the flood wave propagate through the network after the storm.
+
         Args:
-            duration_hours: Total duration of the hyetograph in hours
+            duration_hours: Total duration of the output time series in hours
             start_time: Start datetime for the hyetograph
-            method: Hyetograph construction method. Currently only
-                "chicago_decreasing" is implemented.
+            rainfall_duration: Duration of the rainfall event in hours. Must be
+                <= duration_hours. If None, defaults to duration_hours (rain for
+                the whole series).
+            method: Hyetograph construction method, either "chicago" or "rectangular".
             timestep_hours: Time step in hours (default: 1)
+            r_chicago: Position of the peak within the rainfall duration for the
+                Chicago method, in [0, 1] (0 = peak at start / decreasing,
+                0.5 = centered, 1 = peak at end / increasing). Required when
+                method="chicago", ignored for "rectangular".
 
         Returns:
             Tuple of (times, precipitation) where:
@@ -765,86 +796,171 @@ class HyetographGenerator:
                 - precipitation: 3D array (time, y, x) of precipitation (mm/h)
 
         Raises:
-            ValueError: If method is not supported
+            ValueError: If method is not supported, if r_chicago is missing or out
+                of range for the Chicago method, or if rainfall_duration exceeds
+                duration_hours.
 
         Notes:
-            - The Chicago decreasing method generates only the falling part
-              of the Chicago hyetograph (after the peak)
             - Precipitation values are in mm/h (intensity)
-            - NaN values in IDF parameters propagate to output
+            - NaN values in IDF parameters propagate to all output timesteps
             - If NaN values are > 90% in any parameter, a ValueError is raised during
               initialization of the HyetographGenerator
         """
-        if method != "chicago_decreasing":
-            raise ValueError(f"Unsupported hyetograph method: {method}. Only 'chicago_decreasing' is implemented.")
+        if method not in ("chicago", "rectangular"):
+            raise ValueError(f"Unsupported hyetograph method: {method}. Use 'chicago' or 'rectangular'.")
+
+        if rainfall_duration is None:
+            rainfall_duration = duration_hours
+
+        if rainfall_duration <= 0:
+            raise ValueError("rainfall_duration must be positive.")
+
+        if rainfall_duration > duration_hours:
+            raise ValueError(
+                f"rainfall_duration ({rainfall_duration} h) cannot exceed duration_hours ({duration_hours} h)."
+            )
+
+        if method == "chicago":
+            if r_chicago is None:
+                raise ValueError("r_chicago is required for the 'chicago' method.")
+            if r_chicago < 0 or r_chicago > 1:
+                raise ValueError("r_chicago must be in range [0, 1].")
 
         logger.info(
             f"Generating {method} hyetograph: duration={duration_hours}h, "
-            f"timestep={timestep_hours}h, start={start_time}"
+            f"rainfall_duration={rainfall_duration}h, timestep={timestep_hours}h, "
+            f"r_chicago={r_chicago}, start={start_time}"
         )
 
-        return self._chicago_decreasing(duration_hours, start_time, timestep_hours)
+        return self._build_hyetograph(
+            duration_hours=duration_hours,
+            start_time=start_time,
+            rainfall_duration=rainfall_duration,
+            method=method,
+            timestep_hours=timestep_hours,
+            r_chicago=r_chicago,
+        )
 
-    def _chicago_decreasing(
+    def _ddf_depth(self, d: float) -> np.ndarray:
+        """Distributed DDF depth h = ka * k * a * d^n at duration d [hours].
+
+        Args:
+            d: Duration in hours (>= 0)
+
+        Returns:
+            2D array of cumulated precipitation depth [mm]. Returns zeros for d <= 0.
+        """
+        if d <= 0:
+            return np.zeros(self.idf_params.shape)
+        return self.ka * self.idf_params.k * (self.idf_params.a * np.power(d, self.idf_params.n))
+
+    def _chicago_cumulative(self, t: float, rainfall_duration: float, r: float, ddf_total: np.ndarray) -> np.ndarray:
+        """Cumulated rainfall depth of the Chicago curve at time t.
+
+        Implements the Chicago hyetograph cumulative curve with a peak located at
+        ``r * rainfall_duration``. The limiting cases r=0 (decreasing) and r=1
+        (increasing) are handled explicitly; 0 < r < 1 blends the pre-peak and
+        post-peak branches.
+
+        Args:
+            t: Time within the rainfall event [hours], 0 <= t <= rainfall_duration
+            rainfall_duration: Total rainfall duration [hours]
+            r: Peak position within the rainfall duration, in [0, 1]
+            ddf_total: Distributed total depth at rainfall_duration [mm]
+
+        Returns:
+            2D array of cumulated depth at time t [mm]
+        """
+        if r == 0:
+            # Peak at the start: decreasing hyetograph
+            return self._ddf_depth(t)
+        if r == 1:
+            # Peak at the end: increasing hyetograph
+            return ddf_total - self._ddf_depth(rainfall_duration - t)
+
+        # General case: 0 < r < 1
+        tp = r * rainfall_duration  # time of the peak [h]
+        if t <= tp:
+            d_eff = (tp - t) / r
+            return r * (ddf_total - self._ddf_depth(d_eff))
+        d_eff = (t - tp) / (1 - r)
+        return r * ddf_total + (1 - r) * self._ddf_depth(d_eff)
+
+    def _build_hyetograph(
         self,
         duration_hours: int,
         start_time: datetime,
+        rainfall_duration: float,
+        method: str,
         timestep_hours: int,
+        r_chicago: float | None,
     ) -> tuple[list[datetime], np.ndarray]:
-        """Generate Chicago decreasing hyetograph.
+        """Construct the hyetograph intensity time series.
 
-        The Chicago method constructs a hyetograph where precipitation intensity
-        decreases monotonically from the peak. This implementation generates only
-        the descending part (after peak).
+        Rainfall increments are computed over intervals of width ``timestep_hours``
+        spanning ``rainfall_duration`` (the last interval is clipped to the exact
+        rainfall duration), then padded with dry timesteps up to ``duration_hours``.
 
         Args:
-            duration_hours: Total duration in hours
+            duration_hours: Total duration of the output series [hours]
             start_time: Start datetime
-            timestep_hours: Time step in hours
+            rainfall_duration: Rainfall event duration [hours]
+            method: "chicago" or "rectangular"
+            timestep_hours: Time step [hours]
+            r_chicago: Peak position for the Chicago method (ignored for rectangular)
 
         Returns:
             Tuple of (times, precipitation) where precipitation is in mm/h
         """
-        n_steps = duration_hours // timestep_hours
         nrows, ncols = self.idf_params.shape
 
-        # Extract parameters
-        a = self.idf_params.a
-        n = self.idf_params.n
-        k = self.idf_params.k
-        ka = self.ka
+        # Total number of output timesteps and rainfall timesteps
+        n_total = int(duration_hours // timestep_hours)
+        n_rain = int(np.ceil(rainfall_duration / timestep_hours - 1e-9))
+        n_rain = min(n_rain, n_total)
 
-        # Initialize arrays
-        # DDF: Depth-Duration-Frequency, cumulative depth (mm)
-        # P: Incremental precipitation (mm per timestep)
-        ddf = np.zeros((n_steps, nrows, ncols))
-        precip = np.zeros((n_steps, nrows, ncols))
+        # Interval edges within the rainfall event (last edge clipped to rainfall_duration)
+        t_edges = np.minimum(np.arange(n_rain + 1) * timestep_hours, rainfall_duration)
+
+        # Total depth at the rainfall duration
+        ddf_total = self._ddf_depth(rainfall_duration)
+
+        # Incremental precipitation depth [mm] per timestep
+        increments = np.zeros((n_total, nrows, ncols))
+
+        if method == "rectangular":
+            # Constant intensity over the rainfall duration
+            intensity_const = ddf_total / rainfall_duration  # [mm/h]
+            for j in range(n_rain):
+                dt_j = t_edges[j + 1] - t_edges[j]
+                increments[j, :, :] = intensity_const * dt_j
+        else:
+            # Chicago: increments are differences of the cumulative curve
+            c_prev = self._chicago_cumulative(t_edges[0], rainfall_duration, r_chicago, ddf_total)
+            for j in range(n_rain):
+                c_next = self._chicago_cumulative(t_edges[j + 1], rainfall_duration, r_chicago, ddf_total)
+                increments[j, :, :] = c_next - c_prev
+                c_prev = c_next
+
+        # Numerical cleanup: remove tiny negative values from rounding (leaves NaN untouched)
+        increments[increments < 0] = 0.0
+
+        # Convert from mm/timestep to mm/h (intensity); dividing by the nominal
+        # timestep preserves the depth integrated by the simulation over each slot.
+        precip_intensity = increments / timestep_hours
+
+        # Propagate the basin mask (NaN in IDF parameters) to every timestep
+        mask = np.isnan(self.idf_params.a) | np.isnan(self.idf_params.n) | np.isnan(self.idf_params.k)
+        precip_intensity[:, mask] = np.nan
 
         # Generate times
-        times = [start_time + timedelta(hours=i * timestep_hours) for i in range(n_steps)]
+        times = [start_time + timedelta(hours=i * timestep_hours) for i in range(n_total)]
 
-        # Chicago hyetograph calculation
-        # Note: t is 1-indexed (t=1 for first hour)
-        for i in range(n_steps):
-            t = (i + 1) * timestep_hours  # Duration in hours (1, 2, 3, ...)
-
-            # DDF calculation: h = ka * k * a * t^n (mm)
-            ddf[i, :, :] = ka * k * (a * np.power(t, n))
-
-            if i > 0:
-                # Rainfall increment (Chicago decreasing)
-                precip[i, :, :] = ddf[i, :, :] - ddf[i - 1, :, :]
-            else:
-                # First timestep: P = DDF
-                precip[i, :, :] = ddf[i, :, :]
-
-        # Convert from mm/timestep to mm/h (intensity)
-        precip_intensity = precip / timestep_hours
-
+        peak = precip_intensity[:n_rain] if n_rain > 0 else precip_intensity
         logger.success(
-            f"Hyetograph generated: {n_steps} timesteps, "
-            f"total depth range=[{np.nanmin(ddf[-1]):.1f}, {np.nanmax(ddf[-1]):.1f}] mm, "
-            f"peak intensity range=[{np.nanmin(precip_intensity[0]):.2f}, {np.nanmax(precip_intensity[0]):.2f}] mm/h"
+            f"Hyetograph generated: {n_total} timesteps ({n_rain} wet), "
+            f"total depth range=[{np.nanmin(ddf_total):.1f}, {np.nanmax(ddf_total):.1f}] mm, "
+            f"peak intensity range=[{np.nanmin(peak):.2f}, {np.nanmax(peak):.2f}] mm/h"
         )
 
         return times, precip_intensity
@@ -854,8 +970,10 @@ class HyetographGenerator:
         duration_hours: int,
         start_time: datetime,
         output_path: str | Path,
-        method: Literal["chicago_decreasing"] = "chicago_decreasing",
+        rainfall_duration: float | None = None,
+        method: Literal["chicago", "rectangular"] = "chicago",
         timestep_hours: int = 1,
+        r_chicago: float | None = None,
         add_metadata: dict | None = None,
         preload: bool = True,
     ) -> "MeteoRaster":
@@ -866,11 +984,16 @@ class HyetographGenerator:
         workflow for design storm simulations.
 
         Args:
-            duration_hours: Total duration of the hyetograph in hours
+            duration_hours: Total duration of the output series in hours
             start_time: Start datetime for the hyetograph
             output_path: Path for output NetCDF file
-            method: Hyetograph construction method (default: "chicago_decreasing")
+            rainfall_duration: Duration of the rainfall event in hours (<= duration_hours).
+                If None, defaults to duration_hours.
+            method: Hyetograph construction method, "chicago" or "rectangular"
+                (default: "chicago")
             timestep_hours: Time step in hours (default: 1)
+            r_chicago: Peak position for the Chicago method, in [0, 1]. Required
+                when method="chicago".
             add_metadata: Optional dictionary of additional global attributes
             preload: If True, preload all data into memory for fast access
                 (default: True, recommended for normal use)
@@ -912,8 +1035,10 @@ class HyetographGenerator:
         times, precipitation = self.generate(
             duration_hours=duration_hours,
             start_time=start_time,
+            rainfall_duration=rainfall_duration,
             method=method,
             timestep_hours=timestep_hours,
+            r_chicago=r_chicago,
         )
 
         # Save to NetCDF
@@ -921,6 +1046,7 @@ class HyetographGenerator:
             output_path=output_path,
             times=times,
             precipitation=precipitation,
+            method=method,
             add_metadata=add_metadata,
         )
 
@@ -936,6 +1062,7 @@ class HyetographGenerator:
         output_path: str | Path,
         times: list[datetime],
         precipitation: np.ndarray,
+        method: str = "chicago",
         add_metadata: dict | None = None,
     ) -> None:
         """Export hyetograph to CF-compliant NetCDF file.
@@ -947,6 +1074,8 @@ class HyetographGenerator:
             output_path: Path for output NetCDF file
             times: List of datetime objects for each timestep
             precipitation: 3D array (time, y, x) of precipitation [mm/h]
+            method: Hyetograph construction method recorded in the file metadata
+                (default: "chicago")
             add_metadata: Optional dictionary of additional global attributes
 
         Notes:
@@ -955,7 +1084,7 @@ class HyetographGenerator:
             - Precipitation units are mm/h (compatible with MeteoRaster)
 
         Examples:
-            >>> times, precip = generator.generate(48, datetime(2023, 11, 1))
+            >>> times, precip = generator.generate(48, datetime(2023, 11, 1), method="chicago", r_chicago=0)
             >>> generator.to_netcdf(
             ...     "design_storm.nc",
             ...     times=times,
@@ -1000,7 +1129,7 @@ class HyetographGenerator:
                 "title": "Synthetic hyetograph from IDF parameters",
                 "source": f"MOBIDICpy version {__version__}",
                 "history": f"Created {datetime.now().isoformat()}",
-                "hyetograph_method": "chicago_decreasing",
+                "hyetograph_method": method,
                 "areal_reduction_factor": self.ka,
             },
         )
