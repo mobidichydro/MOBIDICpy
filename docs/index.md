@@ -52,7 +52,7 @@ See [Examples](examples.md) page for practical usage examples.
 
 ## Features
 
-**Currently implemented (v0.3)**
+**Currently implemented (v0.4)**
 
 - Simulation setup with YAML configuration file and parameter validation
 - GIS data I/O (raster and vector formats)
@@ -61,7 +61,7 @@ See [Examples](examples.md) page for practical usage examples.
 - Hillslope-reach mapping
 - Meteorological data preprocessing from MATLAB format (.mat to NetCDF conversion)
 - Meteorological data spatial interpolation (IDW and nearest neighbor)
-- Design storm hyetograph generation from IDF parameters (Chicago method)
+- Design storm hyetograph generation from IDF parameters (rectangular and Chicago method)
 - Soil water balance module (4 reservoirs: capillary, gravitational, plants, surface)
 - Linear routing (hillslope and channel)
 - Linear reservoir groundwater model (with multi-aquifer capability)

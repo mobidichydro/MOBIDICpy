@@ -194,7 +194,7 @@ from mobidic import (
 
 ## Development status
 
-MOBIDICpy's currently implemented features (v0.3):
+MOBIDICpy's currently implemented features (v0.4):
 
 - Configuration system
 - GIS data I/O
