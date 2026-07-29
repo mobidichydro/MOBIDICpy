@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from mobidic.config.schema import (
+    Advanced,
     EnergyParameters,
     GroundwaterParameters,
     InitialConditions,
@@ -496,3 +497,20 @@ class TestOutputReportSettings:
         """Test that reach_selection='list' with sel_list is accepted."""
         settings = OutputReportSettings(reach_selection="list", sel_list=[1, 2, 3])
         assert settings.sel_list == [1, 2, 3]
+
+
+class TestAdvanced:
+    """Tests for Advanced settings."""
+
+    def test_jit_enable_defaults_to_true(self):
+        """Test that JIT compilation is enabled by default."""
+        assert Advanced().jit_enable is True
+
+    def test_jit_enable_can_be_disabled(self):
+        """Test that jit_enable accepts an explicit false."""
+        assert Advanced(jit_enable=False).jit_enable is False
+
+    def test_jit_enable_rejects_non_boolean(self):
+        """Test that a non-boolean jit_enable is rejected."""
+        with pytest.raises(ValidationError):
+            Advanced(jit_enable="maybe")
