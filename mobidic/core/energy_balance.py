@@ -18,6 +18,7 @@ from numba import njit, prange
 from numpy.typing import NDArray
 
 from mobidic.core import constants as const
+from mobidic.utils.jit import dispatch
 
 # Constants are saved at the module level for the JIT kernel
 _SIGMA = const.STEFAN_BOLTZMANN
@@ -426,7 +427,7 @@ def energy_balance_1l(
         tt_values = np.arange(n_pts, dtype=np.float64) * step
         step_safe = float(step)
 
-    return _energy_balance_1l_kernel(
+    return dispatch(_energy_balance_1l_kernel)(
         float(ff),
         a_tem_arr,
         a_rad_arr,
