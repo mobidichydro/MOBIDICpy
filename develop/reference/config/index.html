@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/logo_mobidic_color_notext.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -3769,18 +3769,7 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>mobidic/config/schema.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-675">675</a></span>
-<span class="normal"><a href="#__codelineno-0-676">676</a></span>
-<span class="normal"><a href="#__codelineno-0-677">677</a></span>
-<span class="normal"><a href="#__codelineno-0-678">678</a></span>
-<span class="normal"><a href="#__codelineno-0-679">679</a></span>
-<span class="normal"><a href="#__codelineno-0-680">680</a></span>
-<span class="normal"><a href="#__codelineno-0-681">681</a></span>
-<span class="normal"><a href="#__codelineno-0-682">682</a></span>
-<span class="normal"><a href="#__codelineno-0-683">683</a></span>
-<span class="normal"><a href="#__codelineno-0-684">684</a></span>
-<span class="normal"><a href="#__codelineno-0-685">685</a></span>
-<span class="normal"><a href="#__codelineno-0-686">686</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-686">686</a></span>
 <span class="normal"><a href="#__codelineno-0-687">687</a></span>
 <span class="normal"><a href="#__codelineno-0-688">688</a></span>
 <span class="normal"><a href="#__codelineno-0-689">689</a></span>
@@ -3799,37 +3788,48 @@
 <span class="normal"><a href="#__codelineno-0-702">702</a></span>
 <span class="normal"><a href="#__codelineno-0-703">703</a></span>
 <span class="normal"><a href="#__codelineno-0-704">704</a></span>
-<span class="normal"><a href="#__codelineno-0-705">705</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="k">class</span><span class="w"> </span><span class="nc">MOBIDICConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete MOBIDIC configuration.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a>        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Validate on assignment</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a>    <span class="p">)</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>    <span class="n">basin</span><span class="p">:</span> <span class="n">Basin</span>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="n">paths</span><span class="p">:</span> <span class="n">Paths</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a>    <span class="n">vector_files</span><span class="p">:</span> <span class="n">VectorFiles</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a>    <span class="n">raster_files</span><span class="p">:</span> <span class="n">RasterFiles</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a>    <span class="n">raster_settings</span><span class="p">:</span> <span class="n">RasterSettings</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>    <span class="n">initial_conditions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">InitialConditions</span><span class="p">)</span>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="n">simulation</span><span class="p">:</span> <span class="n">Simulation</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStates</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStates</span><span class="p">)</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a>    <span class="n">output_states_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStatesSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStatesSettings</span><span class="p">)</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a>    <span class="n">output_report</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReport</span><span class="p">)</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>    <span class="n">output_report_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReportSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReportSettings</span><span class="p">)</span>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a>    <span class="n">output_forcing_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputForcingData</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputForcingData</span><span class="p">)</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a>    <span class="n">hyetograph</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HyetographConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph generation configuration (optional)&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a>    <span class="n">advanced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Advanced</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Advanced</span><span class="p">)</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_hyetograph_config_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MOBIDICConfig&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that hyetograph config section is provided when paths.hyetograph is specified.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>                <span class="s2">&quot;The &#39;hyetograph&#39; configuration section must be provided when &#39;paths.hyetograph&#39; is specified.&quot;</span>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a>            <span class="p">)</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a>        <span class="k">return</span> <span class="bp">self</span>
+<span class="normal"><a href="#__codelineno-0-705">705</a></span>
+<span class="normal"><a href="#__codelineno-0-706">706</a></span>
+<span class="normal"><a href="#__codelineno-0-707">707</a></span>
+<span class="normal"><a href="#__codelineno-0-708">708</a></span>
+<span class="normal"><a href="#__codelineno-0-709">709</a></span>
+<span class="normal"><a href="#__codelineno-0-710">710</a></span>
+<span class="normal"><a href="#__codelineno-0-711">711</a></span>
+<span class="normal"><a href="#__codelineno-0-712">712</a></span>
+<span class="normal"><a href="#__codelineno-0-713">713</a></span>
+<span class="normal"><a href="#__codelineno-0-714">714</a></span>
+<span class="normal"><a href="#__codelineno-0-715">715</a></span>
+<span class="normal"><a href="#__codelineno-0-716">716</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="k">class</span><span class="w"> </span><span class="nc">MOBIDICConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete MOBIDIC configuration.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a>        <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Validate on assignment</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a>    <span class="p">)</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a>    <span class="n">basin</span><span class="p">:</span> <span class="n">Basin</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>    <span class="n">paths</span><span class="p">:</span> <span class="n">Paths</span>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a>    <span class="n">vector_files</span><span class="p">:</span> <span class="n">VectorFiles</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a>    <span class="n">raster_files</span><span class="p">:</span> <span class="n">RasterFiles</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a>    <span class="n">raster_settings</span><span class="p">:</span> <span class="n">RasterSettings</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a>    <span class="n">initial_conditions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">InitialConditions</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">InitialConditions</span><span class="p">)</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>    <span class="n">simulation</span><span class="p">:</span> <span class="n">Simulation</span>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a>    <span class="n">output_states</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStates</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStates</span><span class="p">)</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a>    <span class="n">output_states_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputStatesSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputStatesSettings</span><span class="p">)</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a>    <span class="n">output_report</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReport</span><span class="p">)</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>    <span class="n">output_report_settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputReportSettings</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputReportSettings</span><span class="p">)</span>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a>    <span class="n">output_forcing_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OutputForcingData</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">OutputForcingData</span><span class="p">)</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a>    <span class="n">hyetograph</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">HyetographConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Hyetograph generation configuration (optional)&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a>    <span class="n">advanced</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Advanced</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Advanced</span><span class="p">)</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a>    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_hyetograph_config_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MOBIDICConfig&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that hyetograph config section is provided when paths.hyetograph is specified.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hyetograph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>                <span class="s2">&quot;The &#39;hyetograph&#39; configuration section must be provided when &#39;paths.hyetograph&#39; is specified.&quot;</span>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a>            <span class="p">)</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a>        <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -7520,13 +7520,35 @@ h = k_a \cdot k \cdot a \cdot t^n
 <span class="normal"><a href="#__codelineno-0-669">669</a></span>
 <span class="normal"><a href="#__codelineno-0-670">670</a></span>
 <span class="normal"><a href="#__codelineno-0-671">671</a></span>
-<span class="normal"><a href="#__codelineno-0-672">672</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-666" name="__codelineno-0-666"></a><span class="k">class</span><span class="w"> </span><span class="nc">Advanced</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-672">672</a></span>
+<span class="normal"><a href="#__codelineno-0-673">673</a></span>
+<span class="normal"><a href="#__codelineno-0-674">674</a></span>
+<span class="normal"><a href="#__codelineno-0-675">675</a></span>
+<span class="normal"><a href="#__codelineno-0-676">676</a></span>
+<span class="normal"><a href="#__codelineno-0-677">677</a></span>
+<span class="normal"><a href="#__codelineno-0-678">678</a></span>
+<span class="normal"><a href="#__codelineno-0-679">679</a></span>
+<span class="normal"><a href="#__codelineno-0-680">680</a></span>
+<span class="normal"><a href="#__codelineno-0-681">681</a></span>
+<span class="normal"><a href="#__codelineno-0-682">682</a></span>
+<span class="normal"><a href="#__codelineno-0-683">683</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-666" name="__codelineno-0-666"></a><span class="k">class</span><span class="w"> </span><span class="nc">Advanced</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Advanced settings.&quot;&quot;&quot;</span>
 <a id="__codelineno-0-668" name="__codelineno-0-668"></a>
 <a id="__codelineno-0-669" name="__codelineno-0-669"></a>    <span class="n">log_level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span> <span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
 <a id="__codelineno-0-670" name="__codelineno-0-670"></a>        <span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Logging level&quot;</span>
 <a id="__codelineno-0-671" name="__codelineno-0-671"></a>    <span class="p">)</span>
 <a id="__codelineno-0-672" name="__codelineno-0-672"></a>    <span class="n">log_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PathField</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to log file&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a>    <span class="n">jit_enable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a>        <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a>        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a>            <span class="s2">&quot;Enable Numba JIT compilation of the numerical kernels (routing, &quot;</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a>            <span class="s2">&quot;interpolation, energy balance). Set to false to run them as pure Python, &quot;</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a>            <span class="s2">&quot;which is substantially slower but allows breakpoints and readable &quot;</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a>            <span class="s2">&quot;tracebacks inside the kernels. Intended for debugging and benchmarking. &quot;</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a>            <span class="s2">&quot;Ignored when the NUMBA_DISABLE_JIT environment variable is set, which &quot;</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a>            <span class="s2">&quot;disables Numba globally.&quot;</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a>        <span class="p">),</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -8131,7 +8153,7 @@ and configures the logger accordingly.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../assets/fontawesome.min.js"></script>
       
