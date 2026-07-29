@@ -19,6 +19,8 @@ from geopandas import GeoDataFrame
 from loguru import logger
 from numba import njit
 
+from mobidic.utils.jit import dispatch
+
 
 @njit(cache=True, fastmath=True)
 def _hillslope_routing_kernel(
@@ -143,7 +145,7 @@ def hillslope_routing(
 
     # Call Numba-compiled kernel for maximum performance
     # Flow direction is always in MOBIDIC format (1-8) after preprocessing
-    _hillslope_routing_kernel(
+    dispatch(_hillslope_routing_kernel)(
         lateral_flow,
         flow_direction,
         upstream_contribution,
@@ -388,7 +390,7 @@ def linear_channel_routing(
         C4 = 1 - C3  # Lateral inflow coefficient
 
     # Call Numba-compiled kernel for maximum performance
-    _linear_routing_kernel(
+    dispatch(_linear_routing_kernel)(
         discharge_initial,
         lateral_inflow,
         sorted_reach_idx,

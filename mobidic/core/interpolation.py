@@ -14,6 +14,8 @@ from scipy.interpolate import griddata
 from loguru import logger
 from numba import jit, prange
 
+from mobidic.utils.jit import dispatch
+
 
 @jit(nopython=True, cache=True, fastmath=True, parallel=True)
 def _compute_weighted_sum_jit(
@@ -270,7 +272,7 @@ def station_interpolation(
     # Compute or use pre-computed weights
     if weights_matrix is not None:
         # Use pre-computed weights with Numba JIT for maximum performance
-        result, weights_sum = _compute_weighted_sum_jit(weights_matrix, k_ok, st_val_corr)
+        result, weights_sum = dispatch(_compute_weighted_sum_jit)(weights_matrix, k_ok, st_val_corr)
     else:
         # Compute weights on-the-fly using IDW
         # Match MATLAB mobidic_sid.m lines 1126-1128: add 0.01 to grid coordinates to avoid division by zero

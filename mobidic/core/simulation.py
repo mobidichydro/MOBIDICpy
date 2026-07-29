@@ -28,6 +28,7 @@ from mobidic.core.interpolation import precipitation_interpolation, station_inte
 from mobidic.core.pet import calculate_pet
 from mobidic.core.crop_coefficients import compute_kc_grid, default_kc_clc_mapping_path, load_kc_clc_mapping
 from mobidic.io import StateWriter
+from mobidic.utils.jit import set_jit_enabled
 
 # Energy-balance forcing variables required when energy_balance != "None"
 _ENERGY_VARIABLES = ["temperature_min", "temperature_max", "humidity", "wind_speed", "radiation"]
@@ -237,6 +238,10 @@ class Simulation:
         self.gisdata = gisdata
         self.forcing = forcing
         self.config = config
+
+        # Apply the Numba JIT setting before any kernel is called
+        if config.advanced is not None:
+            set_jit_enabled(config.advanced.jit_enable)
 
         # Detect forcing type and set up method
         # _raster_et_source: "pet_c" if raster has Kc-adjusted PET (used directly),

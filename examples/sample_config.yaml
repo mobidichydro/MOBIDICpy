@@ -519,3 +519,7 @@ advanced:
   # [full pathname to .log file. If empty, only logs to console]
   log_file: mobidic.log
 
+  # OPTIONAL: Enable/disable Numba JIT compilation (routing, interpolation, energy balance)
+  # Intended for debugging and benchmarking. Ignored when the NUMBA_DISABLE_JIT environment variable is set.
+  # [true (default) or false]
+  jit_enable: true
