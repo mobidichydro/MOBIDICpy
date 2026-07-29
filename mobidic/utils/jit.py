@@ -1,8 +1,8 @@
 """Runtime switch for Numba JIT compilation of the numerical kernels.
 
-The kernels decorated with ``@njit``/``@jit`` are called through the function 
+The kernels decorated with ``@njit``/``@jit`` are called through the function
 :func:`dispatch`, which returns either the compiled Numba or the original
-Python function (through Numba's ``py_func``). When ``py_func`` is selected, 
+Python function (through Numba's ``py_func``). When ``py_func`` is selected,
 the code runs as pure Python.
 
 The switch is intended for debugging and for benchmarking the JIT speedup. The code
