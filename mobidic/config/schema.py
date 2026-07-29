@@ -670,6 +670,17 @@ class Advanced(BaseModel):
         "INFO", description="Logging level"
     )
     log_file: Optional[PathField] = Field(None, description="Path to log file")
+    jit_enable: Optional[bool] = Field(
+        True,
+        description=(
+            "Enable Numba JIT compilation of the numerical kernels (routing, "
+            "interpolation, energy balance). Set to false to run them as pure Python, "
+            "which is substantially slower but allows breakpoints and readable "
+            "tracebacks inside the kernels. Intended for debugging and benchmarking. "
+            "Ignored when the NUMBA_DISABLE_JIT environment variable is set, which "
+            "disables Numba globally."
+        ),
+    )
 
 
 class MOBIDICConfig(BaseModel):
