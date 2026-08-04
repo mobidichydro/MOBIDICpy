@@ -1,0 +1,181 @@
+# Sequential data assimilation configuration for the Arno River Basin
+# PESTPP-DA integration with MOBIDICpy
+
+
+######## CASE SETTINGS
+
+# OPTIONAL: File name prefix for PEST++ output files.
+# [Any string. Default for pest_tool=da: "assimilation"]
+case_name: assimilation
+
+# REQUIRED: Path to MOBIDIC simulation configuration
+# [path to .yaml file, e.g.: Arno.yaml]
+mobidic_config: "Arno.yaml"
+
+
+######## SIMULATION PERIOD
+
+# REQUIRED for sequential DA: the window split into assimilation cycles.
+# Cycle c runs [t_c, t_{c+1} - dt] inclusive, so every forcing timestep is used
+# exactly once.
+# [Format: "YYYY-MM-DD HH:MM:SS"]
+simulation_period:
+  start_date: "2023-11-01 00:00:00"
+  end_date: "2023-11-04 23:45:00"
+
+# OPTIONAL: If true, the meteorological raster is produced on the first run and reused in subsequent runs.
+# [boolean, default: false]
+use_raster_forcing: true
+
+
+######## DATA ASSIMILATION CONFIGURATION
+
+da:
+  # OPTIONAL: 'sequential' (cycle-based) or 'batch' (no cycles; PESTPP-DA then
+  # behaves like PESTPP-IES).
+  # [batch | sequential, default: sequential]
+  mode: sequential
+
+  # REQUIRED (in sequential mode): cycle length.
+  # Must be a multiple of simulation.timestep in the MOBIDIC config.
+  # [e.g. "6h", "24h"]
+  cycle_length: "6h"
+
+  # REQUIRED when states.restart_from='warmup': warm-up run period.
+  # [Format: "YYYY-MM-DD HH:MM:SS"]
+  warmup_period:
+    start_date: "2023-10-31 00:15:00"
+    end_date: "2023-11-01 00:00:00"
+
+  # OPTIONAL: which timesteps of a cycle carry a non-zero weight.
+  # 'end': only the last timestep of a cycle is assimilated; 
+  # 'all': uses every timestep of the cycle.
+  # [end | all, default: all]
+  assimilate: all
+
+  # OPTIONAL: cycles with zero weight for forecasts
+  # [non-negative integer, default: 0]
+  forecast_cycles: 0
+
+  # OPTIONAL: cycle number from which to (re)start from / last cycle to process.
+  # [non-negative integers, default: null = all cycles]
+  # hotstart_cycle: 0
+
+  # OPTIONAL: cycle number to stop after (inclusive). 
+  # If null, runs until the end of the simulation period.
+  # [non-negative integer, default: null]
+  stop_cycle: 8
+
+  states:
+    # OPTIONAL: how each cycle obtains its initial state.
+    #  'warmup'         - re-simulate from the end of the warm-up every cycle
+    #                     (ensemble Kalman smoother). Exact, no shared disk and
+    #                     no state parameters, but each run simulates (N+1)/2
+    #                     cycles on average, so cost grows with the cycle count.
+    #  'previous_cycle' - carry the previous cycle's full-resolution state in a
+    #                     state file named by a scalar identifier that travels
+    #                     through the PEST interface (ensemble Kalman filter).
+    #                     Exact and cheap, but every agent must be able to read
+    #                     and write state_file_dir.
+    # [warmup | previous_cycle, default: warmup]
+    restart_from: previous_cycle
+
+    # --- the settings below apply only when restart_from='previous_cycle' ---
+
+    # OPTIONAL: directory holding the state files, relative to working_dir.
+    # [string, default: "da_states"]
+    state_file_dir: "da_states"
+
+    # OPTIONAL: past cycles of state files to keep on disk.
+    # [integer >= 2, default: 2]
+    keep_cycles: 4
+
+
+######## CALIBRATION PARAMETERS
+
+# Static parameters. PESTPP-DA re-optimizes them at every cycle, so their
+# estimated value changes as cycles progress.
+parameters:
+  - name: alpha
+    parameter_key: parameters.soil.alpha
+    initial_value: 8.0e-06
+    lower_bound: 1.0e-08
+    upper_bound: 1.0e-04
+    transform: log
+    par_group: soil
+
+  - name: beta
+    parameter_key: parameters.soil.beta
+    initial_value: 5.0e-05
+    lower_bound: 1.0e-08
+    upper_bound: 1.0e-04
+    transform: log
+    par_group: soil
+
+  - name: wcel
+    parameter_key: parameters.routing.wcel
+    initial_value: 5.18
+    lower_bound: 1.0
+    upper_bound: 10.0
+    transform: none
+    par_group: routing
+
+  - name: ks_factor
+    parameter_key: parameters.multipliers.ks_factor
+    initial_value: 1.0
+    lower_bound: 0.01
+    upper_bound: 100.0
+    transform: log
+    par_group: soil
+
+
+######## OBSERVATIONS
+
+observations:
+  - name: Q_278
+    obs_file: "../datasets/Arno/data/Q_TOS01004659_15min_2023.csv"
+    reach_id: 278
+    relative_error: 0.10   # OPTIONAL: sigma as a fraction of the observed value [10% - typical rating-curve uncertainty]
+    min_error: 5.0         # REQUIRED with relative_error: floor on sigma [m3/s], keeps low flows from dominating
+    time_column: time
+    value_column: Q
+
+
+######## PEST++ SETTINGS
+
+# REQUIRED for this file: PESTPP-DA.
+pest_tool: da
+
+pest_options:
+  # ---- Common ----
+  noptmax: 3       # Iterations per cycle. 0 = one run per cycle at the control-file
+                   # values (state transfer only); -1 = prior Monte Carlo per cycle.
+                   # Both are cheap first checks.
+  pst_version: 2   # Forced to 2 in sequential mode: the 'cycle' and
+                   # 'state_par_link' columns only exist in version-2 external files.
+
+  # ---- Ensemble (all ies_* options are accepted; da_* variants take precedence) ----
+  ies_num_reals: 20        # Number of realizations
+  # ies_subset_size: 4     # Realizations used to test lambdas each iteration
+  # ies_bad_phi: 1.0e+30   # Phi above which a realization is dropped
+
+  # ---- DA (pest_tool: da) ----
+  # da_hotstart_cycle: 0          # Cycle to (re)start from (also `mobidic calibration --hotstart-cycle N`)
+  # da_stop_cycle: 15             # Last cycle to process
+  # da_use_simulated_states: true # Use simulated final states as next-cycle initial states
+  # da_noptmax_schedule: "sched.csv"  # Two-column file: cycle -> noptmax
+  # debug_parse_only: true        # Validate the cycle interface and exit
+  # check_tplins: false           # Disable interface checking for very large problems
+
+
+######## WORKING DIRECTORY
+
+working_dir: "pest_run_da"
+
+
+######## PARALLEL EXECUTION
+
+parallel:
+  num_workers: 8
+  port: 4004
+  manager_ip: null
