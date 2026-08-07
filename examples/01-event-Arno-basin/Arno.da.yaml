@@ -20,7 +20,7 @@ mobidic_config: "Arno.yaml"
 # exactly once.
 # [Format: "YYYY-MM-DD HH:MM:SS"]
 simulation_period:
-  start_date: "2023-11-01 00:00:00"
+  start_date: "2023-11-02 00:00:00"
   end_date: "2023-11-04 23:45:00"
 
 # OPTIONAL: If true, the meteorological raster is produced on the first run and reused in subsequent runs.
@@ -45,7 +45,7 @@ da:
   # [Format: "YYYY-MM-DD HH:MM:SS"]
   warmup_period:
     start_date: "2023-10-31 00:15:00"
-    end_date: "2023-11-01 00:00:00"
+    end_date: "2023-11-02 00:00:00"
 
   # OPTIONAL: which timesteps of a cycle carry a non-zero weight.
   # 'end': only the last timestep of a cycle is assimilated; 
@@ -64,24 +64,14 @@ da:
   # OPTIONAL: cycle number to stop after (inclusive). 
   # If null, runs until the end of the simulation period.
   # [non-negative integer, default: null]
-  stop_cycle: 8
+  stop_cycle: 4
 
   states:
     # OPTIONAL: how each cycle obtains its initial state.
-    #  'warmup'         - re-simulate from the end of the warm-up every cycle
-    #                     (ensemble Kalman smoother). Exact, no shared disk and
-    #                     no state parameters, but each run simulates (N+1)/2
-    #                     cycles on average, so cost grows with the cycle count.
-    #  'previous_cycle' - carry the previous cycle's full-resolution state in a
-    #                     state file named by a scalar identifier that travels
-    #                     through the PEST interface (ensemble Kalman filter).
-    #                     Exact and cheap, but every agent must be able to read
-    #                     and write state_file_dir.
     # [warmup | previous_cycle, default: warmup]
     restart_from: previous_cycle
 
     # --- the settings below apply only when restart_from='previous_cycle' ---
-
     # OPTIONAL: directory holding the state files, relative to working_dir.
     # [string, default: "da_states"]
     state_file_dir: "da_states"
@@ -90,55 +80,227 @@ da:
     # [integer >= 2, default: 2]
     keep_cycles: 4
 
+    # --- joint state-parameter estimation  ---
+    # OPTIONAL: state variables the filter adjusts alongside the parameters.
+    # Empty (the default): states are transferred from cycle to cycle but never adjusted.
+    # [list of: discharge, soil_moisture, soil_capillary, soil_gravitational,
+    #  surface_water, runoff_fraction, conductivity. Default: [] = no state estimation]
+    estimate: [conductivity]
+
+    # OPTIONAL: which reaches are parametrized.
+    # [upstream | all, default: upstream]
+    estimate_reaches: upstream
+
+    # --- soil-moisture zones (used only when `estimate` includes a soil store) ---
+
+    # OPTIONAL: spatial aggregation into zones (i.e., the hillslopes associated with each reach).
+    # [reach, default: reach]
+    zones: reach
+
+    # OPTIONAL: zones smaller than this are merged 
+    # [integer >= 1, default: 1 = no merging]
+    min_zone_cells: 10
+
+    # OPTIONAL: bounds and cycle-0 prior spread of the soil moisture states.
+    # [defaults: [0.0, 1.0] and 0.05]
+    # saturation_bounds: [0.0, 1.0]
+    saturation_prior_std: 0.10
+
+    # OPTIONAL: floor on the cycle-0 prior spread of the surface-water state.
+    # [number > 0, default: 1.0e-4]
+    # surface_prior_std_floor: 1.0e-4
+
+    # OPTIONAL: upper bound of a discharge state, as a multiple of the largest
+    # discharge that reach reaches in a reference run.
+    # [number > 1, default: 10.0]
+    bound_factor: 10.0
+
+    # OPTIONAL: cycle-0 prior standard deviation of each state, relative to its
+    # warm-up value.
+    # [number > 0, defaults: 0.1 and 1.0e-3]
+    prior_std: 0.1
+    prior_std_floor: 1.0e-3
+
+    # OPTIONAL: lower bound of a discharge state [m3/s]. 
+    # [number > 0, default: 1.0e-30]
+    state_floor: 1.0e-30
+
+    # OPTIONAL: localization of the ensemble update. 'upstream' writes loc.mat
+    # (a PEST ASCII matrix) allowing each observation group to update only the
+    # discharge states of the reaches draining into it, plus every non-state
+    # parameter, and registers it as da_localizer.
+    # [upstream | none, default: upstream]
+    localizer: upstream
+
 
 ######## CALIBRATION PARAMETERS
 
 # Static parameters. PESTPP-DA re-optimizes them at every cycle, so their
 # estimated value changes as cycles progress.
 parameters:
-  - name: alpha
-    parameter_key: parameters.soil.alpha
-    initial_value: 8.0e-06
-    lower_bound: 1.0e-08
-    upper_bound: 1.0e-04
-    transform: log
-    par_group: soil
+  # - name: alpha
+  #   parameter_key: parameters.soil.alpha
+  #   initial_value: 8.0e-06
+  #   lower_bound: 1.0e-08
+  #   upper_bound: 1.0e-04
+  #   transform: log
+  #   par_group: soil
 
-  - name: beta
-    parameter_key: parameters.soil.beta
-    initial_value: 5.0e-05
-    lower_bound: 1.0e-08
-    upper_bound: 1.0e-04
-    transform: log
-    par_group: soil
+  # - name: beta
+  #   parameter_key: parameters.soil.beta
+  #   initial_value: 5.0e-05
+  #   lower_bound: 1.0e-08
+  #   upper_bound: 1.0e-04
+  #   transform: log
+  #   par_group: soil
 
   - name: wcel
     parameter_key: parameters.routing.wcel
     initial_value: 5.18
-    lower_bound: 1.0
-    upper_bound: 10.0
+    lower_bound: 5.17
+    upper_bound: 5.19
     transform: none
     par_group: routing
 
-  - name: ks_factor
-    parameter_key: parameters.multipliers.ks_factor
-    initial_value: 1.0
-    lower_bound: 0.01
-    upper_bound: 100.0
-    transform: log
-    par_group: soil
+  # - name: ks_factor
+  #   parameter_key: parameters.multipliers.ks_factor
+  #   initial_value: 1.0
+  #   lower_bound: 0.8
+  #   upper_bound: 1.2
+  #   transform: log
+  #   par_group: soil
+
+  # - name: Wc_factor
+  #   parameter_key: parameters.multipliers.Wc_factor
+  #   initial_value: 1.0
+  #   lower_bound: 0.8
+  #   upper_bound: 1.2
+  #   transform: log
+  #   par_group: soil
+
+  # - name: Wg_factor
+  #   parameter_key: parameters.multipliers.Wg_factor
+  #   initial_value: 1.0
+  #   lower_bound: 0.8
+  #   upper_bound: 1.2
+  #   transform: log
+  #   par_group: soil
 
 
 ######## OBSERVATIONS
 
 observations:
   - name: Q_278
-    obs_file: "../datasets/Arno/data/Q_TOS01004659_15min_2023.csv"
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
     reach_id: 278
-    relative_error: 0.10   # OPTIONAL: sigma as a fraction of the observed value [10% - typical rating-curve uncertainty]
-    min_error: 5.0         # REQUIRED with relative_error: floor on sigma [m3/s], keeps low flows from dominating
+    relative_error: 0.30   # OPTIONAL: sigma as a fraction of the observed value
+    min_error: 5.0         # REQUIRED with relative_error: floor on sigma [m3/s]
     time_column: time
-    value_column: Q
+    value_column: TOS01004659
+
+  - name: Q_614
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 614
+    relative_error: 0.30 
+    min_error: 5.0        
+    time_column: time
+    value_column: TOS01004411
+
+  - name: Q_174
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 174
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004625
+
+  - name: Q_312
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 312
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004642
+
+  - name: Q_297
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 297
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004679
+
+  - name: Q_293
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 293
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004731
+
+  - name: Q_273
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 273
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004791
+
+  - name: Q_315
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 315
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004811
+
+  - name: Q_387
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 387
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01004941
+
+  - name: Q_412
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 412
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01005001
+
+  # - name: Q_567
+  #   obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+  #   reach_id: 567
+  #   relative_error: 0.30
+  #   min_error: 5.0
+  #   time_column: time
+  #   value_column: TOS01005131
+
+  - name: Q_526
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 526
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01005135
+
+  - name: Q_462
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 462
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01005181
+
+  - name: Q_445
+    obs_file: "../datasets/Arno/data/2023_11_1_discharge.csv"
+    reach_id: 445
+    relative_error: 0.30
+    min_error: 5.0
+    time_column: time
+    value_column: TOS01005191
 
 
 ######## PEST++ SETTINGS
@@ -155,9 +317,11 @@ pest_options:
                    # 'state_par_link' columns only exist in version-2 external files.
 
   # ---- Ensemble (all ies_* options are accepted; da_* variants take precedence) ----
-  ies_num_reals: 20        # Number of realizations
+  ies_num_reals: 40        # Number of realizations
   # ies_subset_size: 4     # Realizations used to test lambdas each iteration
   # ies_bad_phi: 1.0e+30   # Phi above which a realization is dropped
+  ies_no_noise: false      # Do not use noise realisations to compute the ensemble update
+  #ies_use_mda: true        # NOPTMAX = 1 and ies_use_mda(true) results in the standard ensemble smoother Kalman update
 
   # ---- DA (pest_tool: da) ----
   # da_hotstart_cycle: 0          # Cycle to (re)start from (also `mobidic calibration --hotstart-cycle N`)
