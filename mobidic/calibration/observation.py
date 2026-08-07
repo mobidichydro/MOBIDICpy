@@ -62,6 +62,39 @@ def load_observations(
     return result
 
 
+def observation_weights(values, obs_group: ObservationGroup):
+    """Weight of each observation of a group.
+
+    PEST treats a weight as the reciprocal of the observation standard
+    deviation, so this is where the assumed measurement-error model enters the
+    objective function.
+
+    Two models are supported:
+
+    - **Constant** (default): every observation gets ``obs_group.weight``,
+      i.e. a single sigma for the whole record.
+    - **Relative** (``relative_error`` set): ``sigma_i = max(relative_error *
+      |obs_i|, min_error)`` and ``weight_i = 1 / sigma_i``. For a flood
+      hydrograph spanning orders of magnitude this is much the better choice: a
+      constant sigma sized for the peak makes the low-flow tail effectively
+      unobserved, while one sized for the tail lets thousands of low-flow points
+      swamp the handful that describe the peak.
+
+    Args:
+        values: Observed values (array-like).
+        obs_group: Observation group configuration.
+
+    Returns:
+        Array of weights, one per observation.
+    """
+    values = np.asarray(values, dtype=float)
+    if obs_group.relative_error is None:
+        return np.full(values.shape, float(obs_group.weight))
+
+    sigma = np.maximum(obs_group.relative_error * np.abs(values), obs_group.min_error)
+    return 1.0 / sigma
+
+
 def align_observations_to_simulation(
     obs_df: pd.DataFrame,
     sim_times: list | np.ndarray | pd.DatetimeIndex,
