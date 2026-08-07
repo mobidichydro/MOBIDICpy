@@ -23,10 +23,8 @@ from mobidic.calibration import PestSetup, load_calibration_config, prepare_simu
 from mobidic.calibration.da_states import build_state_mask, state_file_path
 
 # ---- Settings -------------------------------------------------------------
-noptmax = 3  # Iterations per assimilation cycle
-ies_num_reals = 20  # Ensemble size
-forecast_windows = [5, 6, 7, 8]  # Predict from the end of each of these cycles
-rerun_assimilation = False  # False -> Does not run, reuses the existing pest_run_da/master output
+forecast_windows = [1, 2, 3, 4]  # Predict from the end of each of these cycles
+rerun_assimilation = True # If False, load the results from the previous run instead of re-running PESTPP-DA
 
 calib_config_path = Path(__file__).parent / "Arno.da.yaml"
 meteodata_mat_path = (
@@ -34,7 +32,6 @@ meteodata_mat_path = (
 )
 
 calib_config = load_calibration_config(calib_config_path)
-calib_config.pest_options.update({"noptmax": noptmax, "ies_num_reals": ies_num_reals})
 
 mobidic_config = Path(calib_config.mobidic_config)
 config_file = mobidic_config if mobidic_config.is_absolute() else Path(__file__).parent / mobidic_config
@@ -43,7 +40,7 @@ obs_group = calib_config.observations[0]
 # Calibrated parameters (name -> parameter_key)
 name_to_key = {p.name.lower(): p.parameter_key for p in calib_config.parameters}
 
-
+ies_num_reals = calib_config.pest_options.get('ies_num_reals')  
 
 # =========================================================================
 # Step 1: Preprocessing and meteorological forcing
@@ -67,9 +64,14 @@ pest = PestSetup(calib_config, base_path=calib_config_path.parent)
 working_dir = pest.setup()
 schedule = pest._cycle_schedule
 
+estimated = calib_config.da.states.estimate
 print(f"\nPESTPP-DA working directory: {working_dir}")
 print(f"Cycles: {schedule.n_cycles} x {schedule.n_steps_per_cycle} timesteps ({calib_config.da.cycle_length})")
 print(f"Assimilation stops after cycle {calib_config.da.stop_cycle}")
+if estimated:
+    print(f"Formulation 2: estimating {estimated} on {len(pest._state_spec)} reach(es) alongside the parameters")
+else:
+    print("Formulation 1: states are transferred between cycles but never adjusted")
 
 results = pest.run() if rerun_assimilation else pest.load_results()
 state_dir = pest.working_dir / calib_config.da.states.state_file_dir
@@ -163,6 +165,17 @@ for cycle in forecast_windows:
 # =========================================================================
 print("\nReassembling the assimilated (posterior) trajectory...")
 analysis = results.get_da_timeseries(obs_group.name, posterior=True)
+
+if estimated:
+    print("\nAnalysis increment on the discharge state at the observed reach:")
+    print(f"{'cycle':>6} {'background':>12} {'analysed':>10} {'increment':>11} {'ens. sd':>9}")
+    for cycle in range(last_assimilated + 1):
+        prior = results.get_da_states(cycle=cycle, iteration=0)
+        posterior = results.get_da_states(cycle=cycle)
+        if prior is None or posterior is None:
+            continue
+        b, a = prior[obs_group.reach_id], posterior[obs_group.reach_id]
+        print(f"{cycle:>6} {b.mean():12.2f} {a.mean():10.2f} {a.mean() - b.mean():+11.2f} {a.std():9.2f}")
 
 
 # =========================================================================
