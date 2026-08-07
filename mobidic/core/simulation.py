@@ -809,12 +809,13 @@ class Simulation:
         # If raster exists, use it; otherwise use scalar value
         param_grids = {}
 
-        # Rainfall fraction f0: fraction of time step without rain [-]
-        # Time-dependent parameter from mobidic_sid.m line 213
-        f0_value = const.F0_CONSTANT * (
-            1 - np.exp(-self.dt / (24 * 3600) * np.log(const.F0_CONSTANT / (const.F0_CONSTANT - 0.75)))
-        )
-        param_grids["f0"] = np.full((self.nrows, self.ncols), f0_value)
+        # Rainfall fraction f0 as grid
+        f0_value = params.soil.f0
+        if f0_value is None:
+            f0_value = const.F0_CONSTANT * (
+                1 - np.exp(-self.dt / (24 * 3600) * np.log(const.F0_CONSTANT / (const.F0_CONSTANT - 0.75)))
+            )
+        param_grids["f0"] = np.full((self.nrows, self.ncols), float(f0_value))
         param_grids["f0"][np.isnan(self.dtm)] = np.nan
 
         # Hydraulic conductivity [m/s]
