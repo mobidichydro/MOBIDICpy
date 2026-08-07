@@ -149,6 +149,17 @@ class SoilParameters(BaseModel):
         - kf: Aquifer conductivity (default: 1.0e-7 m/s)
     """
 
+    f0: Optional[float] = Field(
+        None,
+        description="Fraction of a rainy time step without rain [-], the sub-grid rainfall "
+        "intermittency that sets Hortonian runoff: Rh = P*exp(-(1-f0)*ks*kaug/P), so f0 -> 1 turns "
+        "all rainfall into runoff and f0 -> 0 gives the minimum. Left unset (the default) it is "
+        "derived from the timestep as 0.85*(1-exp(-dt/86400*log(0.85/0.10))), matching "
+        "mobidic_sid.m; for dt = 900 s that is 0.0187. Set it to override that globally. Sequential "
+        "data assimilation can estimate it per zone (da.states.estimate: [runoff_fraction]).",
+        ge=0.0,
+        lt=1.0,
+    )
     Wc0: float = Field(
         0.0, description="Default value of maximum water holding capacity in soil small pores, in millimiters"
     )
