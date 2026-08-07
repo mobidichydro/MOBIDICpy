@@ -7,6 +7,8 @@ from mobidic.calibration.config import (
     CalibrationConfig,
     CalibrationParameter,
     CalibrationPeriod,
+    DAConfig,
+    DAStateConfig,
     MetricConfig,
     ObservationGroup,
     ParallelConfig,
@@ -31,6 +33,19 @@ class TestCalibrationParameter:
         assert p.transform == "log"
         assert p.scale == 1.0
         assert p.offset == 0.0
+
+    def test_name_is_lower_cased(self):
+        """PEST++ is case-insensitive, but pyemu only lower-cases some of its names."""
+        p = CalibrationParameter(
+            name="Wc_factor",
+            parameter_key="parameters.multipliers.Wc_factor",
+            initial_value=1.0,
+            lower_bound=0.1,
+            upper_bound=10.0,
+        )
+        assert p.name == "wc_factor"
+        # The path into the MOBIDIC schema keeps its case
+        assert p.parameter_key == "parameters.multipliers.Wc_factor"
 
     def test_name_with_spaces_rejected(self):
         with pytest.raises(ValidationError, match="cannot contain spaces"):
@@ -298,6 +313,10 @@ class TestCalibrationConfig:
             overrides = {"pest_tool": tool}
             if tool == "swp":
                 overrides["pest_options"] = {"sweep_parameter_csv_file": "ensemble.par.csv"}
+            if tool == "da":
+                # Sequential DA is the default mode and needs cycle machinery;
+                # batch DA is the plain ensemble-smoother setup.
+                overrides["da"] = {"mode": "batch"}
             cc = self._make_minimal_config(**overrides)
             assert cc.pest_tool == tool
 
@@ -451,3 +470,226 @@ class TestParallelConfig:
     def test_cluster_mode(self):
         pc = ParallelConfig(manager_ip="192.168.1.100", port=5000, num_workers=1)
         assert pc.manager_ip == "192.168.1.100"
+
+
+# ---- PESTPP-DA configuration tests ----
+
+
+class TestDAConfig:
+    def test_defaults(self):
+        da = DAConfig()
+        assert da.mode == "sequential"
+        assert da.assimilate == "all"
+        assert da.forecast_cycles == 0
+        assert da.states.restart_from == "warmup"
+        assert da.states.keep_cycles == 2
+
+    def test_invalid_cycle_length_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid pandas offset"):
+            DAConfig(cycle_length="six hours")
+
+    def test_negative_cycle_length_rejected(self):
+        with pytest.raises(ValidationError, match="must be positive"):
+            DAConfig(cycle_length="-6h")
+
+    def test_stop_cycle_before_hotstart_rejected(self):
+        with pytest.raises(ValidationError, match="must be >= da.hotstart_cycle"):
+            DAConfig(cycle_length="6h", hotstart_cycle=5, stop_cycle=2)
+
+    def test_keep_cycles_minimum_is_two(self):
+        with pytest.raises(ValidationError):
+            DAStateConfig(keep_cycles=1)
+
+
+class TestDAJointEstimation:
+    """da.states.estimate selects formulation 2 and constrains the rest of the setup."""
+
+    def test_estimate_is_empty_by_default(self):
+        """An empty list is formulation 1: states transferred, never adjusted."""
+        assert DAStateConfig().estimate == []
+        assert DAStateConfig().estimate_reaches == "upstream"
+
+    def test_discharge_is_accepted_with_state_files(self):
+        states = DAStateConfig(restart_from="previous_cycle", estimate=["discharge"])
+        assert states.estimate == ["discharge"]
+
+    def test_estimate_requires_the_enkf_restart_mode(self):
+        with pytest.raises(ValidationError, match="requires restart_from='previous_cycle'"):
+            DAStateConfig(estimate=["discharge"])
+
+    def test_soil_moisture_is_accepted(self):
+        states = DAStateConfig(restart_from="previous_cycle", estimate=["discharge", "soil_moisture"])
+        assert states.estimate == ["discharge", "soil_moisture"]
+
+    def test_an_alias_overlapping_its_component_is_rejected(self):
+        """'soil_moisture' already stands for both stores."""
+        with pytest.raises(ValidationError, match="more than once"):
+            DAStateConfig(restart_from="previous_cycle", estimate=["soil_moisture", "soil_capillary"])
+
+    def test_saturation_bounds_must_be_a_usable_fraction(self):
+        with pytest.raises(ValidationError, match="0 <= lower < upper <= 1"):
+            DAStateConfig(restart_from="previous_cycle", saturation_bounds=(0.5, 0.2))
+        with pytest.raises(ValidationError, match="0 <= lower < upper <= 1"):
+            DAStateConfig(restart_from="previous_cycle", saturation_bounds=(0.0, 1.5))
+
+    def test_min_zone_cells_defaults_to_no_merging(self):
+        assert DAStateConfig().min_zone_cells == 1
+
+    def test_unknown_state_variable_is_rejected(self):
+        with pytest.raises(ValidationError, match="unknown state variable"):
+            DAStateConfig(restart_from="previous_cycle", estimate=["groundwater"])
+
+    def test_duplicates_are_rejected(self):
+        with pytest.raises(ValidationError, match="duplicates"):
+            DAStateConfig(restart_from="previous_cycle", estimate=["discharge", "discharge"])
+
+    def test_estimate_requires_a_warmup_period(self):
+        """The warm-up supplies parval1 for every state parameter."""
+        with pytest.raises(ValidationError, match="requires da.warmup_period"):
+            DAConfig(
+                cycle_length="6h",
+                states={"restart_from": "previous_cycle", "estimate": ["discharge"]},
+            )
+
+    def test_estimate_with_a_warmup_period_is_accepted(self):
+        da = DAConfig(
+            cycle_length="6h",
+            warmup_period={"start_date": "2023-10-25 00:00:00", "end_date": "2023-11-01 00:00:00"},
+            states={"restart_from": "previous_cycle", "estimate": ["discharge"]},
+        )
+        assert da.states.estimate == ["discharge"]
+
+    def test_bound_factor_must_exceed_one(self):
+        with pytest.raises(ValidationError):
+            DAStateConfig(bound_factor=1.0)
+
+    def test_prior_std_must_be_positive(self):
+        with pytest.raises(ValidationError):
+            DAStateConfig(prior_std=0.0)
+
+
+class TestCalibrationConfigDA:
+    def _make(self, **overrides):
+        defaults = {
+            "mobidic_config": "Arno.yaml",
+            "pest_tool": "da",
+            "simulation_period": {
+                "start_date": "2023-11-01 00:00:00",
+                "end_date": "2023-11-04 23:45:00",
+            },
+            "da": {"cycle_length": "6h", "warmup_period": {"start_date": "2023-10-25", "end_date": "2023-11-01"}},
+            "parameters": [
+                {
+                    "name": "ks_factor",
+                    "parameter_key": "parameters.multipliers.ks_factor",
+                    "initial_value": 1.0,
+                    "lower_bound": 0.01,
+                    "upper_bound": 100.0,
+                    "transform": "log",
+                }
+            ],
+            "observations": [
+                {
+                    "name": "Q_329",
+                    "obs_file": "observations/Q_329.csv",
+                    "reach_id": 329,
+                    "value_column": "Q_329",
+                }
+            ],
+        }
+        defaults.update(overrides)
+        return CalibrationConfig(**defaults)
+
+    def test_case_name_defaults_to_assimilation(self):
+        assert self._make().case_name == "assimilation"
+
+    def test_is_sequential_da(self):
+        assert self._make().is_sequential_da is True
+        assert self._make(da={"mode": "batch"}).is_sequential_da is False
+
+    def test_sequential_without_cycle_length_rejected(self):
+        with pytest.raises(ValidationError, match="da.cycle_length is required"):
+            self._make(da={"warmup_period": {"start_date": "2023-10-25", "end_date": "2023-11-01"}})
+
+    def test_sequential_without_simulation_period_rejected(self):
+        with pytest.raises(ValidationError, match="simulation_period is required"):
+            self._make(simulation_period=None)
+
+    def test_warmup_required_when_restarting_from_warmup(self):
+        with pytest.raises(ValidationError, match="da.warmup_period is required"):
+            self._make(da={"cycle_length": "6h"})
+
+    def test_warmup_optional_when_restarting_from_previous_cycle(self):
+        cc = self._make(da={"cycle_length": "6h", "states": {"restart_from": "previous_cycle"}})
+        assert cc.da.warmup_period is None
+
+    def test_warmup_must_end_before_the_first_cycle(self):
+        with pytest.raises(ValidationError, match="must be at or before"):
+            self._make(
+                da={
+                    "cycle_length": "6h",
+                    "warmup_period": {"start_date": "2023-10-25", "end_date": "2023-11-02"},
+                }
+            )
+
+    def test_metrics_rejected_in_sequential_mode(self):
+        with pytest.raises(ValidationError, match="Derived metrics are not supported"):
+            self._make(
+                observations=[
+                    {
+                        "name": "Q_329",
+                        "obs_file": "observations/Q_329.csv",
+                        "reach_id": 329,
+                        "value_column": "Q_329",
+                        "metrics": [{"metric": "nse", "target": 1.0}],
+                    }
+                ]
+            )
+
+    def test_metrics_allowed_in_batch_mode(self):
+        cc = self._make(
+            da={"mode": "batch"},
+            observations=[
+                {
+                    "name": "Q_329",
+                    "obs_file": "observations/Q_329.csv",
+                    "reach_id": 329,
+                    "value_column": "Q_329",
+                    "metrics": [{"metric": "nse", "target": 1.0}],
+                }
+            ],
+        )
+        assert cc.observations[0].metrics is not None
+
+    def test_pst_version_1_rejected_in_sequential_mode(self):
+        with pytest.raises(ValidationError, match="pst_version must be 2"):
+            self._make(pest_options={"pst_version": 1})
+
+    def test_pst_version_2_accepted(self):
+        assert self._make(pest_options={"pst_version": 2}).pest_options["pst_version"] == 2
+
+    def test_da_section_with_another_tool_only_warns(self):
+        cc = CalibrationConfig(
+            mobidic_config="Arno.yaml",
+            pest_tool="ies",
+            da={"cycle_length": "6h"},
+            parameters=[
+                {
+                    "name": "ks_factor",
+                    "parameter_key": "parameters.multipliers.ks_factor",
+                    "initial_value": 1.0,
+                    "lower_bound": 0.01,
+                    "upper_bound": 100.0,
+                    "transform": "log",
+                }
+            ],
+            observations=[
+                {
+                    "name": "Q_329",
+                    "obs_file": "observations/Q_329.csv",
+                    "reach_id": 329,
+                    "value_column": "Q_329",
+                }
+            ],
+        )
+        assert cc.case_name == "calibration"

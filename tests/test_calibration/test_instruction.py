@@ -84,3 +84,23 @@ class TestGenerateInstructionFile:
         content = ins_path.read_text()
         assert "!Q_329_nse!" in content
         assert "!Q_329_peak_error!" in content
+
+
+# ---- Data-assimilation state observations ----
+
+
+def test_extra_obs_names_are_appended(tmp_path):
+    cc = _make_config()
+    path, obs_names = generate_instruction_file(
+        cc,
+        {"Q_329": 3},
+        tmp_path / "model_output.csv.ins",
+        extra_obs_names=["st_state_id", "st_q_00001"],
+    )
+
+    assert obs_names[-2:] == ["st_state_id", "st_q_00001"]
+    lines = path.read_text(encoding="utf-8").strip().split("\n")
+    assert lines[-2] == "l1 ~,~ !st_state_id!"
+    assert lines[-1] == "l1 ~,~ !st_q_00001!"
+    # header + skip line + one instruction per observation
+    assert len(lines) == 2 + len(obs_names)

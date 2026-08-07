@@ -115,3 +115,64 @@ class TestAlignObservations:
 
         sim_idx, obs_vals, _ = align_observations_to_simulation(obs_df, sim_times)
         assert len(sim_idx) == 0
+
+
+# ---- Observation error model ----
+
+
+class TestObservationWeights:
+    def _group(self, **overrides):
+        from mobidic.calibration.config import ObservationGroup
+
+        defaults = {"name": "Q", "obs_file": "obs.csv", "reach_id": 1, "value_column": "Q"}
+        defaults.update(overrides)
+        return ObservationGroup(**defaults)
+
+    def test_constant_weight_by_default(self):
+        from mobidic.calibration.observation import observation_weights
+
+        w = observation_weights([1.0, 500.0], self._group(weight=2.5))
+        np.testing.assert_allclose(w, [2.5, 2.5])
+
+    def test_relative_error_gives_one_over_sigma(self):
+        from mobidic.calibration.observation import observation_weights
+
+        group = self._group(relative_error=0.1, min_error=5.0)
+        w = observation_weights([470.9, 122.7], group)
+        np.testing.assert_allclose(w, [1 / 47.09, 1 / 12.27], rtol=1e-12)
+
+    def test_min_error_floors_the_weight_at_low_flow(self):
+        from mobidic.calibration.observation import observation_weights
+
+        group = self._group(relative_error=0.1, min_error=5.0)
+        # 10% of 8.5 is 0.85, below the 5.0 floor
+        np.testing.assert_allclose(observation_weights([8.5], group), [0.2])
+        # A zero observation would otherwise give an infinite weight
+        assert np.isfinite(observation_weights([0.0], group)).all()
+
+    def test_high_flow_gets_less_weight_than_low_flow(self):
+        from mobidic.calibration.observation import observation_weights
+
+        group = self._group(relative_error=0.1, min_error=5.0)
+        w = observation_weights([471.0, 8.5], group)
+        assert w[0] < w[1]
+
+    def test_negative_values_use_the_magnitude(self):
+        from mobidic.calibration.observation import observation_weights
+
+        group = self._group(relative_error=0.1, min_error=1.0)
+        np.testing.assert_allclose(observation_weights([-100.0], group), observation_weights([100.0], group))
+
+    def test_relative_error_requires_a_positive_floor(self):
+        import pytest as _pytest
+        from pydantic import ValidationError
+
+        with _pytest.raises(ValidationError, match="min_error must be > 0"):
+            self._group(relative_error=0.1)
+
+    def test_relative_error_must_be_positive(self):
+        import pytest as _pytest
+        from pydantic import ValidationError
+
+        with _pytest.raises(ValidationError):
+            self._group(relative_error=0.0, min_error=1.0)
