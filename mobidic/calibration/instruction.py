@@ -14,15 +14,21 @@ from mobidic.calibration.config import CalibrationConfig
 def _make_obs_names(
     calib_config: CalibrationConfig,
     n_obs_per_group: dict[str, int],
+    extra_obs_names: list[str] | None = None,
 ) -> list[str]:
     """Generate PEST++ observation names for all observation groups.
 
     Names follow the pattern: {group_name}_{index:04d}
     Metric pseudo-observations follow: {group_name}_{metric_name}
 
+    In sequential data assimilation the index is the *within-cycle* slot, and
+    ``extra_obs_names`` carries the state observations appended after the
+    time-series slots.
+
     Args:
         calib_config: Calibration configuration.
         n_obs_per_group: Dict mapping group name to number of time-series observations.
+        extra_obs_names: Additional observation names appended at the end.
 
     Returns:
         Ordered list of all observation names.
@@ -37,6 +43,7 @@ def _make_obs_names(
         if obs_group.metrics:
             for mc in obs_group.metrics:
                 obs_names.append(f"{obs_group.name}_{mc.metric}")
+    obs_names.extend(extra_obs_names or [])
     return obs_names
 
 
@@ -45,6 +52,7 @@ def generate_instruction_file(
     n_obs_per_group: dict[str, int],
     output_path: Path,
     delimiter: str = "~",
+    extra_obs_names: list[str] | None = None,
 ) -> tuple[Path, list[str]]:
     """Generate a PEST++ instruction (.ins) file for model_output.csv.
 
@@ -58,11 +66,13 @@ def generate_instruction_file(
         n_obs_per_group: Dict mapping group name to number of time-series observations.
         output_path: Path to write the .ins file.
         delimiter: PEST++ instruction delimiter character (default: ~).
+        extra_obs_names: Additional observation names appended at the end
+            (state observations, in sequential data assimilation).
 
     Returns:
         Tuple of (path to .ins file, list of all observation names).
     """
-    obs_names = _make_obs_names(calib_config, n_obs_per_group)
+    obs_names = _make_obs_names(calib_config, n_obs_per_group, extra_obs_names)
 
     lines = []
 
