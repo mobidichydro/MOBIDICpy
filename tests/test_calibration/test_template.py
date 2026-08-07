@@ -89,3 +89,62 @@ class TestGenerateModelInputCsv:
         params = read_model_input_csv(csv_path)
         assert params["parameters.multipliers.ks_factor"] == pytest.approx(1.0)
         assert params["parameters.routing.wcel"] == pytest.approx(3.0)
+
+
+# ---- Data-assimilation extra rows ----
+
+
+class TestExtraParameters:
+    def _extras(self):
+        from mobidic.calibration.template import ExtraParameter
+
+        return [
+            ExtraParameter("__cycle__", "cycle_num", 0.0, width=12),
+            ExtraParameter("__state_id__", "sp_state_id", -1.0, width=20),
+        ]
+
+    def test_template_appends_reserved_rows(self, tmp_path):
+        path = generate_template_file(_make_config(), tmp_path / "model_input.csv.tpl", extra_parameters=self._extras())
+        lines = path.read_text(encoding="utf-8").strip().split("\n")
+
+        assert lines[0] == "ptf ~"
+        assert lines[1] == "parameter_key,value"
+        assert lines[-2].startswith("__cycle__,~ cycle_num")
+        assert lines[-1].startswith("__state_id__,~ sp_state_id")
+
+    def test_state_field_is_wide_enough_to_avoid_truncation(self, tmp_path):
+        path = generate_template_file(_make_config(), tmp_path / "model_input.csv.tpl", extra_parameters=self._extras())
+        state_line = path.read_text(encoding="utf-8").strip().split("\n")[-2]
+
+        marker = state_line.split(",", 1)[1]
+        assert marker.startswith("~") and marker.endswith("~")
+        # PEST fits the value to the field width; 12 characters is the minimum
+        # that keeps a six-digit identifier exact.
+        assert len(marker) >= 12
+
+    def test_narrow_field_is_rejected(self, tmp_path):
+        from mobidic.calibration.template import ExtraParameter
+
+        with pytest.raises(ValueError, match="at least 12"):
+            generate_template_file(
+                _make_config(),
+                tmp_path / "model_input.csv.tpl",
+                extra_parameters=[ExtraParameter("__state_id__", "sp_state_id", -1.0, width=4)],
+            )
+
+    def test_model_input_csv_carries_the_initial_values(self, tmp_path):
+        path = generate_model_input_csv(_make_config(), tmp_path / "model_input.csv", extra_parameters=self._extras())
+        lines = path.read_text(encoding="utf-8").strip().split("\n")
+
+        assert lines[-2] == "__cycle__,0.0"
+        assert lines[-1] == "__state_id__,-1.0"
+
+    def test_template_and_csv_stay_in_sync(self, tmp_path):
+        from mobidic.calibration.parameter_mapping import read_model_input_csv
+
+        extras = self._extras()
+        tpl = generate_template_file(_make_config(), tmp_path / "model_input.csv.tpl", extra_parameters=extras)
+        csv = generate_model_input_csv(_make_config(), tmp_path / "model_input.csv", extra_parameters=extras)
+
+        tpl_keys = [line.split(",", 1)[0] for line in tpl.read_text(encoding="utf-8").strip().split("\n")[2:]]
+        assert list(read_model_input_csv(csv)) == tpl_keys
