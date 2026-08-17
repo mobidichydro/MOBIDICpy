@@ -20,6 +20,44 @@ import rasterio.features
 from loguru import logger
 
 
+def _records_to_dataframe(records: Any) -> Optional[pd.DataFrame]:
+    """Rebuild a DataFrame from a column of record dicts from GeoParquet.
+
+    Args:
+        records: Sequence of dicts (numpy array or list), None, or NaN (missing value)
+
+    Returns:
+        DataFrame with one column per record key, or None if no records
+    """
+    if records is None:
+        return None
+
+    # A null column can be read back as NaN instead of None
+    if isinstance(records, float) and pd.isna(records):
+        return None
+
+    records = list(records)
+    if len(records) == 0:
+        return None
+
+    return pd.DataFrame(records)
+
+
+def _to_timestamp(value: Any) -> Optional[pd.Timestamp]:
+    """Convert a stored value to a pandas Timestamp, mapping missing values to None.
+
+    Args:
+        value: ISO date string, datetime-like value, None or NaT
+
+    Returns:
+        Timestamp, or None if the value is missing
+    """
+    if value is None or pd.isna(value):
+        return None
+
+    return pd.Timestamp(value)
+
+
 @dataclass
 class Reservoir:
     """Single reservoir data structure.
@@ -110,6 +148,7 @@ class Reservoirs:
                     "stage_discharge_q",
                     "initial_volume",
                     "stage_storage_curve",
+                    "date_start",
                     "geometry",
                 ]
             )
@@ -129,6 +168,10 @@ class Reservoirs:
                 "initial_volume": res.initial_volume,
                 "stage_storage_curve": (
                     res.stage_storage_curve.to_dict(orient="records") if res.stage_storage_curve is not None else None
+                ),
+                # Stored as ISO string (like period_times) so Parquet keeps a stable dtype
+                "date_start": (
+                    pd.Timestamp(res.date_start).isoformat() if _to_timestamp(res.date_start) is not None else None
                 ),
                 "geometry": res.geometry,
             }
@@ -181,10 +224,19 @@ class Reservoirs:
                 initial_volume=row["initial_volume"],
                 geometry=row["geometry"],
                 name=row.get("name", ""),
-                stage_storage_curve=(
-                    pd.DataFrame(row["stage_storage_curve"]) if row.get("stage_storage_curve") is not None else None
-                ),
+                stage_storage_curve=_records_to_dataframe(row.get("stage_storage_curve")),
+                date_start=_to_timestamp(row.get("date_start")),
             )
+
+            # Check that stage_storage_curve has required columns if present
+            if res.stage_storage_curve is not None:
+                missing = {"stage_m", "volume_m3"} - set(res.stage_storage_curve.columns)
+                if missing:
+                    raise ValueError(
+                        f"Stage-storage curve of reservoir {res.id} in {input_path} is missing "
+                        f"column(s) {sorted(missing)}. Found: {list(res.stage_storage_curve.columns)}"
+                    )
+
             reservoirs.append(res)
 
         metadata = {"crs": gdf.crs}
