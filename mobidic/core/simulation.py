@@ -372,6 +372,13 @@ class Simulation:
         self.reservoirs = getattr(gisdata, "reservoirs", None)
         if self.reservoirs is not None:
             logger.info(f"Reservoirs loaded: {len(self.reservoirs)} reservoirs")
+        elif self._config_declares_reservoirs(config):
+            # Warning when reservoirs are defined in config but not present in GIS data
+            logger.warning(
+                "The configuration defines reservoirs but none are attached to the GIS data: "
+                "reservoir routing will be skipped. Load them with "
+                "load_gisdata(..., reservoirs_path=config.paths.reservoirs)."
+            )
         else:
             logger.debug("No reservoirs in gisdata")
 
@@ -407,6 +414,23 @@ class Simulation:
             f"Simulation initialized: grid={self.nrows}x{self.ncols}, "
             f"dt={self.dt}s, network={len(self.network)} reaches"
         )
+
+    @staticmethod
+    def _config_declares_reservoirs(config: MOBIDICConfig) -> bool:
+        """Return True if the configuration defines reservoir input data.
+
+        Args:
+            config: MOBIDIC configuration
+
+        Returns:
+            True when either the consolidated reservoirs path or the reservoir
+            shapefile is configured
+        """
+        if config.paths.reservoirs is not None:
+            return True
+
+        res_params = config.parameters.reservoirs
+        return res_params is not None and res_params.res_shape is not None
 
     def _initial_state(self) -> SimulationState:
         """Initialize the initial simulation state variables with initial conditions from configuration.
