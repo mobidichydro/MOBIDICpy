@@ -583,7 +583,7 @@ class PestSetup:
         from mobidic.preprocessing.io import load_gisdata
         from mobidic.preprocessing.meteo_preprocessing import MeteoData
 
-        gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+        gisdata = load_gisdata(config.paths.gisdata, config.paths.network, reservoirs_path=config.paths.reservoirs)
 
         # Enable meteo output so interpolated forcing is saved as raster
         config.output_forcing_data.meteo_data = True

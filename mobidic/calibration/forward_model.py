@@ -92,7 +92,8 @@ def run_forward_model(
     save_config(config, modified_yaml)
 
     # Step 3: Load pre-processed data
-    gisdata = load_gisdata(gisdata_path, network_path)
+    # Config paths are absolute (resolved by load_config), so reservoirs are found from any worker dir
+    gisdata = load_gisdata(gisdata_path, network_path, reservoirs_path=config.paths.reservoirs)
 
     # Remove gisdata grids for calibrated parameters so the simulation
     # uses the scalar config values (which PEST++ perturbs) instead of
