@@ -30,6 +30,7 @@ from mobidic import (
     run_preprocessing,
     save_gisdata,
     save_network,
+    save_reservoirs,
     load_gisdata,
     MeteoData,
     MeteoRaster,
@@ -83,16 +84,19 @@ if force_preprocessing or not config.paths.gisdata.exists() or not config.paths.
     print("  Saving preprocessed GIS data...")
     save_gisdata(gisdata, config.paths.gisdata)
     save_network(gisdata.network, config.paths.network, format="parquet")
+    save_reservoirs(gisdata.reservoirs, config.paths.reservoirs, format="parquet")
 
     print(f"  [OK] GIS data saved to: {config.paths.gisdata}")
     print(f"  [OK] Network saved to: {config.paths.network}")
+    print(f"  [OK] Reservoirs saved to: {config.paths.reservoirs}")
     print(f"  [OK] Grid size: {gisdata.metadata['shape']}")
     print(f"  [OK] Number of reaches: {len(gisdata.network)}")
 else:
     print("  Loading preprocessed data (already exists)...")
-    gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+    gisdata = load_gisdata(config.paths.gisdata, config.paths.network, reservoirs_path=config.paths.reservoirs)
     print(f"  [OK] Loaded GIS data: {gisdata.metadata['shape']}")
     print(f"  [OK] Loaded network: {len(gisdata.network)} reaches")
+    print(f"  [OK] Loaded reservoirs: {len(gisdata.reservoirs)} reservoirs")
 
 print()
 
