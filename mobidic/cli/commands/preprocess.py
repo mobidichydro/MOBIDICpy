@@ -34,18 +34,20 @@ def run(args) -> int:
     from mobidic import run_preprocessing
     from mobidic import save_gisdata
     from mobidic import save_network
+    from mobidic import save_reservoirs
 
     config = load_config(args.config)
     configure_cli_logging(config, args.log_level)
 
     gisdata_path = Path(config.paths.gisdata)
     network_path = Path(config.paths.network)
+    reservoirs_path = Path(config.paths.reservoirs) if config.paths.reservoirs is not None else None
 
     if not args.force and gisdata_path.exists() and network_path.exists():
         logger.info("Preprocessed data already exists; skipping (use --force to re-run):")
         logger.info(f"  gisdata: {gisdata_path}")
         logger.info(f"  network: {network_path}")
-        gisdata = load_gisdata(gisdata_path, network_path)
+        gisdata = load_gisdata(gisdata_path, network_path, reservoirs_path=reservoirs_path)
         logger.info(f"Grid size: {gisdata.metadata['shape']}, reaches: {len(gisdata.network)}")
         return 0
 
@@ -56,5 +58,10 @@ def run(args) -> int:
 
     logger.success(f"GIS data saved to: {gisdata_path}")
     logger.success(f"Network saved to: {network_path}")
+
+    if reservoirs_path is not None and gisdata.reservoirs is not None:
+        save_reservoirs(gisdata.reservoirs, reservoirs_path, format="parquet")
+        logger.success(f"Reservoirs saved to: {reservoirs_path}")
+
     logger.info(f"Grid size: {gisdata.metadata['shape']}, reaches: {len(gisdata.network)}")
     return 0
