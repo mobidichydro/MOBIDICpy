@@ -179,7 +179,7 @@ class TestGISData:
 
             result = GISData.load(gisdata_path, network_path)
 
-            mock_load.assert_called_once_with(gisdata_path, network_path)
+            mock_load.assert_called_once_with(gisdata_path, network_path, reservoirs_path=None)
             assert result is not None
 
 
