@@ -21,6 +21,11 @@ from numba import njit
 
 from mobidic.utils.jit import dispatch
 
+# Direction offsets for the MOBIDIC flow direction notation (1-8), indexed by flow_dir - 1.
+# Matches MATLAB stack8point.m: i8=[-1 -1 -1 0 1 1 1 0], j8=[-1 0 1 1 1 0 -1 -1]
+_DIR_OFFSETS_I = np.array([-1, -1, -1, 0, 1, 1, 1, 0], dtype=np.int32)
+_DIR_OFFSETS_J = np.array([-1, 0, 1, 1, 1, 0, -1, -1], dtype=np.int32)
+
 
 @njit(cache=True, fastmath=True)
 def _hillslope_routing_kernel(
@@ -43,11 +48,6 @@ def _hillslope_routing_kernel(
         nrows: Number of rows
         ncols: Number of columns
     """
-    # Pre-computed direction offsets for MOBIDIC notation (1-8)
-    # Matches MATLAB stack8point.m: i8=[-1 -1 -1 0 1 1 1 0], j8=[-1 0 1 1 1 0 -1 -1]
-    dir_offsets_i = np.array([-1, -1, -1, 0, 1, 1, 1, 0], dtype=np.int32)
-    dir_offsets_j = np.array([-1, 0, 1, 1, 1, 0, -1, -1], dtype=np.int32)
-
     for i in range(nrows):
         for j in range(ncols):
             # Skip NaN cells
@@ -62,8 +62,8 @@ def _hillslope_routing_kernel(
 
             # Get downstream cell offset (flow_dir 1-8 maps to index 0-7)
             idx = flow_dir - 1
-            di = dir_offsets_i[idx]
-            dj = dir_offsets_j[idx]
+            di = _DIR_OFFSETS_I[idx]
+            dj = _DIR_OFFSETS_J[idx]
             down_i = i + di
             down_j = j + dj
 
