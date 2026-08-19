@@ -137,19 +137,37 @@ Simulate reservoirs with time-varying regulation curves.
 **Script**: `examples/01-event-Arno-basin/04a_run_example_Arno_reservoirs.py`
 
 ```python
-from mobidic import load_config, run_preprocessing, MeteoData, Simulation
+from mobidic import load_config, run_preprocessing, GISData, MeteoData, Simulation
 
 config = load_config("examples/01-event-Arno-basin/Arno.reservoirs.yaml")
-gisdata = run_preprocessing(config)  # Automatically processes reservoir data
+gisdata = run_preprocessing(config)
+
+# Save all GIS data, including reservoirs
+gisdata.save(config.paths.gisdata, config.paths.network, config.paths.reservoirs)
+gisdata = GISData.load(config.paths.gisdata, config.paths.network, config.paths.reservoirs)
 
 forcing = MeteoData.from_netcdf(config.paths.meteodata)
 sim = Simulation(gisdata, forcing, config)
 results = sim.run(start_date=forcing.start_date, end_date=forcing.end_date)
 ```
 
+!!! warning "Reservoirs must be loaded explicitly"
+
+    Reservoirs are attached to `GISData` only when a reservoirs path is given. When loading
+    preprocessed data, pass `config.paths.reservoirs` to `GISData.load()` or `load_gisdata()` —
+    otherwise reservoir routing is skipped and the simulation outputs a warning:
+
+    ```
+    The configuration defines reservoirs but none are attached to the GIS data:
+    reservoir routing will be skipped.
+    ```
+
 **Configuration** (`Arno.reservoirs.yaml`):
 
 ```yaml
+paths:
+  reservoirs: gisdata/Arno_reservoirs.parquet  # Consolidated reservoirs dataset
+
 parameters:
   reservoirs:
     res_shape: reservoirs/reservoirs.shp
@@ -473,18 +491,23 @@ Full MOBIDICpy workflow for a daily continuous hydrological balance simulation, 
 
 ```python
 from pathlib import Path
-from mobidic import load_config, run_preprocessing, save_gisdata, save_network, load_gisdata, MeteoData, Simulation
+from mobidic import (
+    load_config, run_preprocessing, save_gisdata, save_network, save_reservoirs,
+    load_gisdata, MeteoData, Simulation,
+)
 
 config_file = Path("examples/02-daily-balance-Arno-basin/Arno.daily.yaml")
 config = load_config(config_file)
 
-# Preprocessing (skipped if output already exists)
+# Preprocessing
 if not config.paths.gisdata.exists() or not config.paths.network.exists():
     gisdata = run_preprocessing(config)
     save_gisdata(gisdata, config.paths.gisdata)
     save_network(gisdata.network, config.paths.network, format="parquet")
+    save_reservoirs(gisdata.reservoirs, config.paths.reservoirs, format="parquet")
 else:
-    gisdata = load_gisdata(config.paths.gisdata, config.paths.network)
+    # Preprocessed data already exists, load it (including reservoirs)
+    gisdata = load_gisdata(config.paths.gisdata, config.paths.network, reservoirs_path=config.paths.reservoirs)
 
 # Convert meteorological data from MATLAB to NetCDF
 meteo_data = MeteoData.from_mat("examples/datasets/Arno/matlab/meteodata/Arno_daily_balance_2017_2018.mat")
