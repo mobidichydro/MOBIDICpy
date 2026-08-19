@@ -259,17 +259,29 @@ class Simulation:
             # No interpolation weights needed
             self._interpolation_weights = None
             # Detect precomputed PETc/PET: when present, energy balance is forced off.
+            # Warn instead of informing when the user explicitly enabled the energy balance,
+            # since their configured setting is silently overridden.
+            energy_bal_configured = self.config.simulation.energy_balance != "None"
             if "pet_c" in forcing.variables:
                 self._raster_et_source = "pet_c"
-                logger.info(
-                    "Precomputed PETc found in raster forcing: energy balance will be disabled "
-                    "(Kc already embedded, not applied again)"
-                )
+                if energy_bal_configured:
+                    logger.warning(
+                        "Precomputed PETc found in raster forcing (Kc is already applied). "
+                        "The actual ET will be computed using PETc in the forcing raster. "
+                        "The energy balance will be disabled."
+                    )
+                else:
+                    logger.info("Precomputed PETc found in raster forcing (Kc is already applied)")
             elif "pet" in forcing.variables:
                 self._raster_et_source = "pet"
-                logger.info(
-                    "Precomputed PET found in raster forcing: energy balance will be disabled (Kc will be applied)"
-                )
+                if energy_bal_configured:
+                    logger.warning(
+                        "Precomputed PET found in raster forcing (Kc will be applied). "
+                        "The actual ET will be computed using PET in the forcing raster. "
+                        "The energy balance will be disabled."
+                    )
+                else:
+                    logger.info("Precomputed PET found in raster forcing (Kc will be applied)")
         else:  # MeteoData
             self.forcing_mode = "station"
             logger.info("Using station meteorological forcing (with spatial interpolation)")
