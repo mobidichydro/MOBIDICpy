@@ -1584,7 +1584,7 @@ q = k_f \cdot h, \quad dh/dt = R - q
 <a id="__codelineno-0-14" name="__codelineno-0-14"></a>    <span class="n">recharge</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15"></a>    <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Linear groundwater reservoir.</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="w">    </span><span class="sd">"""Linear groundwater reservoir.</span>
 <a id="__codelineno-0-18" name="__codelineno-0-18"></a>
 <a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">    Approximates groundwater dynamics as a linear reservoir:</span>
 <a id="__codelineno-0-20" name="__codelineno-0-20"></a>
@@ -1608,7 +1608,7 @@ q = k_f \cdot h, \quad dh/dt = R - q
 <a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        - $h$: Updated groundwater head [m]</span>
 <a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        - $q$: Average baseflow over the time step [m/s]</span>
 <a id="__codelineno-0-40" name="__codelineno-0-40"></a>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">    """</span>
 <a id="__codelineno-0-42" name="__codelineno-0-42"></a>    <span class="n">h0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <a id="__codelineno-0-43" name="__codelineno-0-43"></a>    <span class="n">kf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">kf</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="n">recharge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">recharge</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -1632,7 +1632,7 @@ q = k_f \cdot h, \quad dh/dt = R - q
 <a id="__codelineno-0-62" name="__codelineno-0-62"></a>
 <a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="c1"># Clamp recharge to prevent negative head (matching MATLAB groundwater_linear.m line 31)</span>
 <a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="c1"># Avoid division by zero when one_minus_exp is extremely small</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
 <a id="__codelineno-0-66" name="__codelineno-0-66"></a>        <span class="n">lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
 <a id="__codelineno-0-67" name="__codelineno-0-67"></a>            <span class="n">one_minus_exp</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">,</span>
 <a id="__codelineno-0-68" name="__codelineno-0-68"></a>            <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">kf_a</span> <span class="o">*</span> <span class="n">h0_a</span> <span class="o">*</span> <span class="n">exp_adt</span> <span class="o">/</span> <span class="n">one_minus_exp</span><span class="p">,</span>

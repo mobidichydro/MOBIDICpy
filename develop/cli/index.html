@@ -1482,8 +1482,10 @@ not the current working directory.</p>
 </code></pre></div>
 <h2 id="commands">Commands</h2>
 <h3 id="mobidic-preprocess"><code>mobidic preprocess</code></h3>
-<p>Run the GIS preprocessing pipeline and write the consolidated gisdata (NetCDF)
-and river network (GeoParquet) to the paths defined in the config.</p>
+<p>Run the GIS preprocessing routine and write the consolidated gisdata (NetCDF)
+and river network (GeoParquet) to the paths defined in the config. When
+<code>paths.reservoirs</code> is set and reservoirs are configured, the consolidated
+reservoirs dataset (GeoParquet) is written as well.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>mobidic<span class="w"> </span>preprocess<span class="w"> </span>&lt;config.yaml&gt;<span class="w"> </span><span class="o">[</span>--force<span class="o">]</span><span class="w"> </span><span class="o">[</span>--log-level<span class="w"> </span>LEVEL<span class="o">]</span>
 </code></pre></div>
 <table>
@@ -1500,8 +1502,8 @@ and river network (GeoParquet) to the paths defined in the config.</p>
 </tr>
 </tbody>
 </table>
-<p>Wraps <a href="../reference/preprocessing/"><code>run_preprocessing</code></a>, <code>save_gisdata</code>, and
-<code>save_network</code>.</p>
+<p>Wraps <a href="../reference/preprocessing/"><code>run_preprocessing</code></a>, <code>save_gisdata</code>,
+<code>save_network</code>, and <code>save_reservoirs</code>.</p>
 <h3 id="mobidic-simulation"><code>mobidic simulation</code></h3>
 <p>Load the preprocessed GIS data and meteorological forcing, then run the
 hydrological simulation. Reports and states are written automatically according
@@ -1526,10 +1528,12 @@ to the output options in the config.</p>
 </tr>
 <tr>
 <td><code>--preprocess</code></td>
-<td>Run GIS preprocessing first (and save gisdata/network) before simulating. Without this flag, missing preprocessed data is an error.</td>
+<td>Run GIS preprocessing first (and save gisdata/network/reservoirs) before simulating. Without this flag, missing preprocessed data is an error.</td>
 </tr>
 </tbody>
 </table>
+<p>Reservoirs are loaded automatically from <code>paths.reservoirs</code> when that path is set
+in the config.</p>
 <p>The <strong>forcing mode</strong> is detected automatically from the config (exactly one of
 <code>paths.meteodata</code>, <code>paths.meteoraster</code>, or <code>paths.hyetograph</code> must be set):</p>
 <ul>
