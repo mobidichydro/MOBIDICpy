@@ -60,8 +60,10 @@ mobidic simulation config.yaml
 
 ### `mobidic preprocess`
 
-Run the GIS preprocessing pipeline and write the consolidated gisdata (NetCDF)
-and river network (GeoParquet) to the paths defined in the config.
+Run the GIS preprocessing routine and write the consolidated gisdata (NetCDF)
+and river network (GeoParquet) to the paths defined in the config. When
+`paths.reservoirs` is set and reservoirs are configured, the consolidated
+reservoirs dataset (GeoParquet) is written as well.
 
 ```bash
 mobidic preprocess <config.yaml> [--force] [--log-level LEVEL]
@@ -71,8 +73,8 @@ mobidic preprocess <config.yaml> [--force] [--log-level LEVEL]
 | --- | --- |
 | `--force` | Re-run preprocessing even if the gisdata and network files already exist. By default, if both exist the command reports them and exits without re-running. |
 
-Wraps [`run_preprocessing`](reference/preprocessing.md), `save_gisdata`, and
-`save_network`.
+Wraps [`run_preprocessing`](reference/preprocessing.md), `save_gisdata`,
+`save_network`, and `save_reservoirs`.
 
 ### `mobidic simulation`
 
@@ -88,7 +90,10 @@ mobidic simulation <config.yaml> [--start DATE] [--end DATE] [--preprocess] [--l
 | --- | --- |
 | `--start` | Override the simulation start (ISO date, e.g. `2023-11-01`). Default: first date in the forcing. |
 | `--end` | Override the simulation end (ISO date). Default: last date in the forcing. |
-| `--preprocess` | Run GIS preprocessing first (and save gisdata/network) before simulating. Without this flag, missing preprocessed data is an error. |
+| `--preprocess` | Run GIS preprocessing first (and save gisdata/network/reservoirs) before simulating. Without this flag, missing preprocessed data is an error. |
+
+Reservoirs are loaded automatically from `paths.reservoirs` when that path is set
+in the config.
 
 The **forcing mode** is detected automatically from the config (exactly one of
 `paths.meteodata`, `paths.meteoraster`, or `paths.hyetograph` must be set):

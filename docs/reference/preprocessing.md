@@ -107,14 +107,16 @@ If reservoirs are configured (`config.parameters.reservoirs.res_shape` is set), 
 
 ```python
 reservoirs = process_reservoirs(
-    res_shape_path=config.parameters.reservoirs.res_shape,
+    shapefile_path=config.parameters.reservoirs.res_shape,
     stage_storage_path=config.parameters.reservoirs.stage_storage,
     regulation_curves_path=config.parameters.reservoirs.regulation_curves,
     regulation_schedule_path=config.parameters.reservoirs.regulation_schedule,
     initial_volumes_path=config.initial_conditions.reservoir_volumes,
-    grid_transform=gisdata.metadata['transform'],
-    grid_shape=gisdata.metadata['shape'],
     network=gisdata.network,
+    grid_shape=gisdata.metadata['shape'],
+    xllcorner=gisdata.metadata['xllcorner'],
+    yllcorner=gisdata.metadata['yllcorner'],
+    cellsize=gisdata.metadata['resolution'][0],
 )
 gisdata.reservoirs = reservoirs
 ```
