@@ -170,20 +170,9 @@ class GISData:
         Returns:
             GISData object with loaded data
         """
-        from mobidic.preprocessing.io import load_gisdata, load_reservoirs
+        from mobidic.preprocessing.io import load_gisdata
 
-        gisdata = load_gisdata(gisdata_path, network_path)
-
-        # Load reservoirs if path provided
-        if reservoirs_path is not None:
-            reservoirs_path = Path(reservoirs_path)
-            if reservoirs_path.exists():
-                gisdata.reservoirs = load_reservoirs(reservoirs_path)
-            else:
-                logger.warning(f"Reservoirs file not found: {reservoirs_path}")
-                gisdata.reservoirs = None
-
-        return gisdata
+        return load_gisdata(gisdata_path, network_path, reservoirs_path=reservoirs_path)
 
 
 def run_preprocessing(config: MOBIDICConfig) -> GISData:

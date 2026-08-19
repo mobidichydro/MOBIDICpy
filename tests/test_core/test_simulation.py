@@ -326,6 +326,34 @@ class TestSimulationInitialization:
         # Check state is not yet initialized
         assert sim.state is None
 
+    def test_config_declares_reservoirs(self, simple_config):
+        """Test detection of reservoirs declared in the configuration."""
+        assert Simulation._config_declares_reservoirs(simple_config) is False
+
+        simple_config.paths.reservoirs = "reservoirs.parquet"
+        assert Simulation._config_declares_reservoirs(simple_config) is True
+
+        simple_config.paths.reservoirs = None
+        simple_config.parameters.reservoirs.res_shape = "reservoirs.shp"
+        assert Simulation._config_declares_reservoirs(simple_config) is True
+
+    def test_warns_when_reservoirs_declared_but_missing(self, simple_gisdata, simple_meteo, simple_config):
+        """Test that a config declaring reservoirs warns when none are attached to the GIS data."""
+        from loguru import logger
+
+        simple_gisdata.reservoirs = None
+        simple_config.paths.reservoirs = "reservoirs.parquet"
+
+        messages = []
+        handler_id = logger.add(messages.append, level="WARNING")
+        try:
+            sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        finally:
+            logger.remove(handler_id)
+
+        assert sim.reservoirs is None
+        assert any("reservoir routing will be skipped" in message for message in messages)
+
     def test_wc_wg_preprocessing(self, simple_gisdata, simple_meteo, simple_config):
         """Test that Wc0 and Wg0 are preprocessed correctly."""
         sim = Simulation(simple_gisdata, simple_meteo, simple_config)

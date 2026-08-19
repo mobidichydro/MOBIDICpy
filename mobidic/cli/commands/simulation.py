@@ -49,14 +49,18 @@ def _load_gisdata(config, do_preprocess: bool):
     from mobidic import run_preprocessing
     from mobidic import save_gisdata
     from mobidic import save_network
+    from mobidic import save_reservoirs
 
     gisdata_path = Path(config.paths.gisdata)
     network_path = Path(config.paths.network)
+    reservoirs_path = Path(config.paths.reservoirs) if config.paths.reservoirs is not None else None
 
     if do_preprocess:
         gisdata = run_preprocessing(config)
         save_gisdata(gisdata, gisdata_path)
         save_network(gisdata.network, network_path, format="parquet")
+        if reservoirs_path is not None and gisdata.reservoirs is not None:
+            save_reservoirs(gisdata.reservoirs, reservoirs_path, format="parquet")
         return gisdata
 
     if not gisdata_path.exists() or not network_path.exists():
@@ -64,7 +68,7 @@ def _load_gisdata(config, do_preprocess: bool):
             "Preprocessed GIS data not found. Run 'mobidic preprocess <config>' first, "
             "or pass --preprocess to run it now."
         )
-    return load_gisdata(gisdata_path, network_path)
+    return load_gisdata(gisdata_path, network_path, reservoirs_path=reservoirs_path)
 
 
 def _build_forcing(config, config_file: Path, start: str | None):

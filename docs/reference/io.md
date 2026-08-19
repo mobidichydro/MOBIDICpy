@@ -38,7 +38,7 @@ After preprocessing GIS data, processing the river network, and optionally proce
 ### Example 1: complete preprocessing workflow
 
 ```python
-from mobidic import load_config, run_preprocessing, GISData
+from mobidic import load_config, run_preprocessing, load_gisdata, GISData
 
 # Load configuration
 config = load_config("config.yaml")
@@ -57,6 +57,13 @@ gisdata.save(
 loaded_gisdata = GISData.load(
     gisdata_path="output/gisdata.nc",
     network_path="output/network.parquet",
+    reservoirs_path="output/reservoirs.parquet"  # Optional
+)
+
+# load_gisdata() is equivalent and takes the same optional reservoirs path
+loaded_gisdata = load_gisdata(
+    "output/gisdata.nc",
+    "output/network.parquet",
     reservoirs_path="output/reservoirs.parquet"  # Optional
 )
 
@@ -125,14 +132,16 @@ from mobidic import process_reservoirs, save_reservoirs, load_reservoirs, GISDat
 
 # Process reservoir data from shapefiles and CSVs
 reservoirs = process_reservoirs(
-    res_shape_path="reservoirs/reservoirs.shp",
+    shapefile_path="reservoirs/reservoirs.shp",
     stage_storage_path="reservoirs/stage_storage.csv",
     regulation_curves_path="reservoirs/regulation_curves.csv",
     regulation_schedule_path="reservoirs/regulation_schedule.csv",
     initial_volumes_path="reservoirs/initial_volumes.csv",  # Optional
-    grid_transform=gisdata.metadata['transform'],
-    grid_shape=gisdata.metadata['shape'],
     network=gisdata.network,
+    grid_shape=gisdata.metadata['shape'],
+    xllcorner=gisdata.metadata['xllcorner'],
+    yllcorner=gisdata.metadata['yllcorner'],
+    cellsize=gisdata.metadata['resolution'][0],
 )
 
 # Save reservoirs to GeoParquet
@@ -205,7 +214,7 @@ Reservoir data is saved in GeoParquet format with:
 **Structure:**
 - One row per reservoir with all associated data
 - Polygon geometry for reservoir basin
-- Stage-storage curve as nested DataFrame
+- Stage-storage curve as a list of `{stage_m, volume_m3}` records
 - Regulation curves and schedules as dictionaries
 - Basin pixels as list of linear indices
 - Inlet/outlet reach references
@@ -218,7 +227,7 @@ Reservoir data is saved in GeoParquet format with:
 
 **Special handling:**
 - Dictionary keys are zero-padded strings ("000", "001", etc.) for Parquet compatibility
-- DataFrames are serialized to Parquet bytes and stored as binary columns
+- Timestamps (`date_start`, `period_times`) are stored as ISO 8601 strings and parsed back on load
 
 ## Data consistency
 

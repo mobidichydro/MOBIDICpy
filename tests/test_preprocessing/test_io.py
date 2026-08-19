@@ -1,19 +1,22 @@
 """Tests for I/O module."""
 
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 import geopandas as gpd
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 from unittest.mock import Mock
 
 from mobidic.preprocessing.io import (
     save_gisdata,
     save_network,
+    save_reservoirs,
     load_gisdata,
     load_network,
 )
 from mobidic.preprocessing.preprocessor import GISData
+from mobidic.preprocessing.reservoirs import Reservoir, Reservoirs
 
 
 @pytest.fixture
@@ -89,6 +92,27 @@ def sample_network():
 def sample_hillslope_map():
     """Create sample hillslope-reach mapping."""
     return np.random.randint(-9999, 3, size=(10, 10)).astype(float)
+
+
+@pytest.fixture
+def sample_reservoirs():
+    """Create a sample Reservoirs container."""
+    reservoir = Reservoir(
+        id=1,
+        z_max=250.0,
+        name="Test Reservoir",
+        basin_pixels=np.array([10, 11, 12]),
+        inlet_reaches=np.array([0, 1]),
+        outlet_reach=2,
+        stage_storage_curve=pd.DataFrame({"stage_m": [240.0, 250.0], "volume_m3": [1000.0, 10000.0]}),
+        period_times={"000": "2020-01-01T00:00:00"},
+        stage_discharge_h={"000": [240.0, 250.0]},
+        stage_discharge_q={"000": [0.0, 10.0]},
+        initial_volume=5000.0,
+        date_start=pd.Timestamp("2020-01-01"),
+        geometry=Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+    )
+    return Reservoirs([reservoir], metadata={"crs": "EPSG:32632"})
 
 
 @pytest.fixture
@@ -270,6 +294,44 @@ class TestLoadGISData:
 
         with pytest.raises(FileNotFoundError):
             load_gisdata(gisdata_path, network_path)
+
+    def test_load_gisdata_without_reservoirs_path(self, sample_gisdata, tmp_path):
+        """Test that reservoirs are None when no reservoirs path is given."""
+        gisdata_path = tmp_path / "test_gisdata.nc"
+        network_path = tmp_path / "test_network.parquet"
+
+        save_gisdata(sample_gisdata, gisdata_path)
+        save_network(sample_gisdata.network, network_path)
+
+        assert load_gisdata(gisdata_path, network_path).reservoirs is None
+
+    def test_load_gisdata_attaches_reservoirs(self, sample_gisdata, sample_reservoirs, tmp_path):
+        """Test that load_gisdata attaches reservoirs when the path is given."""
+        gisdata_path = tmp_path / "test_gisdata.nc"
+        network_path = tmp_path / "test_network.parquet"
+        reservoirs_path = tmp_path / "test_reservoirs.parquet"
+
+        save_gisdata(sample_gisdata, gisdata_path)
+        save_network(sample_gisdata.network, network_path)
+        save_reservoirs(sample_reservoirs, reservoirs_path)
+
+        loaded = load_gisdata(gisdata_path, network_path, reservoirs_path=reservoirs_path)
+
+        assert loaded.reservoirs is not None
+        assert len(loaded.reservoirs) == 1
+        assert list(loaded.reservoirs[0].stage_storage_curve.columns) == ["stage_m", "volume_m3"]
+
+    def test_load_gisdata_missing_reservoirs_warns(self, sample_gisdata, tmp_path):
+        """Test that a missing reservoirs file warns instead of raising."""
+        gisdata_path = tmp_path / "test_gisdata.nc"
+        network_path = tmp_path / "test_network.parquet"
+
+        save_gisdata(sample_gisdata, gisdata_path)
+        save_network(sample_gisdata.network, network_path)
+
+        loaded = load_gisdata(gisdata_path, network_path, reservoirs_path=tmp_path / "missing.parquet")
+
+        assert loaded.reservoirs is None
 
 
 class TestLoadNetwork:

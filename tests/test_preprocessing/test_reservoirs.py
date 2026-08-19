@@ -210,6 +210,7 @@ def test_reservoirs_to_geodataframe_empty():
         "stage_discharge_q",
         "initial_volume",
         "stage_storage_curve",
+        "date_start",
         "geometry",
     ]
     for col in expected_cols:
@@ -300,6 +301,94 @@ def test_reservoirs_roundtrip_parquet(simple_reservoir, tmp_path):
     assert np.array_equal(load_res.inlet_reaches, orig_res.inlet_reaches)
     assert load_res.outlet_reach == orig_res.outlet_reach
     assert load_res.initial_volume == orig_res.initial_volume
+    assert load_res.date_start == orig_res.date_start
+    pd.testing.assert_frame_equal(load_res.stage_storage_curve, orig_res.stage_storage_curve)
+
+
+def test_reservoirs_roundtrip_preserves_curve_columns(simple_reservoir, tmp_path):
+    """Test that the stage-storage curve keeps its column names after a Parquet roundtrip.
+
+    Regression test: GeoParquet returns the curve as a numpy array of dicts, and
+    ``pd.DataFrame(ndarray_of_dicts)`` used to collapse it into a single column
+    named ``0``, so 'stage_m' / 'volume_m3' were lost and routing raised KeyError.
+    """
+    path = tmp_path / "reservoirs.parquet"
+    Reservoirs([simple_reservoir], metadata={"crs": "EPSG:3003"}).save(path)
+
+    curve = Reservoirs.load(path)[0].stage_storage_curve
+
+    assert list(curve.columns) == ["stage_m", "volume_m3"]
+    assert curve["stage_m"].tolist() == [240, 245, 250]
+    assert curve["volume_m3"].tolist() == [1000, 5000, 10000]
+
+
+def test_reservoirs_roundtrip_preserves_date_start(simple_reservoir, tmp_path):
+    """Test that date_start survives a Parquet roundtrip.
+
+    A dropped date_start makes a reservoir active from the start of the simulation,
+    silently changing results compared to the in-memory preprocessed object.
+    """
+    path = tmp_path / "reservoirs.parquet"
+    Reservoirs([simple_reservoir], metadata={"crs": "EPSG:3003"}).save(path)
+
+    assert Reservoirs.load(path)[0].date_start == pd.Timestamp("2020-01-01")
+
+
+def test_reservoirs_roundtrip_without_date_start(simple_reservoir, tmp_path):
+    """Test that a missing date_start roundtrips as None rather than NaT."""
+    simple_reservoir.date_start = None
+    path = tmp_path / "reservoirs.parquet"
+    Reservoirs([simple_reservoir], metadata={"crs": "EPSG:3003"}).save(path)
+
+    assert Reservoirs.load(path)[0].date_start is None
+
+
+def test_reservoirs_load_rejects_curve_without_expected_columns(simple_reservoir, tmp_path):
+    """Test that a stage-storage curve missing its columns fails at load time."""
+    reservoirs = Reservoirs([simple_reservoir], metadata={"crs": "EPSG:3003"})
+    gdf = reservoirs.to_geodataframe()
+    gdf.at[0, "stage_storage_curve"] = [{"level": 240.0}, {"level": 250.0}]
+
+    path = tmp_path / "reservoirs.parquet"
+    gdf.to_parquet(path)
+
+    with pytest.raises(ValueError, match="stage_m"):
+        Reservoirs.load(path)
+
+
+def test_loaded_reservoir_can_be_routed(simple_reservoir, tmp_path):
+    """Test that a reservoir loaded from Parquet can be routed.
+
+    Regression test for the KeyError('volume_m3') raised at the first timestep of
+    any simulation using reservoirs loaded from a consolidated GeoParquet file.
+    """
+    from datetime import datetime
+
+    from mobidic.core.reservoir import ReservoirState, reservoir_routing
+
+    path = tmp_path / "reservoirs.parquet"
+    Reservoirs([simple_reservoir], metadata={"crs": "EPSG:3003"}).save(path)
+    loaded = Reservoirs.load(path)
+
+    states, discharge, surface_runoff, lateral_flow, _ = reservoir_routing(
+        reservoirs_data=loaded.reservoirs,
+        reservoir_states=[ReservoirState(volume=5000.0, stage=245.0)],
+        reach_discharge=np.array([10.0, 5.0, 2.0, 1.0, 1.0, 1.0]),
+        surface_runoff=np.zeros((5, 5)),
+        lateral_flow=np.zeros((5, 5)),
+        soil_wg=np.zeros((5, 5)),
+        soil_wg0=np.ones((5, 5)) * 0.1,
+        current_time=datetime(2020, 3, 1),
+        dt=900.0,
+        cell_area=10000.0,
+    )
+
+    assert np.isfinite(states[0].volume)
+    assert np.isfinite(states[0].outflow)
+    assert states[0].outflow >= 0.0
+    # Inlet reaches are zeroed to avoid double-counting
+    assert discharge[1] == 0.0
+    assert discharge[2] == 0.0
 
 
 # Tests for _rasterize_reservoir_polygon

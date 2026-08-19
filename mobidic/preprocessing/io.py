@@ -6,7 +6,7 @@ This module provides functions to save/load preprocessed data to/from files:
 """
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import numpy as np
 import geopandas as gpd
 import xarray as xr
@@ -281,22 +281,30 @@ def save_network(network: gpd.GeoDataFrame, output_path: str | Path, format: str
         raise ValueError(f"Unsupported format: {format}. Use 'parquet' or 'shapefile'")
 
 
-def load_gisdata(gisdata_path: str | Path, network_path: str | Path) -> "GISData":
+def load_gisdata(
+    gisdata_path: str | Path,
+    network_path: str | Path,
+    reservoirs_path: Optional[str | Path] = None,
+) -> "GISData":
     """Load preprocessed GIS data from NetCDF and GeoParquet files.
 
     Args:
         gisdata_path: Path to gridded data NetCDF file
         network_path: Path to river network GeoParquet file
+        reservoirs_path: Optional path to reservoirs GeoParquet file (e.g. ``config.paths.reservoirs``).
 
     Returns:
         GISData object containing loaded data
 
     Raises:
-        FileNotFoundError: If either file does not exist
+        FileNotFoundError: If the gisdata or network file does not exist
 
     Examples:
         >>> from mobidic.preprocessing.io import load_gisdata
         >>> gisdata = load_gisdata("Arno_gisdata.nc", "Arno_network.parquet")
+        >>> gisdata = load_gisdata(
+        ...     "Arno_gisdata.nc", "Arno_network.parquet", "Arno_reservoirs.parquet"
+        ... )  # with reservoirs
     """
     from mobidic.preprocessing.preprocessor import GISData
 
@@ -372,14 +380,23 @@ def load_gisdata(gisdata_path: str | Path, network_path: str | Path) -> "GISData
     # Load river network
     network = load_network(network_path)
 
+    # Load reservoirs (optional)
+    reservoirs = None
+    if reservoirs_path is not None:
+        reservoirs_path = Path(reservoirs_path)
+        if reservoirs_path.exists():
+            reservoirs = load_reservoirs(reservoirs_path)
+        else:
+            logger.warning(f"Reservoirs file not found: {reservoirs_path}. Continuing without reservoirs.")
+
     # Create GISData object
-    # Note: config will be None since we only have partial config from attributes
     gisdata = GISData(
         grids=grids,
         metadata=metadata,
         network=network,
         hillslope_reach_map=hillslope_reach_map,
         config=None,  # type: ignore
+        reservoirs=reservoirs,
     )
 
     return gisdata
