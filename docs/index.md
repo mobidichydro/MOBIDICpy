@@ -52,7 +52,7 @@ See [Examples](examples.md) page for practical usage examples.
 
 ## Features
 
-**Currently implemented (v0.4)**
+**Currently implemented (v1.0)**
 
 - Simulation setup with YAML configuration file and parameter validation
 - GIS data I/O (raster and vector formats)
