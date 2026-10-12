@@ -8,7 +8,7 @@ authors = [
     { name = "Fabio Castelli", email = "fabio.castelli@unifi.it" }
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
@@ -153,3 +153,21 @@ filename = "pyproject.toml"
 
 [[tool.bumpversion.files]]
 filename = "CITATION.cff"
+
+[[tool.bumpversion.files]]
+filename = "docs/index.md"
+serialize = ["{major}.{minor}"]
+search = "Currently implemented (v{current_version})"
+replace = "Currently implemented (v{new_version})"
+
+[[tool.bumpversion.files]]
+filename = "docs/introduction.md"
+serialize = ["{major}.{minor}"]
+search = "**Version {current_version}**"
+replace = "**Version {new_version}**"
+
+[[tool.bumpversion.files]]
+filename = "docs/reference/index.md"
+serialize = ["{major}.{minor}"]
+search = "currently implemented features (v{current_version})"
+replace = "currently implemented features (v{new_version})"
