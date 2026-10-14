@@ -6,8 +6,8 @@ Security fixes are released as new versions of MOBIDICpy; please upgrade to the 
 
 | Version  | Supported |
 | -------- | --------- |
-| >= 1.1.0 | Yes       |
-| < 1.1.0  | No        |
+| >= 1.0.1 | Yes       |
+| < 1.0.1  | No        |
 
 ## Reporting a vulnerability
 
