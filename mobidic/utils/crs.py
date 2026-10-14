@@ -246,8 +246,9 @@ def crs_equals(crs1: Any, crs2: Any) -> bool:
         crs2: Second CRS (CRS object, WKT string, EPSG code, etc.)
 
     Returns:
-        True if both CRS have the same EPSG code, False otherwise.
-        Returns False if either EPSG code cannot be determined.
+        True if both CRS have the same EPSG code, False otherwise. When either
+        EPSG code cannot be determined (e.g. a custom WKT), falls back to
+        pyproj's equality check. Returns False if either CRS cannot be parsed.
 
     Examples:
         >>> crs_equals("EPSG:3003", 3003)
@@ -260,8 +261,13 @@ def crs_equals(crs1: Any, crs2: Any) -> bool:
     epsg1 = get_epsg_code(crs1)
     epsg2 = get_epsg_code(crs2)
 
-    if epsg1 is None or epsg2 is None:
+    if epsg1 is not None and epsg2 is not None:
+        return epsg1 == epsg2
+
+    parsed1 = parse_crs(crs1)
+    parsed2 = parse_crs(crs2)
+    if parsed1 is None or parsed2 is None:
         logger.debug(f"Cannot compare CRS: epsg1={epsg1}, epsg2={epsg2}")
         return False
 
-    return epsg1 == epsg2
+    return parsed1.equals(parsed2, ignore_axis_order=True)
