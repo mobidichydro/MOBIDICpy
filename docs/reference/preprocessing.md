@@ -49,8 +49,10 @@ Reads all raster files specified in the configuration:
 - **Flow coefficients**: gamma, kappa, beta, alpha (if provided as rasters)
 
 All rasters are:
-- Validated for consistent shape, resolution, and CRS
-- Converted to numpy arrays with NaN for nodata
+- Checked against the DTM, which defines the model grid and CRS: same shape, cell size,
+  origin and CRS, otherwise preprocessing stops with a `GridAlignmentError` naming the file.
+  Nothing is resampled or reprojected automatically.
+- Converted to numpy arrays with NaN for nodata (see [Nodata handling](#nodata-handling))
 - Stored in the `GISData.grids` dictionary
 
 ### Stage 3: river network processing
@@ -275,14 +277,40 @@ The preprocessing workflow performs comprehensive validation:
 
 ### Spatial consistency
 
-- All rasters have the same shape
-- All rasters have the same resolution
-- All rasters have compatible CRS
-- Network CRS matches raster CRS (or is reprojected)
+The DTM defines the model grid and CRS. Inputs are never resampled or reprojected
+automatically: a mismatch raises `GridAlignmentError` (a `ValueError`) mentioning the file to fix.
+
+- All rasters must have the same shape, cell size, origin and CRS as the DTM
+- River network and reservoir shapefiles must have the same CRS as the DTM
+- Geographic CRSs (e.g. EPSG:4326) are rejected: MOBIDIC requires a projected CRS in metres
+- A raster or shapefile with no CRS only triggers a warning and is assumed to be in the DTM CRS
+- A warning is logged when reaches fall outside the grid and get no hillslope cells
+- At simulation start, the bounding box of the meteorological stations must overlap the grid
+  (station coordinates carry no CRS and are assumed to be in the DTM CRS)
+
+### Nodata handling
+
+The model domain is the set of cells where the DTM, the flow direction and the flow
+accumulation are all valid. Every NaN that affects the domain is reported with a warning:
+
+| Where | What happens |
+|---|---|
+| `flow_dir` or `flow_acc` NaN inside the DTM | The cells are excluded from the model domain |
+| Parameter raster (`Wc0`, `Wg0`, `ks`, `kf`, `gamma`, `kappa`, `beta`, `alpha`, `CH`, `Alb`, `Ma`, `Mf`) NaN inside the domain | Replaced with the default from the configuration (e.g. `parameters.soil.ks` for `ks`), in the raster's units |
+| `CLC` NaN inside the domain | The cells use the default `parameters.soil.Kc` |
+| Raster with no declared nodata value containing `-9999`, `-99999`, `-32768` or `-32767` | Warning only: the values are read as valid data. Declare the nodata value of the file if they are nodata |
+| Precipitation or PET forcing NaN inside the domain (raster forcing, or all stations NaN) | Replaced with 0 |
+| Other forcing variables NaN inside the domain | Reported, not replaced (no default value) |
+| NaN flux in a cell draining to a reach during the simulation | Reported: the cell's water cannot reach the river network |
+
+During a simulation each NaN problem is reported the first time it occurs, and the number of
+affected time steps is summarised at the end of the run.
 
 ### Data quality
 
-- Rasters have valid nodata handling
+These checks ensure the quality and consistency of the input data before running the simulation:
+
+- Rasters have valid nodata handling (see above)
 - Network has no topological errors
 - Flow direction is valid (no invalid direction codes)
 - Flow accumulation is consistent with flow direction
