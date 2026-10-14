@@ -6,7 +6,17 @@ import pytest
 import rasterio
 from rasterio.transform import Affine
 
-from mobidic.preprocessing.gis_reader import grid_to_matrix, read_shapefile
+from loguru import logger
+from shapely.geometry import LineString
+
+from mobidic.preprocessing.gis_reader import (
+    GridAlignmentError,
+    check_crs,
+    check_raster_alignment,
+    check_vector_crs,
+    grid_to_matrix,
+    read_shapefile,
+)
 
 
 class TestReadShapefile:
@@ -219,3 +229,170 @@ class TestGridToMatrix:
 
         with pytest.raises(RuntimeError, match="Error reading GeoTIFF file"):
             grid_to_matrix(filepath)
+
+
+def _write_raster(path, shape=(4, 5), cellsize=100.0, xll=1000.0, yll=2000.0, crs="EPSG:3003"):
+    """Write a GeoTIFF with the given grid and return its grid_to_matrix() result."""
+    data = np.ones(shape, dtype=np.float32)
+    transform = Affine.translation(xll, yll + shape[0] * cellsize) * Affine.scale(cellsize, -cellsize)
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=shape[0],
+        width=shape[1],
+        count=1,
+        dtype=data.dtype,
+        crs=crs,
+        transform=transform,
+    ) as dst:
+        dst.write(data, 1)
+    return grid_to_matrix(path)
+
+
+def _capture_warnings(func, *args, **kwargs):
+    """Call func and return the loguru WARNING messages it emitted."""
+    messages = []
+    handler_id = logger.add(messages.append, level="WARNING")
+    try:
+        func(*args, **kwargs)
+    finally:
+        logger.remove(handler_id)
+    return messages
+
+
+class TestCheckCrs:
+    """Tests for check_crs function."""
+
+    def test_projected_crs(self):
+        """Test that a projected CRS is accepted."""
+        assert check_crs("EPSG:3003", "dtm.tif") is True
+
+    def test_geographic_crs_rejected(self):
+        """Test that a geographic CRS raises an error naming the file."""
+        with pytest.raises(GridAlignmentError, match=r"dtm\.tif has a geographic CRS \(EPSG:4326\)"):
+            check_crs("EPSG:4326", "dtm.tif")
+
+    def test_missing_crs_warns(self):
+        """Test that a missing CRS only warns."""
+        messages = _capture_warnings(check_crs, None, "dtm.tif")
+        assert check_crs(None, "dtm.tif") is False
+        assert any("dtm.tif has no CRS" in m for m in messages)
+
+
+class TestCheckRasterAlignment:
+    """Tests for check_raster_alignment function."""
+
+    def test_aligned_raster(self, tmp_path):
+        """Test that a raster on the DTM grid passes."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif")
+        check_raster_alignment(ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+
+    def test_shape_mismatch(self, tmp_path):
+        """Test that a different shape raises an error naming the file."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif", shape=(5, 5))
+        with pytest.raises(GridAlignmentError, match=r"ks\.tif does not match the DTM grid[\s\S]*shape"):
+            check_raster_alignment(ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+
+    def test_origin_mismatch_same_shape(self, tmp_path):
+        """Test that a shifted raster with the same shape is rejected."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif", xll=1050.0)
+        with pytest.raises(GridAlignmentError, match="lower-left cell center"):
+            check_raster_alignment(ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+
+    def test_cellsize_mismatch(self, tmp_path):
+        """Test that a different cell size is rejected."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif", cellsize=50.0)
+        with pytest.raises(GridAlignmentError, match="cell size"):
+            check_raster_alignment(ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+
+    def test_crs_mismatch_same_grid(self, tmp_path):
+        """Test that the same grid in a different projected CRS is rejected."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif", crs="EPSG:32632")
+        with pytest.raises(GridAlignmentError, match=r"CRS EPSG:32632 != EPSG:3003"):
+            check_raster_alignment(ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+
+    def test_geographic_raster_rejected(self, tmp_path):
+        """Test that a raster with a geographic CRS is rejected."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif", crs="EPSG:4326")
+        with pytest.raises(GridAlignmentError, match="geographic CRS"):
+            check_raster_alignment(ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+
+    def test_missing_crs_warns(self, tmp_path):
+        """Test that a raster without CRS on the DTM grid only warns."""
+        dtm = _write_raster(tmp_path / "dtm.tif")
+        ks = _write_raster(tmp_path / "ks.tif", crs=None)
+        messages = _capture_warnings(check_raster_alignment, ks, dtm, tmp_path / "ks.tif", tmp_path / "dtm.tif")
+        assert any("has no CRS" in m for m in messages)
+
+
+class TestCheckVectorCrs:
+    """Tests for check_vector_crs function."""
+
+    @staticmethod
+    def _gdf(crs):
+        return gpd.GeoDataFrame(geometry=[LineString([(0, 0), (10, 10)])], crs=crs)
+
+    def test_matching_crs(self):
+        """Test that a vector in the DTM CRS passes."""
+        check_vector_crs(self._gdf("EPSG:3003"), "net.shp", "EPSG:3003")
+
+    def test_crs_mismatch(self):
+        """Test that a vector in a different CRS raises an error naming the file."""
+        with pytest.raises(GridAlignmentError, match=r"net\.shp has CRS EPSG:32632, but the DTM has CRS EPSG:3003"):
+            check_vector_crs(self._gdf("EPSG:32632"), "net.shp", "EPSG:3003")
+
+    def test_geographic_crs_rejected(self):
+        """Test that a vector with a geographic CRS is rejected even without a reference."""
+        with pytest.raises(GridAlignmentError, match="geographic CRS"):
+            check_vector_crs(self._gdf("EPSG:4326"), "net.shp")
+
+    def test_missing_crs_warns(self):
+        """Test that a vector without CRS only warns."""
+        messages = _capture_warnings(check_vector_crs, self._gdf(None), "net.shp", "EPSG:3003")
+        assert any("net.shp has no CRS" in m for m in messages)
+
+
+def _write_sentinel_raster(path, nodata):
+    """Write a 3x3 raster with one -9999 cell and the given nodata value."""
+    data = np.ones((3, 3), dtype=np.float32)
+    data[0, 0] = -9999
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=3,
+        width=3,
+        count=1,
+        dtype=data.dtype,
+        nodata=nodata,
+        crs="EPSG:3003",
+        transform=Affine.translation(0, 3) * Affine.scale(1, -1),
+    ) as dst:
+        dst.write(data, 1)
+
+
+class TestNodataSentinels:
+    """Tests for the warning on undeclared nodata sentinels."""
+
+    def test_untagged_sentinel_warns(self, tmp_path):
+        """A raster with -9999 cells and no nodata value triggers a warning."""
+        path = tmp_path / "untagged.tif"
+        _write_sentinel_raster(path, nodata=None)
+
+        messages = _capture_warnings(grid_to_matrix, path)
+        assert any("declares no nodata value but has 1 cells equal to -9999" in m for m in messages)
+        assert grid_to_matrix(path)["data"].min() == -9999  # still read as data
+
+    def test_tagged_nodata_no_warning(self, tmp_path):
+        """A raster with a declared nodata value does not warn."""
+        path = tmp_path / "tagged.tif"
+        _write_sentinel_raster(path, nodata=-9999)
+
+        assert not any("nodata" in m for m in _capture_warnings(grid_to_matrix, path))

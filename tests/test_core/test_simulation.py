@@ -354,6 +354,13 @@ class TestSimulationInitialization:
         assert sim.reservoirs is None
         assert any("reservoir routing will be skipped" in message for message in messages)
 
+    def test_stations_outside_grid_raise(self, simple_gisdata, simple_meteo, simple_config):
+        """Test that stations whose bounding box misses the grid (e.g. wrong CRS) stop the simulation."""
+        simple_meteo.stations["precipitation"][0]["x"] = 1.0e6
+
+        with pytest.raises(ValueError, match="Meteorological stations do not overlap the model grid"):
+            Simulation(simple_gisdata, simple_meteo, simple_config)
+
     def test_wc_wg_preprocessing(self, simple_gisdata, simple_meteo, simple_config):
         """Test that Wc0 and Wg0 are preprocessed correctly."""
         sim = Simulation(simple_gisdata, simple_meteo, simple_config)
@@ -1188,3 +1195,69 @@ class TestSimulationRestart:
 
         # Verify state was loaded
         assert sim2.state is not None
+
+
+class TestNanWarnings:
+    """Tests for NaN handling and warnings during the simulation."""
+
+    @staticmethod
+    def _capture(func, *args, **kwargs):
+        from loguru import logger
+
+        messages = []
+        handler_id = logger.add(messages.append, level="WARNING")
+        try:
+            result = func(*args, **kwargs)
+        finally:
+            logger.remove(handler_id)
+        return result, messages
+
+    def test_lateral_inflow_nan_warns(self, simple_gisdata, simple_meteo, simple_config):
+        """A NaN flux in a contributing cell is reported (once) instead of being dropped silently."""
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        flow = np.ones((5, 5))
+        flow[2, 2] = np.nan
+
+        inflow, messages = self._capture(sim._accumulate_lateral_inflow, flow)
+        _, messages_2 = self._capture(sim._accumulate_lateral_inflow, flow)
+
+        assert inflow[0] == pytest.approx(23.0)  # 24 contributing cells, 1 of them NaN
+        assert any("1 contributing cells have a NaN lateral flow" in m for m in messages)
+        assert messages_2 == []  # later occurrences are only counted
+        assert sim._nan_warnings["NaN lateral flow excluded from the reach inflow"] == 2
+
+    def test_station_precipitation_all_nan(self, simple_gisdata, simple_meteo, simple_config):
+        """When all stations are NaN, precipitation is set to 0 with a warning."""
+        simple_meteo.stations["precipitation"][0]["data"][:] = np.nan
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        precip, messages = self._capture(sim._interpolate_forcing, datetime(2020, 1, 1, 1), "precipitation")
+
+        assert np.all(precip == 0.0)
+        assert any("all stations are NaN" in m and "replaced with 0" in m for m in messages)
+
+    def test_forcing_nan_replaced_or_reported(self, simple_gisdata, simple_meteo, simple_config):
+        """NaN rates are replaced with 0; other variables are only reported."""
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+        grid = np.full((5, 5), 1e-6)
+        grid[2, 2] = np.nan
+
+        precip, messages = self._capture(sim._replace_forcing_nan, grid, "precipitation", datetime(2020, 1, 1))
+        assert precip[2, 2] == 0.0
+        assert np.isnan(grid[2, 2])  # input not modified
+        assert any("NaN values are replaced with 0" in m for m in messages)
+
+        temp, messages = self._capture(sim._replace_forcing_nan, grid, "temperature_min", datetime(2020, 1, 1))
+        assert np.isnan(temp[2, 2])
+        assert any("NaN values are not replaced" in m for m in messages)
+
+    def test_run_reports_nan_summary(self, simple_gisdata, simple_meteo, simple_config, tmp_path):
+        """The end of the run summarises how often each NaN problem occurred."""
+        simple_config.paths.output = str(tmp_path / "output")
+        simple_config.paths.states = str(tmp_path / "states")
+        simple_meteo.stations["precipitation"][0]["data"][:] = np.nan
+        sim = Simulation(simple_gisdata, simple_meteo, simple_config)
+
+        _, messages = self._capture(sim.run, "2020-01-01 00:00", "2020-01-01 01:00")
+
+        assert any("NaN precipitation forcing replaced with 0: occurred at" in m for m in messages)
