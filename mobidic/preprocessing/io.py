@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     from mobidic.preprocessing.preprocessor import GISData
     from mobidic.preprocessing.reservoirs import Reservoirs
 
+# Value of hillslope_reach_map for cells that do not drain to the river network (see map_hillslope_to_reach)
+_REACH_MAP_FILL = -9999.0
+
 
 def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     """Save preprocessed gridded data to NetCDF file.
@@ -144,9 +147,11 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
     ds["hillslope_reach_map"].attrs = {
         "long_name": "Hillslope to Reach Mapping",
         "units": "1",
-        "description": "MOBIDIC ID of downstream reach for each cell",
+        "description": (
+            f"MOBIDIC ID of downstream reach for each cell. {_REACH_MAP_FILL:g} (_FillValue) outside the domain "
+            "and for cells inside the domain that do not drain to the river network"
+        ),
         "grid_mapping": "crs",
-        "_FillValue": np.nan,
     }
 
     ds["alpsur"].attrs = {
@@ -231,6 +236,8 @@ def save_gisdata(gisdata: "GISData", output_path: str | Path) -> None:
 
     # Save to NetCDF
     encoding = {var: {"zlib": True, "complevel": 4} for var in ds.data_vars}
+    # -9999 as nodata, so that GIS viewers (GDAL/QGIS) mask the unassigned cells too
+    encoding["hillslope_reach_map"]["_FillValue"] = _REACH_MAP_FILL
     ds.to_netcdf(output_path, encoding=encoding, engine="netcdf4")
 
     logger.success(f"Gridded data saved to {output_path}")
@@ -348,8 +355,11 @@ def load_gisdata(
         if var in ds:
             grids[var] = ds[var].values
 
-    # Extract hillslope-reach mapping
-    hillslope_reach_map = ds["hillslope_reach_map"].values
+    # Extract hillslope-reach mapping. -9999 is its _FillValue, so xarray decodes it as NaN: restore it for the
+    # cells inside the domain that do not drain to the river network, as produced by run_preprocessing()
+    hillslope_reach_map = ds["hillslope_reach_map"].values.copy()
+    if "dtm" in grids:
+        hillslope_reach_map[np.isfinite(grids["dtm"]) & np.isnan(hillslope_reach_map)] = _REACH_MAP_FILL
 
     # Extract metadata
     # Get CRS from grid mapping variable (CF-1.12 compliant)
