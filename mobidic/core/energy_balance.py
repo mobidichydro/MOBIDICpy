@@ -18,7 +18,7 @@ from numba import njit, prange
 from numpy.typing import NDArray
 
 from mobidic.core import constants as const
-from mobidic.utils.jit import dispatch
+from mobidic.utils.jit import FASTMATH, dispatch
 
 # Constants are saved at the module level for the JIT kernel
 _SIGMA = const.STEFAN_BOLTZMANN
@@ -164,7 +164,7 @@ def saturation_specific_humidity(
 # ---------------------------------------------------------------------------
 
 
-@njit(cache=True, fastmath=True, parallel=True)
+@njit(cache=True, fastmath=FASTMATH, parallel=True)
 def _energy_balance_1l_kernel(
     ff: float,
     a_tem: NDArray[np.float64],

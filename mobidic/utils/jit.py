@@ -28,6 +28,11 @@ def _env_disabled() -> bool:
 # already off before any configuration is read.
 _JIT_ENABLED = not _env_disabled()
 
+# Fast-math flags for the kernels. ``fastmath=True`` would also enable ``nnan`` and ``ninf``, which let LLVM
+# assume that no NaN/inf exists and remove ``np.isnan``/``np.isfinite`` checks: compiled kernels would then
+# propagate NaN where the pure Python version skips it. All the other fast-math flags are kept.
+FASTMATH = {"nsz", "arcp", "contract", "afn", "reassoc"}
+
 
 def jit_enabled() -> bool:
     """Return whether Numba JIT compilation is currently enabled or not."""

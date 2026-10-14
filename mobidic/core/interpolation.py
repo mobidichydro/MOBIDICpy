@@ -14,10 +14,10 @@ from scipy.interpolate import griddata
 from loguru import logger
 from numba import jit, prange
 
-from mobidic.utils.jit import dispatch
+from mobidic.utils.jit import FASTMATH, dispatch
 
 
-@jit(nopython=True, cache=True, fastmath=True, parallel=True)
+@jit(nopython=True, cache=True, fastmath=FASTMATH, parallel=True)
 def _compute_weighted_sum_jit(
     weights_matrix: NDArray[np.float64],
     k_ok: NDArray[np.int64],

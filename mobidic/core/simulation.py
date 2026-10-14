@@ -285,6 +285,7 @@ class Simulation:
         else:  # MeteoData
             self.forcing_mode = "station"
             logger.info("Using station meteorological forcing (with spatial interpolation)")
+            forcing.validate_grid_overlap(gisdata.metadata)
             # Set forcing extraction method
             self._get_forcing_fn = self._interpolate_forcing
             # Interpolation weights will be precomputed later
@@ -414,6 +415,9 @@ class Simulation:
 
         # Time indices cache (will be populated in run() when simulation period is known)
         self._time_indices_cache = None
+
+        # NaN problems met during a run: key -> number of timesteps (see _warn_nan)
+        self._nan_warnings: dict[str, int] = {}
 
         # Initialize state
         self.state = None
@@ -696,6 +700,11 @@ class Simulation:
             if np.nansum(station_values) == 0 or np.all(np.isnan(station_values)):
                 # Return zero grid (matching MATLAB line 1256: p_i = Mzeros)
                 grid_values = np.zeros_like(self.dtm)
+                if np.all(np.isnan(station_values)):
+                    self._warn_nan(
+                        "NaN precipitation forcing replaced with 0",
+                        f"precipitation forcing: all stations are NaN at {time}. NaN values are replaced with 0.",
+                    )
             else:
                 # Get precipitation interpolation method from config
                 precip_interp = self.config.simulation.precipitation_interp
@@ -766,7 +775,7 @@ class Simulation:
                 power=power,
             )
 
-        return grid_values
+        return self._replace_forcing_nan(grid_values, variable, time)
 
     def _get_raster_forcing(
         self,
@@ -795,7 +804,7 @@ class Simulation:
             grid = grid / 1000.0 / 3600.0
 
         # Temperature and other variables are already in correct units (degC)
-        return grid
+        return self._replace_forcing_nan(grid, variable, time)
 
     def _calculate_pet(self, time: datetime) -> np.ndarray:
         """Calculate potential evapotranspiration.
@@ -1185,6 +1194,57 @@ class Simulation:
 
         return topology
 
+    def _warn_nan(self, key: str, message: str) -> None:
+        """Warn about a NaN problem the first time it occurs in a run, and count the later occurrences.
+
+        The counts are reported at the end of the run, so that a problem repeated at every timestep
+        does not flood the log.
+
+        Args:
+            key: Short description of the problem, used to group occurrences.
+            message: Warning message for the first occurrence.
+        """
+        count = self._nan_warnings.get(key, 0)
+        if count == 0:
+            logger.warning(f"{message} Later occurrences are reported at the end of the simulation.")
+        self._nan_warnings[key] = count + 1
+
+    def _replace_forcing_nan(self, grid: np.ndarray, variable: str, time: datetime) -> np.ndarray:
+        """Replace NaN forcing values inside the model domain.
+
+        Precipitation and (reference or crop) PET are rates with a natural default of 0, so their NaN values
+        are replaced with 0. Other variables have no default and are left unchanged. A warning is issued
+        in both cases.
+
+        Args:
+            grid: Forcing grid in simulation units.
+            variable: Forcing variable name.
+            time: Current simulation time, used in messages.
+
+        Returns:
+            Forcing grid with the NaN values inside the domain replaced where possible.
+        """
+        missing = np.isnan(grid) & np.isfinite(self.dtm)
+        n_missing = int(np.sum(missing))
+        if n_missing == 0:
+            return grid
+
+        if variable in ("precipitation", "pet", "pet_c"):
+            self._warn_nan(
+                f"NaN {variable} forcing replaced with 0",
+                f"{variable} forcing: {n_missing} NaN cells inside the model domain at {time}. "
+                "NaN values are replaced with 0.",
+            )
+            grid = grid.copy()
+            grid[missing] = 0.0
+        else:
+            self._warn_nan(
+                f"NaN {variable} forcing not replaced",
+                f"{variable} forcing: {n_missing} NaN cells inside the model domain at {time}. "
+                "NaN values are not replaced (no default value).",
+            )
+        return grid
+
     def _accumulate_lateral_inflow(self, lateral_flow: np.ndarray) -> np.ndarray:
         """Accumulate lateral flow contributions to each reach.
 
@@ -1209,7 +1269,16 @@ class Simulation:
 
         # Create mask for valid cells: not NaN, >= 0, and finite lateral flow
         # MATLAB: ko = find(isfinite(zz) & (ch>0)); % contributing pixels
-        valid_mask = np.isfinite(hillslope_map_flat) & (hillslope_map_flat >= 0) & np.isfinite(lateral_flow_flat)
+        contributing = np.isfinite(hillslope_map_flat) & (hillslope_map_flat >= 0)
+        valid_mask = contributing & np.isfinite(lateral_flow_flat)
+
+        n_dropped = int(np.sum(contributing & ~valid_mask))
+        if n_dropped > 0:
+            self._warn_nan(
+                "NaN lateral flow excluded from the reach inflow",
+                f"{n_dropped} contributing cells have a NaN lateral flow and are excluded from the reach "
+                "lateral inflow: their water is lost.",
+            )
 
         # Extract valid reach IDs and flow values
         valid_reach_ids = hillslope_map_flat[valid_mask].astype(np.int32)
@@ -1301,6 +1370,7 @@ class Simulation:
 
         # Initialize results container
         results = SimulationResults(self.config, simulation=self)
+        self._nan_warnings = {}
         discharge_ts = []
         lateral_inflow_ts = []
         time_ts = []
@@ -2017,6 +2087,8 @@ class Simulation:
             elapsed_str = f"{elapsed_seconds:.2f} seconds"
 
         logger.success(f"Simulation completed: {n_steps} time steps in {elapsed_str}")
+        for problem, count in self._nan_warnings.items():
+            logger.warning(f"{problem}: occurred at {count} of {n_steps} time steps")
 
         # Auto-save reports based on configuration
         output_dir = Path(self.config.paths.output)
