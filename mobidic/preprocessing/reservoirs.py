@@ -274,7 +274,7 @@ def _rasterize_reservoir_polygon(
 
     # Create affine transform
     # Upper-left corner is at (xllcorner, yllcorner + nrows * cellsize)
-    transform = Affine.translation(xllcorner, yllcorner + nrows * cellsize) * Affine.scale(cellsize, -cellsize)
+    transform = Affine.translation(xllcorner, yllcorner + nrows * cellsize) @ Affine.scale(cellsize, -cellsize)
 
     # Rasterize polygon
     mask = rasterio.features.rasterize(

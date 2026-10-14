@@ -118,7 +118,7 @@ class TestGridToMatrix:
         xll = 100.0  # lower-left corner
         yll = 200.0
 
-        transform = Affine.translation(xll, yll + data.shape[0] * cellsize) * Affine.scale(cellsize, -cellsize)
+        transform = Affine.translation(xll, yll + data.shape[0] * cellsize) @ Affine.scale(cellsize, -cellsize)
 
         with rasterio.open(
             filepath,
@@ -163,7 +163,7 @@ class TestGridToMatrix:
         xll = 0.0
         yll = 0.0
 
-        transform = Affine.translation(xll, yll + data.shape[0] * cellsize) * Affine.scale(cellsize, -cellsize)
+        transform = Affine.translation(xll, yll + data.shape[0] * cellsize) @ Affine.scale(cellsize, -cellsize)
 
         with rasterio.open(
             filepath,
@@ -197,7 +197,7 @@ class TestGridToMatrix:
         data = np.array([[1, 2, 3], [4, -1e33, 6], [7, 8, -2e33]], dtype=np.float32)
         cellsize = 1.0
 
-        transform = Affine.translation(0, data.shape[0] * cellsize) * Affine.scale(cellsize, -cellsize)
+        transform = Affine.translation(0, data.shape[0] * cellsize) @ Affine.scale(cellsize, -cellsize)
 
         with rasterio.open(
             filepath,
@@ -234,7 +234,7 @@ class TestGridToMatrix:
 def _write_raster(path, shape=(4, 5), cellsize=100.0, xll=1000.0, yll=2000.0, crs="EPSG:3003"):
     """Write a GeoTIFF with the given grid and return its grid_to_matrix() result."""
     data = np.ones(shape, dtype=np.float32)
-    transform = Affine.translation(xll, yll + shape[0] * cellsize) * Affine.scale(cellsize, -cellsize)
+    transform = Affine.translation(xll, yll + shape[0] * cellsize) @ Affine.scale(cellsize, -cellsize)
     with rasterio.open(
         path,
         "w",
@@ -373,7 +373,7 @@ def _write_sentinel_raster(path, nodata):
         dtype=data.dtype,
         nodata=nodata,
         crs="EPSG:3003",
-        transform=Affine.translation(0, 3) * Affine.scale(1, -1),
+        transform=Affine.translation(0, 3) @ Affine.scale(1, -1),
     ) as dst:
         dst.write(data, 1)
 
