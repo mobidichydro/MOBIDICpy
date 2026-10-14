@@ -16,7 +16,7 @@ from loguru import logger
 
 from mobidic import __version__
 from mobidic.config.schema import MOBIDICConfig
-from mobidic.preprocessing.gis_reader import grid_to_matrix
+from mobidic.preprocessing.gis_reader import GridAlignmentError, check_crs, check_raster_alignment, grid_to_matrix
 from mobidic.preprocessing.grid_operations import (
     decimate_raster,
     decimate_flow_direction,
@@ -94,6 +94,71 @@ def _calculate_slopes(dtm: np.ndarray, grid_size: float, pmin: float = 1e-5) -> 
                 slopes[i - 1, j - 1] = np.sqrt(dzx**2 + dzy**2)
 
     return slopes
+
+
+def _read_aligned_raster(path: str | Path, dtm_result: dict[str, Any], dtm_path: str | Path) -> dict[str, Any]:
+    """Read a raster and check that it matches the DTM grid and CRS."""
+    result = grid_to_matrix(path)
+    check_raster_alignment(result, dtm_result, path, dtm_path)
+    return result
+
+
+def _restrict_domain(grids: dict[str, np.ndarray], paths: dict[str, str | Path]) -> np.ndarray:
+    """Restrict the model domain to the cells where DTM, flow direction and flow accumulation are all valid.
+
+    Cells inside the DTM where flow_dir or flow_acc is NaN cannot be simulated and are excluded from the
+    domain (with a warning). The three grids are set to NaN outside the resulting domain, so that every
+    module of the model works on the same set of cells.
+
+    Args:
+        grids: Grids dictionary containing 'dtm', 'flow_dir' and 'flow_acc' (modified in place).
+        paths: Source of each of the three grids, used in messages.
+
+    Returns:
+        Boolean mask of the model domain.
+    """
+    dtm_valid = np.isfinite(grids["dtm"])
+    domain = dtm_valid.copy()
+    for name in ("flow_dir", "flow_acc"):
+        n_missing = int(np.sum(dtm_valid & np.isnan(grids[name])))
+        if n_missing > 0:
+            logger.warning(
+                f"{paths[name]}: {n_missing} NaN cells inside the DTM domain. "
+                "These cells are excluded from the model domain."
+            )
+        domain &= np.isfinite(grids[name])
+
+    for name in ("dtm", "flow_dir", "flow_acc"):
+        grids[name] = np.where(domain, grids[name], np.nan)
+
+    return domain
+
+
+def _fill_nan_in_domain(
+    data: np.ndarray, domain: np.ndarray, default: float, source: str | Path, default_name: str
+) -> np.ndarray:
+    """Replace NaN cells inside the model domain with a default value, with a warning.
+
+    Args:
+        data: Raster values, in the same units as ``default``.
+        domain: Boolean mask of the model domain.
+        default: Value used to replace the NaN cells.
+        source: Source of the raster, used in messages.
+        default_name: Where the default comes from (e.g. 'parameters.soil.ks'), used in messages.
+
+    Returns:
+        Raster with the NaN cells inside the domain replaced.
+    """
+    missing = domain & np.isnan(data)
+    n_missing = int(np.sum(missing))
+    if n_missing > 0:
+        logger.warning(
+            f"{source}: {n_missing} NaN cells inside the model domain. "
+            f"NaN values are replaced with the default {default_name} = {default}."
+        )
+        data = data.copy()
+        data[missing] = default
+    return data
 
 
 class GISData:
@@ -214,7 +279,9 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     # Load DTM (required)
     logger.debug(f"Loading DTM from {config.raster_files.dtm}")
-    dtm_result = grid_to_matrix(config.raster_files.dtm)
+    dtm_path = config.raster_files.dtm
+    dtm_result = grid_to_matrix(dtm_path)
+    check_crs(dtm_result["crs"], dtm_path)
     grids["dtm"] = dtm_result["data"]
     xllcorner = dtm_result["xllcorner"]
     yllcorner = dtm_result["yllcorner"]
@@ -232,13 +299,21 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
 
     # Load flow direction (required)
     logger.debug(f"Loading flow direction from {config.raster_files.flow_dir}")
-    flow_dir_result = grid_to_matrix(config.raster_files.flow_dir)
+    flow_dir_result = _read_aligned_raster(config.raster_files.flow_dir, dtm_result, dtm_path)
     grids["flow_dir"] = flow_dir_result["data"]
 
     # Load flow accumulation (required)
     logger.debug(f"Loading flow accumulation from {config.raster_files.flow_acc}")
-    flow_acc_result = grid_to_matrix(config.raster_files.flow_acc)
-    flow_acc_data = flow_acc_result["data"]
+    flow_acc_result = _read_aligned_raster(config.raster_files.flow_acc, dtm_result, dtm_path)
+    grids["flow_acc"] = flow_acc_result["data"]
+
+    # Model domain: cells where DTM, flow direction and flow accumulation are all valid
+    domain = _restrict_domain(
+        grids,
+        {"flow_dir": config.raster_files.flow_dir, "flow_acc": config.raster_files.flow_acc},
+    )
+
+    flow_acc_data = grids["flow_acc"]
     if np.any((flow_acc_data[~np.isnan(flow_acc_data)] < 1)):
         flow_acc_data[~np.isnan(flow_acc_data)] += 1
         logger.info("Flow accumulation values were < 1 and have been incremented by 1.")
@@ -250,18 +325,29 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     # Set outlet value to -1 in the flow direction grid
     grids["flow_dir"][max_acc_idx] = -1
 
-    # Load soil parameters (required)
+    # Load soil parameters (required). NaN cells inside the domain are replaced with the
+    # default from the configuration, in the raster units (before the unit conversion).
+    soil = config.parameters.soil
     logger.debug(f"Loading Wc0 from {config.raster_files.Wc0}")
-    wc0_result = grid_to_matrix(config.raster_files.Wc0)
-    grids["Wc0"] = wc0_result["data"] * 0.001  # Convert from mm to m
+    wc0_result = _read_aligned_raster(config.raster_files.Wc0, dtm_result, dtm_path)
+    wc0_data = _fill_nan_in_domain(
+        wc0_result["data"], domain, soil.Wc0, config.raster_files.Wc0, "parameters.soil.Wc0 [mm]"
+    )
+    grids["Wc0"] = wc0_data * 0.001  # Convert from mm to m
 
     logger.debug(f"Loading Wg0 from {config.raster_files.Wg0}")
-    wg0_result = grid_to_matrix(config.raster_files.Wg0)
-    grids["Wg0"] = wg0_result["data"] * 0.001  # Convert from mm to m
+    wg0_result = _read_aligned_raster(config.raster_files.Wg0, dtm_result, dtm_path)
+    wg0_data = _fill_nan_in_domain(
+        wg0_result["data"], domain, soil.Wg0, config.raster_files.Wg0, "parameters.soil.Wg0 [mm]"
+    )
+    grids["Wg0"] = wg0_data * 0.001  # Convert from mm to m
 
     logger.debug(f"Loading ks from {config.raster_files.ks}")
-    ks_result = grid_to_matrix(config.raster_files.ks)
-    grids["ks"] = ks_result["data"] * 0.001 / 3600  # Convert from mm/h to m/s
+    ks_result = _read_aligned_raster(config.raster_files.ks, dtm_result, dtm_path)
+    ks_data = _fill_nan_in_domain(
+        ks_result["data"], domain, soil.ks, config.raster_files.ks, "parameters.soil.ks [mm/h]"
+    )
+    grids["ks"] = ks_data * 0.001 / 3600  # Convert from mm/h to m/s
 
     # Check ranges of ks values (ks_min and ks_max in mm/h from config)
     ks_min = config.parameters.soil.ks_min
@@ -295,8 +381,14 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     for name, path in optional_rasters.items():
         if path is not None:
             logger.debug(f"Loading {name} from {path}")
-            result = grid_to_matrix(path)
-            grids[name] = result["data"]
+            result = _read_aligned_raster(path, dtm_result, dtm_path)
+            grids[name] = _fill_nan_in_domain(
+                result["data"],
+                domain,
+                _get_default_parameter_value(name, config),
+                path,
+                _DEFAULT_PARAMETER_SOURCE[name],
+            )
         else:
             logger.debug(f"Using default value for {name} (no raster provided)")
             # Create grid filled with default parameter value
@@ -309,8 +401,15 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     # not be filled with a default flux value nor averaged during decimation.
     if config.raster_files.CLC is not None:
         logger.debug(f"Loading CLC from {config.raster_files.CLC}")
-        clc_result = grid_to_matrix(config.raster_files.CLC)
+        clc_result = _read_aligned_raster(config.raster_files.CLC, dtm_result, dtm_path)
         grids["CLC"] = clc_result["data"]
+        # CLC is categorical, so NaN cells are kept: the simulation gives them the default Kc
+        n_missing = int(np.sum(domain & np.isnan(grids["CLC"])))
+        if n_missing > 0:
+            logger.warning(
+                f"{config.raster_files.CLC}: {n_missing} NaN cells inside the model domain. "
+                f"NaN values are replaced with the default parameters.soil.Kc = {config.parameters.soil.Kc}."
+            )
     else:
         logger.debug("No CLC raster provided; Kc will default to parameters.soil.Kc")
 
@@ -354,6 +453,9 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
             grids["flow_dir"], grids["flow_acc"], decimation_factor
         )
 
+        # The flow grids are decimated with their own rule, so realign the domain
+        _restrict_domain(grids, {"flow_dir": "Decimated flow direction", "flow_acc": "Decimated flow accumulation"})
+
         # Update metadata
         metadata["shape"] = grids["dtm"].shape
         metadata["resolution"] = (
@@ -395,6 +497,7 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
         shapefile_path=shapefile_path,
         join_single_tributaries=True,
         routing_params=routing_params,
+        reference_crs=crs,
     )
 
     logger.info("")
@@ -443,7 +546,11 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
                 xllcorner=xllcorner,
                 yllcorner=yllcorner,
                 cellsize=metadata["resolution"][0],
+                reference_crs=crs,
             )
+        except GridAlignmentError:
+            # A CRS problem must be fixed by the user, not skipped
+            raise
         except Exception as e:
             logger.error(f"Failed to process reservoirs: {e}")
             logger.warning("Continuing without reservoirs")
@@ -465,6 +572,20 @@ def run_preprocessing(config: MOBIDICConfig) -> GISData:
     logger.info("")
 
     return gisdata
+
+
+# Where the default value of each optional raster comes from, used in messages
+_DEFAULT_PARAMETER_SOURCE = {
+    "kf": "parameters.soil.kf [m/s]",
+    "CH": "parameters.energy.CH [-]",
+    "Alb": "parameters.energy.Alb [-]",
+    "gamma": "parameters.soil.gamma [1/s]",
+    "kappa": "parameters.soil.kappa [1/s]",
+    "beta": "parameters.soil.beta [1/s]",
+    "alpha": "parameters.soil.alpha [1/s]",
+    "Ma": "Ma (no artesian aquifer)",
+    "Mf": "Mf (freatic aquifer)",
+}
 
 
 def _get_default_parameter_value(param_name: str, config: MOBIDICConfig) -> float:
