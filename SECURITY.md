@@ -2,12 +2,12 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest released minor version of MOBIDICpy.
+Security fixes are released as new versions of MOBIDICpy; please upgrade to the latest release.
 
-| Version | Supported |
-| ------- | --------- |
-| 1.0.x   | Yes       |
-| < 1.0   | No        |
+| Version  | Supported |
+| -------- | --------- |
+| >= 1.0.1 | Yes       |
+| < 1.0.1  | No        |
 
 ## Reporting a vulnerability
 
@@ -29,7 +29,7 @@ Please include:
 ## Response process
 
 - We acknowledge reports within 14 days (typically within a few working days).
-- We confirm the issue, assess its severity using CVSS (Common Vulnerability Scoring System), and agree a disclosure date with the reporter.
+- We confirm the issue, assess its severity using CVSS (Common Vulnerability Scoring System), and agree on a disclosure date with the reporter.
 - Fixes for confirmed vulnerabilities of medium or higher severity are released within 60 days of the report.
 - Fixed vulnerabilities are listed in the release notes and published as GitHub Security Advisories,
   with a CVE (Common Vulnerabilities and Exposures) identifier where applicable. Reporters are credited unless they prefer otherwise.
