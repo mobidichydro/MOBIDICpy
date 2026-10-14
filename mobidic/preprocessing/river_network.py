@@ -10,6 +10,9 @@ import pandas as pd
 import geopandas as gpd
 from loguru import logger
 from pathlib import Path
+from typing import Any
+
+from mobidic.preprocessing.gis_reader import check_vector_crs
 
 # MOBIDIC-specific field names reserved for internal use.
 # Original shapefile fields with these names are renamed to "orig_<name>" to avoid conflicts.
@@ -32,6 +35,7 @@ def process_river_network(
     shapefile_path: str | Path,
     join_single_tributaries: bool = True,
     routing_params: dict | None = None,
+    reference_crs: Any = None,
 ) -> gpd.GeoDataFrame:
     """Process river network shapefile to create a complete network structure.
 
@@ -48,6 +52,8 @@ def process_river_network(
             - Br0: Width of 1st order streams [m] (default: 1.0)
             - NBr: Width-order exponent (default: 1.5)
             - n_Man: Manning coefficient [s/m^(1/3)] (default: 0.03)
+        reference_crs: CRS of the DTM. If given, the shapefile must have the same CRS
+            (no reprojection is performed). A geographic CRS is always rejected.
 
     Returns:
         GeoDataFrame with processed network including topology and routing parameters
@@ -66,6 +72,7 @@ def process_river_network(
 
     # Read shapefile
     gdf = gpd.read_file(shapefile_path)
+    check_vector_crs(gdf, shapefile_path, reference_crs)
 
     # Build network topology
     logger.debug("Building network topology")
