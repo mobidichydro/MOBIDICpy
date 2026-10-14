@@ -258,16 +258,16 @@ def crs_equals(crs1: Any, crs2: Any) -> bool:
         >>> crs_equals("EPSG:3003", "EPSG:4326")
         False
     """
+    # Parse first: an invalid input is slow to reject (pyproj searches its database), so stop at the first one
+    parsed1 = parse_crs(crs1)
+    parsed2 = parse_crs(crs2) if parsed1 is not None else None
+    if parsed1 is None or parsed2 is None:
+        logger.debug(f"Cannot compare CRS: crs1 valid={parsed1 is not None}, crs2 valid={parsed2 is not None}")
+        return False
+
     epsg1 = get_epsg_code(crs1)
     epsg2 = get_epsg_code(crs2)
-
     if epsg1 is not None and epsg2 is not None:
         return epsg1 == epsg2
-
-    parsed1 = parse_crs(crs1)
-    parsed2 = parse_crs(crs2)
-    if parsed1 is None or parsed2 is None:
-        logger.debug(f"Cannot compare CRS: epsg1={epsg1}, epsg2={epsg2}")
-        return False
 
     return parsed1.equals(parsed2, ignore_axis_order=True)
