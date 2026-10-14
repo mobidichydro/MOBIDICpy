@@ -133,6 +133,19 @@ def compute_hillslope_cells(
     network["hillslope_cells"] = hillslope_cells
 
     total_cells = sum(len(cells) for cells in hillslope_cells)
+
+    # Reaches outside the grid usually mean that the network and the DTM are not in the same CRS
+    n_empty = sum(len(cells) == 0 for cells in hillslope_cells)
+    if n_empty == len(network) and n_empty > 0:
+        logger.warning(
+            "No reach falls inside the grid: check that the river network and the DTM have the same CRS and extent"
+        )
+    elif n_empty > 0:
+        logger.warning(
+            f"{n_empty} of {len(network)} reaches ({100 * n_empty / len(network):.1f}%) fall outside the grid "
+            "and get no hillslope cells: check that the river network and the DTM have the same CRS and extent"
+        )
+
     logger.success(f"Computed hillslope cells: {total_cells} total cells across {len(network)} reaches")
 
     return network
