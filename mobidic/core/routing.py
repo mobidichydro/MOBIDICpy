@@ -19,7 +19,7 @@ from geopandas import GeoDataFrame
 from loguru import logger
 from numba import njit
 
-from mobidic.utils.jit import dispatch
+from mobidic.utils.jit import FASTMATH, dispatch
 
 # Direction offsets for the MOBIDIC flow direction notation (1-8), indexed by flow_dir - 1.
 # Matches MATLAB stack8point.m: i8=[-1 -1 -1 0 1 1 1 0], j8=[-1 0 1 1 1 0 -1 -1]
@@ -27,7 +27,7 @@ _DIR_OFFSETS_I = np.array([-1, -1, -1, 0, 1, 1, 1, 0], dtype=np.int32)
 _DIR_OFFSETS_J = np.array([-1, 0, 1, 1, 1, 0, -1, -1], dtype=np.int32)
 
 
-@njit(cache=True, fastmath=True)
+@njit(cache=True, fastmath=FASTMATH)
 def _hillslope_routing_kernel(
     lateral_flow: np.ndarray,
     flow_direction: np.ndarray,
@@ -156,7 +156,7 @@ def hillslope_routing(
     return upstream_contribution
 
 
-@njit(cache=True, fastmath=True)
+@njit(cache=True, fastmath=FASTMATH)
 def _linear_routing_kernel(
     discharge_initial: np.ndarray,
     lateral_inflow: np.ndarray,

@@ -360,3 +360,18 @@ class TestCrsEquals:
         """Test WGS84 in different formats."""
         assert crs_equals("EPSG:4326", 4326)
         assert crs_equals(4326, CRS.from_epsg(4326))
+
+
+class TestCrsEqualsWithoutEpsg:
+    """Test crs_equals on CRSs that have no EPSG code."""
+
+    def test_equal_custom_crs(self):
+        """Test that two identical custom CRSs are equal."""
+        proj = "+proj=tmerc +lat_0=0 +lon_0=11 +k=0.9996 +x_0=1700000 +y_0=0 +ellps=intl +units=m +no_defs"
+        assert crs_equals(proj, CRS.from_proj4(proj))
+
+    def test_different_custom_crs(self):
+        """Test that two different custom CRSs are not equal."""
+        proj1 = "+proj=tmerc +lat_0=0 +lon_0=11 +k=0.9996 +x_0=1700000 +y_0=0 +ellps=intl +units=m +no_defs"
+        proj2 = "+proj=tmerc +lat_0=0 +lon_0=12 +k=0.9996 +x_0=1700000 +y_0=0 +ellps=intl +units=m +no_defs"
+        assert not crs_equals(proj1, proj2)

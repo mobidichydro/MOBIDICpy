@@ -66,6 +66,45 @@ class MeteoData:
             f"period={self.start_date} to {self.end_date})"
         )
 
+    def validate_grid_overlap(self, model_metadata: dict) -> None:
+        """Check that the bounding box of the stations overlaps the model grid.
+
+        Station coordinates carry no CRS, so they are assumed to be in the DTM's CRS.
+        A bounding box that misses the grid entirely almost always means they are not.
+
+        Args:
+            model_metadata: Dictionary with model grid metadata containing shape,
+                resolution, xllcorner and yllcorner (lower-left cell center).
+
+        Raises:
+            ValueError: If the station bounding box does not overlap the grid.
+        """
+        xs = np.array([s["x"] for var_stations in self.stations.values() for s in var_stations], dtype=float)
+        ys = np.array([s["y"] for var_stations in self.stations.values() for s in var_stations], dtype=float)
+        valid = np.isfinite(xs) & np.isfinite(ys)
+        if not np.any(valid):
+            return
+        xs, ys = xs[valid], ys[valid]
+
+        nrows, ncols = model_metadata["shape"]
+        res = model_metadata["resolution"]
+        res_x, res_y = res if isinstance(res, (tuple, list, np.ndarray)) else (res, res)
+        grid_xmin = model_metadata["xllcorner"] - 0.5 * res_x
+        grid_ymin = model_metadata["yllcorner"] - 0.5 * res_y
+        grid_xmax = grid_xmin + ncols * res_x
+        grid_ymax = grid_ymin + nrows * res_y
+
+        overlaps = xs.min() <= grid_xmax and xs.max() >= grid_xmin and ys.min() <= grid_ymax and ys.max() >= grid_ymin
+        if not overlaps:
+            msg = (
+                "Meteorological stations do not overlap the model grid: "
+                f"stations x=[{xs.min():.1f}, {xs.max():.1f}], y=[{ys.min():.1f}, {ys.max():.1f}]; "
+                f"grid x=[{grid_xmin:.1f}, {grid_xmax:.1f}], y=[{grid_ymin:.1f}, {grid_ymax:.1f}]. "
+                "Station coordinates must be in the same CRS as the DTM."
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
     def to_netcdf(
         self,
         output_path: str | Path,

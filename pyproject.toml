@@ -88,6 +88,9 @@ exclude = ["tests*", "examples*", "docs*"]
 testpaths = ["tests"]
 filterwarnings = [
     "ignore:numpy.ndarray size changed:RuntimeWarning",
+    # NumPy 2.5 deprecations triggered inside xarray, netCDF4, rasterio and pandas (not MOBIDICpy code)
+    "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning",
+    "ignore:The 'generic' unit for NumPy timedelta is deprecated:DeprecationWarning",
 ]
 
 [tool.coverage.run]

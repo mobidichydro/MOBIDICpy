@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch, MagicMock
 import geopandas as gpd
 from shapely.geometry import LineString
 
+from mobidic.preprocessing.gis_reader import GridAlignmentError
 from mobidic.preprocessing.preprocessor import (
     GISData,
     run_preprocessing,
@@ -287,3 +288,178 @@ class TestPreprocessor:
         assert isinstance(gisdata, GISData)
         assert gisdata.metadata["shape"] == (10, 10)
         assert gisdata.metadata["resolution"] == (20.0, 20.0)
+
+
+def _grid(shape=(10, 10), xll=5.0, crs="EPSG:32632"):
+    """Mock grid_to_matrix() result."""
+    return {"data": np.random.rand(*shape), "xllcorner": xll, "yllcorner": 5.0, "cellsize": 10.0, "crs": crs}
+
+
+class TestPreprocessorInputChecks:
+    """Tests for CRS and grid alignment checks in run_preprocessing."""
+
+    @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
+    def test_raster_mismatch_names_file(self, mock_grid_to_matrix, mock_config):
+        """Test that a raster off the DTM grid stops preprocessing with its path in the error."""
+        mock_grid_to_matrix.side_effect = [_grid(), _grid(shape=(12, 10))]
+
+        with pytest.raises(GridAlignmentError, match=r"flowdir\.tif does not match the DTM grid \(dtm\.tif\)"):
+            run_preprocessing(mock_config)
+
+    @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
+    def test_raster_crs_mismatch(self, mock_grid_to_matrix, mock_config):
+        """Test that a raster on the same grid but in another CRS is rejected."""
+        mock_grid_to_matrix.side_effect = [_grid(), _grid(crs="EPSG:3003")]
+
+        with pytest.raises(GridAlignmentError, match="CRS EPSG:3003 != EPSG:32632"):
+            run_preprocessing(mock_config)
+
+    @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
+    def test_geographic_dtm_rejected(self, mock_grid_to_matrix, mock_config):
+        """Test that a DTM with a geographic CRS is rejected."""
+        mock_grid_to_matrix.return_value = _grid(crs="EPSG:4326")
+
+        with pytest.raises(GridAlignmentError, match=r"dtm\.tif has a geographic CRS"):
+            run_preprocessing(mock_config)
+
+    @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
+    @patch("mobidic.preprocessing.preprocessor.convert_to_mobidic_notation")
+    @patch("mobidic.preprocessing.preprocessor.process_river_network")
+    @patch("mobidic.preprocessing.preprocessor.compute_hillslope_cells")
+    @patch("mobidic.preprocessing.preprocessor.map_hillslope_to_reach")
+    @patch("mobidic.preprocessing.preprocessor.process_reservoirs")
+    def test_dtm_crs_passed_to_vectors_and_reservoir_error_raised(
+        self,
+        mock_process_reservoirs,
+        mock_map_hillslope,
+        mock_compute_hillslope,
+        mock_process_network,
+        mock_convert_notation,
+        mock_grid_to_matrix,
+        mock_config,
+        mock_network,
+    ):
+        """Test that the DTM CRS is the reference for the shapefiles and a reservoir CRS error is not swallowed."""
+        mock_grid_to_matrix.return_value = _grid()
+        mock_convert_notation.return_value = np.random.randint(1, 9, size=(10, 10))
+        mock_process_network.return_value = mock_network
+        mock_compute_hillslope.return_value = mock_network
+        mock_map_hillslope.return_value = np.random.randint(-1, 3, size=(10, 10))
+        mock_config.parameters.reservoirs.res_shape = "reservoirs.shp"
+        mock_process_reservoirs.side_effect = GridAlignmentError("reservoirs.shp has CRS EPSG:3003")
+
+        with pytest.raises(GridAlignmentError, match="reservoirs.shp"):
+            run_preprocessing(mock_config)
+
+        assert mock_process_network.call_args.kwargs["reference_crs"] == "EPSG:32632"
+        assert mock_process_reservoirs.call_args.kwargs["reference_crs"] == "EPSG:32632"
+
+
+def _capture_warnings(func, *args, **kwargs):
+    """Call func and return its result and the loguru WARNING messages it emitted."""
+    from loguru import logger
+
+    messages = []
+    handler_id = logger.add(messages.append, level="WARNING")
+    try:
+        result = func(*args, **kwargs)
+    finally:
+        logger.remove(handler_id)
+    return result, messages
+
+
+class TestNanInDomain:
+    """Tests for NaN handling inside the model domain."""
+
+    def test_fill_nan_in_domain(self):
+        """NaN cells inside the domain are replaced, the ones outside are kept."""
+        from mobidic.preprocessing.preprocessor import _fill_nan_in_domain
+
+        data = np.array([[1.0, np.nan], [np.nan, 4.0]])
+        domain = np.array([[True, True], [False, True]])
+
+        filled, messages = _capture_warnings(_fill_nan_in_domain, data, domain, 9.0, "ks.tif", "parameters.soil.ks")
+
+        np.testing.assert_array_equal(filled, [[1.0, 9.0], [np.nan, 4.0]])
+        assert np.isnan(data[0, 1])  # input not modified
+        assert any(
+            "ks.tif: 1 NaN cells" in m and "replaced with the default parameters.soil.ks = 9.0" in m for m in messages
+        )
+
+    def test_fill_nan_in_domain_no_nan(self):
+        """No warning when there is nothing to replace."""
+        from mobidic.preprocessing.preprocessor import _fill_nan_in_domain
+
+        data = np.ones((2, 2))
+        filled, messages = _capture_warnings(_fill_nan_in_domain, data, np.ones((2, 2), bool), 9.0, "ks.tif", "x")
+        assert filled is data
+        assert messages == []
+
+    def test_restrict_domain(self):
+        """Cells where flow_dir or flow_acc is NaN are excluded from the domain, with a warning."""
+        from mobidic.preprocessing.preprocessor import _restrict_domain
+
+        grids = {
+            "dtm": np.array([[1.0, 2.0, 3.0, np.nan]]),
+            "flow_dir": np.array([[1.0, np.nan, 3.0, 4.0]]),
+            "flow_acc": np.array([[1.0, 2.0, np.nan, 4.0]]),
+        }
+        domain, messages = _capture_warnings(_restrict_domain, grids, {"flow_dir": "fd.tif", "flow_acc": "fa.tif"})
+
+        np.testing.assert_array_equal(domain, [[True, False, False, False]])
+        for name in ("dtm", "flow_dir", "flow_acc"):
+            assert np.isnan(grids[name][0, 1:]).all()
+        assert any("fd.tif: 1 NaN cells inside the DTM domain" in m for m in messages)
+        assert any("fa.tif: 1 NaN cells inside the DTM domain" in m for m in messages)
+
+    @patch("mobidic.preprocessing.preprocessor.grid_to_matrix")
+    @patch("mobidic.preprocessing.preprocessor.convert_to_mobidic_notation")
+    @patch("mobidic.preprocessing.preprocessor.process_river_network")
+    @patch("mobidic.preprocessing.preprocessor.compute_hillslope_cells")
+    @patch("mobidic.preprocessing.preprocessor.map_hillslope_to_reach")
+    def test_run_preprocessing_fills_parameters(
+        self,
+        mock_map_hillslope,
+        mock_compute_hillslope,
+        mock_process_network,
+        mock_convert_notation,
+        mock_grid_to_matrix,
+        mock_config,
+        mock_network,
+    ):
+        """NaN parameter cells inside the domain get the YAML default, converted to model units."""
+        mock_config.parameters.soil.Wc0 = 100.0  # mm
+        mock_config.parameters.soil.Wg0 = 200.0  # mm
+        mock_config.parameters.soil.ks = 3.6  # mm/h
+        mock_config.raster_files.gamma = "gamma.tif"
+        mock_config.raster_files.CLC = None
+
+        def grid(nan_cell=None):
+            g = _grid()
+            g["data"] = np.full((10, 10), 5.0)
+            if nan_cell is not None:
+                g["data"][nan_cell] = np.nan
+            return g
+
+        # Read order: dtm, flow_dir, flow_acc, Wc0, Wg0, ks, gamma
+        mock_grid_to_matrix.side_effect = [
+            grid(),
+            grid(),
+            grid(),
+            grid((1, 1)),
+            grid((2, 2)),
+            grid((3, 3)),
+            grid((4, 4)),
+        ]
+        mock_convert_notation.side_effect = lambda fd, from_notation: fd
+        mock_process_network.return_value = mock_network
+        mock_compute_hillslope.return_value = mock_network
+        mock_map_hillslope.return_value = np.zeros((10, 10))
+
+        gisdata, messages = _capture_warnings(run_preprocessing, mock_config)
+
+        assert gisdata.grids["Wc0"][1, 1] == pytest.approx(0.1)  # 100 mm -> m
+        assert gisdata.grids["Wg0"][2, 2] == pytest.approx(0.2)  # 200 mm -> m
+        assert gisdata.grids["ks"][3, 3] == pytest.approx(1e-6)  # 3.6 mm/h -> m/s
+        assert gisdata.grids["gamma"][4, 4] == pytest.approx(mock_config.parameters.soil.gamma)
+        assert sum("NaN values are replaced with the default" in m for m in messages) == 4

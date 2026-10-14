@@ -90,8 +90,10 @@ def sample_network():
 
 @pytest.fixture
 def sample_hillslope_map():
-    """Create sample hillslope-reach mapping."""
-    return np.random.randint(-9999, 3, size=(10, 10)).astype(float)
+    """Create sample hillslope-reach mapping (reach IDs, plus one cell that does not drain to a reach)."""
+    reach_map = np.random.randint(0, 3, size=(10, 10)).astype(float)
+    reach_map[5, 5] = -9999.0
+    return reach_map
 
 
 @pytest.fixture
@@ -190,9 +192,11 @@ class TestSaveGISData:
 
         np.testing.assert_array_almost_equal(ds["dtm"].values, sample_gisdata.grids["dtm"])
         np.testing.assert_array_almost_equal(ds["flow_dir"].values, sample_gisdata.grids["flow_dir"])
-        np.testing.assert_array_almost_equal(ds["hillslope_reach_map"].values, sample_gisdata.hillslope_reach_map)
-
         ds.close()
+
+        # -9999 is the _FillValue of the reach map: compare the stored values
+        with xr.open_dataset(output_path, mask_and_scale=False) as raw:
+            np.testing.assert_array_equal(raw["hillslope_reach_map"].values, sample_gisdata.hillslope_reach_map)
 
     def test_save_gisdata_creates_parent_directory(self, sample_gisdata, tmp_path):
         """Test that save_gisdata creates parent directories."""
@@ -386,3 +390,46 @@ class TestRoundTrip:
         # Verify metadata
         assert loaded.metadata["shape"] == sample_gisdata.metadata["shape"]
         assert loaded.metadata["resolution"] == sample_gisdata.metadata["resolution"]
+
+
+class TestHillslopeReachMapNodata:
+    """Tests for the -9999 nodata encoding of hillslope_reach_map."""
+
+    @pytest.fixture
+    def gisdata_with_unassigned(self, sample_gisdata):
+        """GISData with a cell outside the domain (NaN) and one unassigned cell inside it (-9999)."""
+        sample_gisdata.grids["dtm"][0, 0] = np.nan
+        reach_map = np.random.randint(0, 3, size=(10, 10)).astype(float)
+        reach_map[0, 0] = np.nan
+        reach_map[1, 1] = -9999.0
+        sample_gisdata.hillslope_reach_map = reach_map
+        return sample_gisdata
+
+    def test_file_declares_minus_9999_as_nodata(self, gisdata_with_unassigned, tmp_path):
+        """Both NaN and -9999 are written as the -9999 _FillValue, so GIS viewers mask them."""
+        import rasterio
+
+        path = tmp_path / "gisdata.nc"
+        save_gisdata(gisdata_with_unassigned, path)
+
+        with xr.open_dataset(path, mask_and_scale=False) as ds:
+            raw = ds["hillslope_reach_map"]
+            assert raw.attrs["_FillValue"] == -9999.0
+            assert raw.values[0, 0] == -9999.0
+            assert raw.values[1, 1] == -9999.0
+
+        with rasterio.open(f'NETCDF:"{path}":hillslope_reach_map') as src:
+            assert src.nodata == -9999.0
+
+    def test_roundtrip_restores_unassigned_cells(self, gisdata_with_unassigned, tmp_path):
+        """load_gisdata returns the map as produced by preprocessing: NaN outside, -9999 inside the domain."""
+        gisdata_path = tmp_path / "gisdata.nc"
+        network_path = tmp_path / "network.parquet"
+        save_gisdata(gisdata_with_unassigned, gisdata_path)
+        save_network(gisdata_with_unassigned.network, network_path)
+
+        loaded = load_gisdata(gisdata_path, network_path)
+
+        np.testing.assert_array_equal(loaded.hillslope_reach_map, gisdata_with_unassigned.hillslope_reach_map)
+        assert np.isnan(loaded.hillslope_reach_map[0, 0])
+        assert loaded.hillslope_reach_map[1, 1] == -9999.0

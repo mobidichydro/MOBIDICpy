@@ -165,3 +165,26 @@ class TestKernelEquivalence:
         np.testing.assert_allclose(ts_py, ts_jit, rtol=1e-10)
         np.testing.assert_allclose(td_py, td_jit, rtol=1e-10)
         np.testing.assert_allclose(evp_py, evp_jit, rtol=1e-10)
+
+
+class TestNanHandling:
+    """Compiled kernels must treat NaN like the pure Python version (no ``nnan`` fast-math flag)."""
+
+    def test_hillslope_routing_skips_nan_flow(self):
+        """A NaN lateral flow is skipped, not propagated downstream, in both modes."""
+        lateral_flow = np.array([[1.0, np.nan, 1.0, 2.0]])
+        flow_direction = np.array([[4.0, 4.0, 4.0, np.nan]])  # MOBIDIC 4 = east
+
+        set_jit_enabled(True)
+        expected = hillslope_routing(lateral_flow, flow_direction)
+
+        set_jit_enabled(False)
+        actual = hillslope_routing(lateral_flow, flow_direction)
+
+        np.testing.assert_array_equal(expected, [[0.0, 1.0, 0.0, 1.0]])
+        np.testing.assert_array_equal(actual, expected)
+
+    def test_fastmath_flags_exclude_nan_assumptions(self):
+        """The shared fast-math flags never let LLVM assume that NaN/inf do not exist."""
+        assert "nnan" not in jit_module.FASTMATH
+        assert "ninf" not in jit_module.FASTMATH

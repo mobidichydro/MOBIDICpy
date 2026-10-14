@@ -437,3 +437,29 @@ def test_save_invalid_format(simple_network_gdf, tmp_path):
 
     with pytest.raises(ValueError, match="Unsupported format"):
         save_network(network, tmp_path / "network.csv", format="csv")
+
+
+def test_process_river_network_crs_mismatch(simple_network_gdf, tmp_path):
+    """Test that a network in a CRS other than the DTM's is rejected, not reprojected."""
+    from mobidic.preprocessing.gis_reader import GridAlignmentError
+
+    shp_path = tmp_path / "network.shp"
+    simple_network_gdf.to_file(shp_path)
+
+    with pytest.raises(GridAlignmentError, match="network.shp has CRS EPSG:3003, but the DTM has CRS EPSG:32632"):
+        process_river_network(shp_path, reference_crs="EPSG:32632")
+
+    # Same CRS passes
+    network = process_river_network(shp_path, reference_crs="EPSG:3003")
+    assert len(network) > 0
+
+
+def test_process_river_network_geographic_crs(simple_network_gdf, tmp_path):
+    """Test that a network with a geographic CRS is rejected."""
+    from mobidic.preprocessing.gis_reader import GridAlignmentError
+
+    shp_path = tmp_path / "network.shp"
+    simple_network_gdf.set_crs("EPSG:4326", allow_override=True).to_file(shp_path)
+
+    with pytest.raises(GridAlignmentError, match="geographic CRS"):
+        process_river_network(shp_path)

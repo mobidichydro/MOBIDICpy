@@ -494,3 +494,32 @@ class TestNetCDFMeteoReader:
         # Should only have precipitation
         assert meteo_data.variables == ["precipitation"]
         assert len(meteo_data.stations["precipitation"]) == 1
+
+
+class TestValidateGridOverlap:
+    """Tests for MeteoData.validate_grid_overlap."""
+
+    METADATA = {"shape": (10, 20), "resolution": (100.0, 100.0), "xllcorner": 1050.0, "yllcorner": 2050.0}
+
+    @staticmethod
+    def _meteo(coords):
+        stations = [
+            {"code": i, "x": x, "y": y, "elevation": 0.0, "time": pd.DatetimeIndex([]), "data": np.array([])}
+            for i, (x, y) in enumerate(coords)
+        ]
+        return MeteoData({"precipitation": stations})
+
+    def test_stations_inside_grid(self):
+        """Test that stations inside the grid pass."""
+        self._meteo([(1500.0, 2500.0)]).validate_grid_overlap(self.METADATA)
+
+    def test_bbox_overlaps_grid(self):
+        """Test that stations outside the grid pass when their bounding box overlaps it."""
+        # Grid spans x=[1000, 3000], y=[2000, 3000]
+        self._meteo([(500.0, 1500.0), (3500.0, 3500.0)]).validate_grid_overlap(self.METADATA)
+
+    def test_stations_outside_grid(self):
+        """Test that stations entirely outside the grid (e.g. wrong CRS) raise an error."""
+        meteo = self._meteo([(11.2, 43.7), (11.5, 43.9)])  # lon/lat instead of projected coordinates
+        with pytest.raises(ValueError, match="Meteorological stations do not overlap the model grid"):
+            meteo.validate_grid_overlap(self.METADATA)

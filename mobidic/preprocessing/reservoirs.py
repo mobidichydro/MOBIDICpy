@@ -19,6 +19,8 @@ import pandas as pd
 import rasterio.features
 from loguru import logger
 
+from mobidic.preprocessing.gis_reader import check_vector_crs
+
 
 def _records_to_dataframe(records: Any) -> Optional[pd.DataFrame]:
     """Rebuild a DataFrame from a column of record dicts from GeoParquet.
@@ -272,7 +274,7 @@ def _rasterize_reservoir_polygon(
 
     # Create affine transform
     # Upper-left corner is at (xllcorner, yllcorner + nrows * cellsize)
-    transform = Affine.translation(xllcorner, yllcorner + nrows * cellsize) * Affine.scale(cellsize, -cellsize)
+    transform = Affine.translation(xllcorner, yllcorner + nrows * cellsize) @ Affine.scale(cellsize, -cellsize)
 
     # Rasterize polygon
     mask = rasterio.features.rasterize(
@@ -385,6 +387,7 @@ def process_reservoirs(
     xllcorner: float,
     yllcorner: float,
     cellsize: float,
+    reference_crs: Any = None,
 ) -> Reservoirs:
     """Process reservoir data from input files.
 
@@ -410,6 +413,8 @@ def process_reservoirs(
         xllcorner: X coordinate of lower-left corner [m]
         yllcorner: Y coordinate of lower-left corner [m]
         cellsize: Grid cell size [m]
+        reference_crs: CRS of the DTM. If given, the shapefile must have the same CRS
+            (no reprojection is performed). A geographic CRS is always rejected.
 
     Returns:
         Reservoirs object with processed data
@@ -420,6 +425,7 @@ def process_reservoirs(
     # Read reservoir polygons
     logger.debug(f"Reading reservoir shapefile: {shapefile_path}")
     res_polygons = gpd.read_file(shapefile_path)
+    check_vector_crs(res_polygons, shapefile_path, reference_crs)
     logger.info(f"Found {len(res_polygons)} reservoirs in shapefile")
 
     if len(res_polygons) == 0:

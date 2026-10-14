@@ -21,6 +21,14 @@ All functions provide comprehensive logging and error handling, converting nodat
 
 ::: mobidic.preprocessing.gis_reader.read_shapefile
 
+### Input checks
+
+::: mobidic.preprocessing.gis_reader.check_crs
+
+::: mobidic.preprocessing.gis_reader.check_raster_alignment
+
+::: mobidic.preprocessing.gis_reader.check_vector_crs
+
 ## Examples
 
 ### Reading a Raster
@@ -86,5 +94,6 @@ Both functions provide detailed error messages and logging:
 
 - **File not found**: `FileNotFoundError` with clear message
 - **Invalid format**: `RasterioIOError` or `RuntimeError` with details
-- **CRS issues**: Warnings when CRS is missing or reprojection fails
+- **CRS issues**: Warning when a file has no CRS; `GridAlignmentError` when a CRS is geographic, or when a
+  raster or shapefile does not match the DTM grid/CRS (see the input checks above)
 - **Logging**: All operations logged using loguru (DEBUG, INFO, SUCCESS, ERROR levels)

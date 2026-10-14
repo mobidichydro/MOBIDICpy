@@ -39,7 +39,17 @@ Model parameters can be calibrated against observed data through the USGS [PEST+
 
 ## Installation
 
-The package can be installed locally via pip:
+The package is available on [PyPI](https://pypi.org/project/mobidicpy/) and can be installed with pip:
+
+```bash
+# Install the base package
+pip install mobidicpy
+
+# For calibration and sensitivity analysis (PEST++)
+pip install "mobidicpy[calibration]" && get-pestpp :pyemu
+```
+
+Alternatively, it can be installed from source:
 
 ```bash
 # Clone the repository

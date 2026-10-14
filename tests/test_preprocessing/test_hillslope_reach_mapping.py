@@ -154,3 +154,41 @@ class TestComputeHillslopeCells:
 
         # Should have empty list for hillslope_cells
         assert network.loc[0, "hillslope_cells"] == []
+
+
+class TestComputeHillslopeCellsWarnings:
+    """Tests for the warning on reaches falling outside the grid."""
+
+    @staticmethod
+    def _run(network, flowdir):
+        from loguru import logger
+        from mobidic.preprocessing.hillslope_reach_mapping import compute_hillslope_cells
+
+        messages = []
+        handler_id = logger.add(messages.append, level="WARNING")
+        try:
+            compute_hillslope_cells(network, flowdir, densify_step=1.0)
+        finally:
+            logger.remove(handler_id)
+        return messages
+
+    def test_no_warning_inside_grid(self, simple_flowdir):
+        """Test that reaches inside the grid produce no warning."""
+        gdf = gpd.GeoDataFrame({"mobidic_id": [0]}, geometry=[LineString([(0.5, 0.5), (3.5, 0.5)])], crs="EPSG:32632")
+        assert not any("outside the grid" in m or "No reach" in m for m in self._run(gdf, simple_flowdir))
+
+    def test_warning_some_reaches_outside(self, simple_flowdir):
+        """Test that a reach outside the grid triggers a warning with the count."""
+        gdf = gpd.GeoDataFrame(
+            {"mobidic_id": [0, 1]},
+            geometry=[LineString([(0.5, 0.5), (3.5, 0.5)]), LineString([(500, 500), (510, 500)])],
+            crs="EPSG:32632",
+        )
+        messages = self._run(gdf, simple_flowdir)
+        assert any("1 of 2 reaches (50.0%) fall outside the grid" in m for m in messages)
+
+    def test_warning_all_reaches_outside(self, simple_flowdir):
+        """Test that a network entirely outside the grid triggers a CRS warning."""
+        gdf = gpd.GeoDataFrame({"mobidic_id": [0]}, geometry=[LineString([(500, 500), (510, 500)])], crs="EPSG:32632")
+        messages = self._run(gdf, simple_flowdir)
+        assert any("No reach falls inside the grid" in m for m in messages)
