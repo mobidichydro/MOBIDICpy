@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from loguru import logger
 
 from mobidic.calibration.config import ObservationGroup
 from mobidic.calibration.observation import align_observations_to_simulation, load_observations
@@ -46,6 +47,33 @@ class TestLoadObservations:
         df = load_observations(og, tmp_path, start_date="2023-11-01 00:15:00", end_date="2023-11-01 00:45:00")
         assert len(df) == 3
         assert df["value"].iloc[0] == 12.5
+
+    def test_load_negative_values_warns(self, tmp_path):
+        (tmp_path / "obs.csv").write_text(
+            "time,Q_329\n2023-11-01 00:00:00,10.0\n2023-11-01 00:15:00,-9999\n2023-11-01 00:30:00,-0.5\n"
+        )
+        og = ObservationGroup(name="Q_329", obs_file="obs.csv", reach_id=329, value_column="Q_329")
+        messages = []
+        handler_id = logger.add(messages.append, level="WARNING")
+        try:
+            df = load_observations(og, tmp_path)
+        finally:
+            logger.remove(handler_id)
+        assert len(df) == 3  # negative values are kept
+        assert len(messages) == 1
+        assert "2 negative value(s)" in messages[0]
+        assert "min -9999" in messages[0]
+
+    def test_load_no_warning_without_negative_values(self, tmp_path):
+        self._make_obs_csv(tmp_path)
+        og = ObservationGroup(name="Q_329", obs_file="obs.csv", reach_id=329, value_column="Q_329")
+        messages = []
+        handler_id = logger.add(messages.append, level="WARNING")
+        try:
+            load_observations(og, tmp_path)
+        finally:
+            logger.remove(handler_id)
+        assert messages == []
 
     def test_load_missing_file(self, tmp_path):
         og = ObservationGroup(

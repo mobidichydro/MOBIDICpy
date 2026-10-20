@@ -57,6 +57,16 @@ def load_observations(
         result = result[result["time"] <= pd.Timestamp(end_date)]
 
     result = result.reset_index(drop=True)
+
+    # Negative values are kept, but discharge cannot be negative: they are usually missing-value codes
+    # (e.g. -9999) that dominate the residuals and make log-based metrics NaN
+    n_negative = int((result["value"] < 0).sum())
+    if n_negative:
+        logger.warning(
+            f"Observation group '{obs_group.name}': {n_negative} negative value(s) in {obs_path.name} "
+            f"(min {result['value'].min():g}) are used as observations. Leave the cells empty if they are missing data"
+        )
+
     logger.info(f"Loaded {len(result)} observations for group '{obs_group.name}' (reach {obs_group.reach_id})")
 
     return result

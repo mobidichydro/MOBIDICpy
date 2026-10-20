@@ -153,6 +153,14 @@ YAML file with `apply_parameters_to_yaml`.
 
 ## Observations
 
+!!! warning "Missing values and negative discharges"
+    Leave missing values as empty cells (or `NaN`/`NA`) in the observation CSV: those rows are skipped.
+    Numeric missing-value codes such as `-9999` are not recognized and become observations.
+    `load_observations` logs a warning when a group contains negative values, but keeps them: discharge
+    cannot be negative, so they leave a residual that no parameter set can remove and dominate phi when
+    large. They also make log-based metrics `NaN`: `nse_log` for any negative value, `mle`, `male`, `msle`
+    and `rmsle` for values of -1 or below. Remove them when preparing the CSV.
+
 ::: mobidic.calibration.observation.load_observations
 
 ::: mobidic.calibration.observation.align_observations_to_simulation
