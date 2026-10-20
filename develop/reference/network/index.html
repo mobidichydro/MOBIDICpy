@@ -1998,153 +1998,153 @@ and calculates routing parameters.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/preprocessing/river_network.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34"> 34</a></span>
-<span class="normal"><a href="#__codelineno-0-35"> 35</a></span>
-<span class="normal"><a href="#__codelineno-0-36"> 36</a></span>
-<span class="normal"><a href="#__codelineno-0-37"> 37</a></span>
-<span class="normal"><a href="#__codelineno-0-38"> 38</a></span>
-<span class="normal"><a href="#__codelineno-0-39"> 39</a></span>
-<span class="normal"><a href="#__codelineno-0-40"> 40</a></span>
-<span class="normal"><a href="#__codelineno-0-41"> 41</a></span>
-<span class="normal"><a href="#__codelineno-0-42"> 42</a></span>
-<span class="normal"><a href="#__codelineno-0-43"> 43</a></span>
-<span class="normal"><a href="#__codelineno-0-44"> 44</a></span>
-<span class="normal"><a href="#__codelineno-0-45"> 45</a></span>
-<span class="normal"><a href="#__codelineno-0-46"> 46</a></span>
-<span class="normal"><a href="#__codelineno-0-47"> 47</a></span>
-<span class="normal"><a href="#__codelineno-0-48"> 48</a></span>
-<span class="normal"><a href="#__codelineno-0-49"> 49</a></span>
-<span class="normal"><a href="#__codelineno-0-50"> 50</a></span>
-<span class="normal"><a href="#__codelineno-0-51"> 51</a></span>
-<span class="normal"><a href="#__codelineno-0-52"> 52</a></span>
-<span class="normal"><a href="#__codelineno-0-53"> 53</a></span>
-<span class="normal"><a href="#__codelineno-0-54"> 54</a></span>
-<span class="normal"><a href="#__codelineno-0-55"> 55</a></span>
-<span class="normal"><a href="#__codelineno-0-56"> 56</a></span>
-<span class="normal"><a href="#__codelineno-0-57"> 57</a></span>
-<span class="normal"><a href="#__codelineno-0-58"> 58</a></span>
-<span class="normal"><a href="#__codelineno-0-59"> 59</a></span>
-<span class="normal"><a href="#__codelineno-0-60"> 60</a></span>
-<span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
-<span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
-<span class="normal"><a href="#__codelineno-0-63"> 63</a></span>
-<span class="normal"><a href="#__codelineno-0-64"> 64</a></span>
-<span class="normal"><a href="#__codelineno-0-65"> 65</a></span>
-<span class="normal"><a href="#__codelineno-0-66"> 66</a></span>
-<span class="normal"><a href="#__codelineno-0-67"> 67</a></span>
-<span class="normal"><a href="#__codelineno-0-68"> 68</a></span>
-<span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
-<span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
-<span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
-<span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
-<span class="normal"><a href="#__codelineno-0-73"> 73</a></span>
-<span class="normal"><a href="#__codelineno-0-74"> 74</a></span>
-<span class="normal"><a href="#__codelineno-0-75"> 75</a></span>
-<span class="normal"><a href="#__codelineno-0-76"> 76</a></span>
-<span class="normal"><a href="#__codelineno-0-77"> 77</a></span>
-<span class="normal"><a href="#__codelineno-0-78"> 78</a></span>
-<span class="normal"><a href="#__codelineno-0-79"> 79</a></span>
-<span class="normal"><a href="#__codelineno-0-80"> 80</a></span>
-<span class="normal"><a href="#__codelineno-0-81"> 81</a></span>
-<span class="normal"><a href="#__codelineno-0-82"> 82</a></span>
-<span class="normal"><a href="#__codelineno-0-83"> 83</a></span>
-<span class="normal"><a href="#__codelineno-0-84"> 84</a></span>
-<span class="normal"><a href="#__codelineno-0-85"> 85</a></span>
-<span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
-<span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
-<span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
-<span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
-<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
-<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
-<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
-<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
-<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
-<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
-<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
-<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
-<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
-<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
-<span class="normal"><a href="#__codelineno-0-100">100</a></span>
-<span class="normal"><a href="#__codelineno-0-101">101</a></span>
-<span class="normal"><a href="#__codelineno-0-102">102</a></span>
-<span class="normal"><a href="#__codelineno-0-103">103</a></span>
-<span class="normal"><a href="#__codelineno-0-104">104</a></span>
-<span class="normal"><a href="#__codelineno-0-105">105</a></span>
-<span class="normal"><a href="#__codelineno-0-106">106</a></span>
-<span class="normal"><a href="#__codelineno-0-107">107</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_river_network</span><span class="p">(</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="n">shapefile_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>    <span class="n">join_single_tributaries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a>    <span class="n">routing_params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="n">reference_crs</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">:</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="w">    </span><span class="sd">"""Process river network shapefile to create a complete network structure.</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">    This function reads a river network shapefile, builds the network topology,</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">    enforces binary tree structure (max 2 upstream tributaries per reach),</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">    computes Strahler stream ordering, optionally joins single-tributary reaches,</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">    and calculates routing parameters.</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">        shapefile_path: Path to river network shapefile</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        join_single_tributaries: If True, joins reaches with single tributaries (default: True)</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">        routing_params: Dictionary with routing parameters:</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">            - wcel: Wave celerity [m/s] (default: 5.0)</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">            - Br0: Width of 1st order streams [m] (default: 1.0)</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">            - NBr: Width-order exponent (default: 1.5)</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">            - n_Man: Manning coefficient [s/m^(1/3)] (default: 0.03)</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        reference_crs: CRS of the DTM. If given, the shapefile must have the same CRS</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">            (no reprojection is performed). A geographic CRS is always rejected.</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">        GeoDataFrame with processed network including topology and routing parameters</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        FileNotFoundError: If shapefile does not exist</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        ValueError: If network is invalid</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        &gt;&gt;&gt; network = process_river_network(</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">        ...     "river_network.shp",</span>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">        ...     routing_params={"wcel": 3.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03}</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">        ... )</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    """</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Processing river network from </span><span class="si">{</span><span class="n">shapefile_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-72" name="__codelineno-0-72"></a>
-<a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="c1"># Read shapefile</span>
-<a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">shapefile_path</span><span class="p">)</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="n">check_vector_crs</span><span class="p">(</span><span class="n">gdf</span><span class="p">,</span> <span class="n">shapefile_path</span><span class="p">,</span> <span class="n">reference_crs</span><span class="p">)</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="c1"># Build network topology</span>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Building network topology"</span><span class="p">)</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_build_network_topology</span><span class="p">(</span><span class="n">gdf</span><span class="p">)</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="c1"># Enforce binary tree structure (max 2 upstream tributaries per reach)</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Enforcing binary tree structure"</span><span class="p">)</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_enforce_binary_tree</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a>
-<a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="c1"># Compute Strahler ordering</span>
-<a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Computing Strahler stream order"</span><span class="p">)</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_compute_strahler_order</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="c1"># Optionally join single-tributary reaches</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>    <span class="k">if</span> <span class="n">join_single_tributaries</span><span class="p">:</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Joining single-tributary reaches"</span><span class="p">)</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a>        <span class="n">network</span> <span class="o">=</span> <span class="n">_join_single_tributaries</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="c1"># Calculate routing parameters</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="k">if</span> <span class="n">routing_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a>        <span class="n">routing_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"wcel"</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">"Br0"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"NBr"</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s2">"n_Man"</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">}</span>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Calculating routing parameters"</span><span class="p">)</span>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_calculate_routing_parameters</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">routing_params</span><span class="p">)</span>
-<a id="__codelineno-0-100" name="__codelineno-0-100"></a>
-<a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="c1"># Compute calculation order (topological order)</span>
-<a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Computing calculation order"</span><span class="p">)</span>
-<a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_compute_calculation_order</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
-<a id="__codelineno-0-104" name="__codelineno-0-104"></a>
-<a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"River network processed successfully: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">network</span><span class="p">)</span><span class="si">}</span><span class="s2"> reaches"</span><span class="p">)</span>
-<a id="__codelineno-0-106" name="__codelineno-0-106"></a>
-<a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="k">return</span> <span class="n">network</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-34"> 34</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-35"> 35</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-36"> 36</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-37"> 37</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-38"> 38</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-39"> 39</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-40"> 40</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-41"> 41</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-42"> 42</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-43"> 43</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-44"> 44</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-45"> 45</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-46"> 46</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-47"> 47</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-48"> 48</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-49"> 49</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-50"> 50</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-51"> 51</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-52"> 52</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-53"> 53</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-54"> 54</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-55"> 55</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-56"> 56</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-57"> 57</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-58"> 58</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-59"> 59</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-60"> 60</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-61"> 61</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-62"> 62</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-63"> 63</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-64"> 64</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-65"> 65</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-66"> 66</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-67"> 67</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-68"> 68</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-69"> 69</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-70"> 70</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-71"> 71</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-72"> 72</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-73"> 73</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-74"> 74</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-75"> 75</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-76"> 76</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-77"> 77</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-78"> 78</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-79"> 79</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-80"> 80</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-81"> 81</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-82"> 82</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-83"> 83</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-84"> 84</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-85"> 85</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-86"> 86</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-87"> 87</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-88"> 88</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-89"> 89</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-90"> 90</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-91"> 91</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-92"> 92</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-93"> 93</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-107">107</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-34" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-34"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_river_network</span><span class="p">(</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-35" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-35"></a>    <span class="n">shapefile_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-36" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-36"></a>    <span class="n">join_single_tributaries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-37" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-37"></a>    <span class="n">routing_params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-38" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-38"></a>    <span class="n">reference_crs</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-39" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-39"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-40" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-40"></a><span class="w">    </span><span class="sd">"""Process river network shapefile to create a complete network structure.</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-41" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-41"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-42" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-42"></a><span class="sd">    This function reads a river network shapefile, builds the network topology,</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-43" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-43"></a><span class="sd">    enforces binary tree structure (max 2 upstream tributaries per reach),</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-44" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-44"></a><span class="sd">    computes Strahler stream ordering, optionally joins single-tributary reaches,</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-45" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-45"></a><span class="sd">    and calculates routing parameters.</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-46" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-46"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-47" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-47"></a><span class="sd">    Args:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-48" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-48"></a><span class="sd">        shapefile_path: Path to river network shapefile</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-49" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-49"></a><span class="sd">        join_single_tributaries: If True, joins reaches with single tributaries (default: True)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-50" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-50"></a><span class="sd">        routing_params: Dictionary with routing parameters:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-51" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-51"></a><span class="sd">            - wcel: Wave celerity [m/s] (default: 5.0)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-52" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-52"></a><span class="sd">            - Br0: Width of 1st order streams [m] (default: 1.0)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-53" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-53"></a><span class="sd">            - NBr: Width-order exponent (default: 1.5)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-54" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-54"></a><span class="sd">            - n_Man: Manning coefficient [s/m^(1/3)] (default: 0.03)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-55" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-55"></a><span class="sd">        reference_crs: CRS of the DTM. If given, the shapefile must have the same CRS</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-56" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-56"></a><span class="sd">            (no reprojection is performed). A geographic CRS is always rejected.</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-57" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-57"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-58" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-58"></a><span class="sd">    Returns:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-59" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-59"></a><span class="sd">        GeoDataFrame with processed network including topology and routing parameters</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-60" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-60"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-61" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-61"></a><span class="sd">    Raises:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-62" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-62"></a><span class="sd">        FileNotFoundError: If shapefile does not exist</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-63" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-63"></a><span class="sd">        ValueError: If network is invalid</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-64" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-64"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-65" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-65"></a><span class="sd">    Examples:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-66" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-66"></a><span class="sd">        &gt;&gt;&gt; network = process_river_network(</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-67" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-67"></a><span class="sd">        ...     "river_network.shp",</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-68" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-68"></a><span class="sd">        ...     routing_params={"wcel": 3.0, "Br0": 1.0, "NBr": 1.5, "n_Man": 0.03}</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-69" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-69"></a><span class="sd">        ... )</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-70" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-70"></a><span class="sd">    """</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-71" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-71"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Processing river network from </span><span class="si">{</span><span class="n">shapefile_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-72" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-72"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-73" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-73"></a>    <span class="c1"># Read shapefile</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-74" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-74"></a>    <span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">shapefile_path</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-75" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-75"></a>    <span class="n">check_vector_crs</span><span class="p">(</span><span class="n">gdf</span><span class="p">,</span> <span class="n">shapefile_path</span><span class="p">,</span> <span class="n">reference_crs</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-76" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-76"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-77" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-77"></a>    <span class="c1"># Build network topology</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-78" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-78"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Building network topology"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-79" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-79"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_build_network_topology</span><span class="p">(</span><span class="n">gdf</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-80" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-80"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-81" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-81"></a>    <span class="c1"># Enforce binary tree structure (max 2 upstream tributaries per reach)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-82" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-82"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Enforcing binary tree structure"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-83" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-83"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_enforce_binary_tree</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-84" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-84"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-85" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-85"></a>    <span class="c1"># Compute Strahler ordering</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-86" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-86"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Computing Strahler stream order"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-87" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-87"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_compute_strahler_order</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-88" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-88"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-89" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-89"></a>    <span class="c1"># Optionally join single-tributary reaches</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-90" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-90"></a>    <span class="k">if</span> <span class="n">join_single_tributaries</span><span class="p">:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-91" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-91"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Joining single-tributary reaches"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-92" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-92"></a>        <span class="n">network</span> <span class="o">=</span> <span class="n">_join_single_tributaries</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-93" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-93"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-94" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-94"></a>    <span class="c1"># Calculate routing parameters</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-95" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-95"></a>    <span class="k">if</span> <span class="n">routing_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-96" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-96"></a>        <span class="n">routing_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"wcel"</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span> <span class="s2">"Br0"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">"NBr"</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s2">"n_Man"</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">}</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-97" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-97"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-98" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-98"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Calculating routing parameters"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-99" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-99"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_calculate_routing_parameters</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">routing_params</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-100" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-100"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-101" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-101"></a>    <span class="c1"># Compute calculation order (topological order)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-102" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-102"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Computing calculation order"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-103" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-103"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">_compute_calculation_order</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-104" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-104"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-105" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-105"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"River network processed successfully: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">network</span><span class="p">)</span><span class="si">}</span><span class="s2"> reaches"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-106" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-106"></a>
+<a id="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-107" name="mobidic.preprocessing.river_network.process_river_network--source--__codelineno-0-107"></a>    <span class="k">return</span> <span class="n">network</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2265,89 +2265,89 @@ GeoParquet is more efficient, has no field name limitations, and preserves data 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/preprocessing/io.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-247">247</a></span>
-<span class="normal"><a href="#__codelineno-0-248">248</a></span>
-<span class="normal"><a href="#__codelineno-0-249">249</a></span>
-<span class="normal"><a href="#__codelineno-0-250">250</a></span>
-<span class="normal"><a href="#__codelineno-0-251">251</a></span>
-<span class="normal"><a href="#__codelineno-0-252">252</a></span>
-<span class="normal"><a href="#__codelineno-0-253">253</a></span>
-<span class="normal"><a href="#__codelineno-0-254">254</a></span>
-<span class="normal"><a href="#__codelineno-0-255">255</a></span>
-<span class="normal"><a href="#__codelineno-0-256">256</a></span>
-<span class="normal"><a href="#__codelineno-0-257">257</a></span>
-<span class="normal"><a href="#__codelineno-0-258">258</a></span>
-<span class="normal"><a href="#__codelineno-0-259">259</a></span>
-<span class="normal"><a href="#__codelineno-0-260">260</a></span>
-<span class="normal"><a href="#__codelineno-0-261">261</a></span>
-<span class="normal"><a href="#__codelineno-0-262">262</a></span>
-<span class="normal"><a href="#__codelineno-0-263">263</a></span>
-<span class="normal"><a href="#__codelineno-0-264">264</a></span>
-<span class="normal"><a href="#__codelineno-0-265">265</a></span>
-<span class="normal"><a href="#__codelineno-0-266">266</a></span>
-<span class="normal"><a href="#__codelineno-0-267">267</a></span>
-<span class="normal"><a href="#__codelineno-0-268">268</a></span>
-<span class="normal"><a href="#__codelineno-0-269">269</a></span>
-<span class="normal"><a href="#__codelineno-0-270">270</a></span>
-<span class="normal"><a href="#__codelineno-0-271">271</a></span>
-<span class="normal"><a href="#__codelineno-0-272">272</a></span>
-<span class="normal"><a href="#__codelineno-0-273">273</a></span>
-<span class="normal"><a href="#__codelineno-0-274">274</a></span>
-<span class="normal"><a href="#__codelineno-0-275">275</a></span>
-<span class="normal"><a href="#__codelineno-0-276">276</a></span>
-<span class="normal"><a href="#__codelineno-0-277">277</a></span>
-<span class="normal"><a href="#__codelineno-0-278">278</a></span>
-<span class="normal"><a href="#__codelineno-0-279">279</a></span>
-<span class="normal"><a href="#__codelineno-0-280">280</a></span>
-<span class="normal"><a href="#__codelineno-0-281">281</a></span>
-<span class="normal"><a href="#__codelineno-0-282">282</a></span>
-<span class="normal"><a href="#__codelineno-0-283">283</a></span>
-<span class="normal"><a href="#__codelineno-0-284">284</a></span>
-<span class="normal"><a href="#__codelineno-0-285">285</a></span>
-<span class="normal"><a href="#__codelineno-0-286">286</a></span>
-<span class="normal"><a href="#__codelineno-0-287">287</a></span>
-<span class="normal"><a href="#__codelineno-0-288">288</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_network</span><span class="p">(</span><span class="n">network</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"parquet"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="w">    </span><span class="sd">"""Save processed river network to file.</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">    Saves the river network to either GeoParquet (default, recommended) or Shapefile format.</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    GeoParquet is more efficient, has no field name limitations, and preserves data types better.</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        network: Processed river network GeoDataFrame</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">        output_path: Path to output file</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">        format: Output format, either 'parquet' (default) or 'shapefile'</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">        ValueError: If format is not supported</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">        &gt;&gt;&gt; from mobidic import process_river_network</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">        &gt;&gt;&gt; network = process_river_network("river_network.shp")</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">        &gt;&gt;&gt; from mobidic.preprocessing.io import save_network</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">        &gt;&gt;&gt; save_network(network, "river_network.parquet")  # Default: parquet</span>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">        &gt;&gt;&gt; save_network(network, "river_network.shp", format="shapefile")  # Shapefile</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">    """</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="n">output_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a>    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">"parquet"</span><span class="p">:</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saving river network to GeoParquet: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>        <span class="n">network</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Network saved to GeoParquet: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File size: </span><span class="si">{</span><span class="n">output_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> KB"</span><span class="p">)</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">"shapefile"</span><span class="p">:</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saving river network to Shapefile: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>        <span class="c1"># Suppress shapefile field name truncation warnings (10 char limit is expected)</span>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a>        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">".*Column names longer than 10 characters.*"</span><span class="p">)</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">".*Normalized/laundered field name.*"</span><span class="p">)</span>
-<a id="__codelineno-0-284" name="__codelineno-0-284"></a>            <span class="n">network</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
-<a id="__codelineno-0-285" name="__codelineno-0-285"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Network saved to Shapefile: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File size: </span><span class="si">{</span><span class="n">output_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> KB"</span><span class="p">)</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported format: </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">. Use 'parquet' or 'shapefile'"</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-247">247</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-248">248</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-249">249</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-250">250</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-251">251</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-252">252</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-253">253</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-254">254</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-255">255</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-257">257</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-258">258</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-277">277</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-278">278</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-280">280</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-281">281</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-282">282</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-283">283</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-284">284</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-285">285</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-286">286</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-287">287</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.save_network--source--__codelineno-0-288">288</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-247" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-247"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_network</span><span class="p">(</span><span class="n">network</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"parquet"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-248" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-248"></a><span class="w">    </span><span class="sd">"""Save processed river network to file.</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-249" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-249"></a>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-250" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-250"></a><span class="sd">    Saves the river network to either GeoParquet (default, recommended) or Shapefile format.</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-251" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-251"></a><span class="sd">    GeoParquet is more efficient, has no field name limitations, and preserves data types better.</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-252" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-252"></a>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-253" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-253"></a><span class="sd">    Args:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-254" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-254"></a><span class="sd">        network: Processed river network GeoDataFrame</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-255" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-255"></a><span class="sd">        output_path: Path to output file</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-256" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-256"></a><span class="sd">        format: Output format, either 'parquet' (default) or 'shapefile'</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-257" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-257"></a>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-258" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-258"></a><span class="sd">    Raises:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-259" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-259"></a><span class="sd">        ValueError: If format is not supported</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-260" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-260"></a>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-261" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-261"></a><span class="sd">    Examples:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-262" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-262"></a><span class="sd">        &gt;&gt;&gt; from mobidic import process_river_network</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-263" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-263"></a><span class="sd">        &gt;&gt;&gt; network = process_river_network("river_network.shp")</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-264" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-264"></a><span class="sd">        &gt;&gt;&gt; from mobidic.preprocessing.io import save_network</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-265" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-265"></a><span class="sd">        &gt;&gt;&gt; save_network(network, "river_network.parquet")  # Default: parquet</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-266" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-266"></a><span class="sd">        &gt;&gt;&gt; save_network(network, "river_network.shp", format="shapefile")  # Shapefile</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-267" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-267"></a><span class="sd">    """</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-268" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-268"></a>    <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-269" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-269"></a>    <span class="n">output_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-270" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-270"></a>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-271" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-271"></a>    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">"parquet"</span><span class="p">:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-272" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-272"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saving river network to GeoParquet: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-273" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-273"></a>        <span class="n">network</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-274" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-274"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Network saved to GeoParquet: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-275" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-275"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File size: </span><span class="si">{</span><span class="n">output_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> KB"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-276" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-276"></a>    <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">"shapefile"</span><span class="p">:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-277" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-277"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-278" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-278"></a>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-279" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-279"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Saving river network to Shapefile: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-280" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-280"></a>        <span class="c1"># Suppress shapefile field name truncation warnings (10 char limit is expected)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-281" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-281"></a>        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-282" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-282"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">".*Column names longer than 10 characters.*"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-283" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-283"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">".*Normalized/laundered field name.*"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-284" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-284"></a>            <span class="n">network</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-285" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-285"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Network saved to Shapefile: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-286" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-286"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File size: </span><span class="si">{</span><span class="n">output_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> KB"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-287" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-287"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="mobidic.preprocessing.io.save_network--source--__codelineno-0-288" name="mobidic.preprocessing.io.save_network--source--__codelineno-0-288"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported format: </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">. Use 'parquet' or 'shapefile'"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2465,77 +2465,77 @@ For loading shapefiles, use geopandas.read_file() directly.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>mobidic/preprocessing/io.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-415">415</a></span>
-<span class="normal"><a href="#__codelineno-0-416">416</a></span>
-<span class="normal"><a href="#__codelineno-0-417">417</a></span>
-<span class="normal"><a href="#__codelineno-0-418">418</a></span>
-<span class="normal"><a href="#__codelineno-0-419">419</a></span>
-<span class="normal"><a href="#__codelineno-0-420">420</a></span>
-<span class="normal"><a href="#__codelineno-0-421">421</a></span>
-<span class="normal"><a href="#__codelineno-0-422">422</a></span>
-<span class="normal"><a href="#__codelineno-0-423">423</a></span>
-<span class="normal"><a href="#__codelineno-0-424">424</a></span>
-<span class="normal"><a href="#__codelineno-0-425">425</a></span>
-<span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span>
-<span class="normal"><a href="#__codelineno-0-435">435</a></span>
-<span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span>
-<span class="normal"><a href="#__codelineno-0-441">441</a></span>
-<span class="normal"><a href="#__codelineno-0-442">442</a></span>
-<span class="normal"><a href="#__codelineno-0-443">443</a></span>
-<span class="normal"><a href="#__codelineno-0-444">444</a></span>
-<span class="normal"><a href="#__codelineno-0-445">445</a></span>
-<span class="normal"><a href="#__codelineno-0-446">446</a></span>
-<span class="normal"><a href="#__codelineno-0-447">447</a></span>
-<span class="normal"><a href="#__codelineno-0-448">448</a></span>
-<span class="normal"><a href="#__codelineno-0-449">449</a></span>
-<span class="normal"><a href="#__codelineno-0-450">450</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_network</span><span class="p">(</span><span class="n">network_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">:</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="w">    </span><span class="sd">"""Load processed river network from GeoParquet file.</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">    Loads river network data from GeoParquet format only (the recommended format).</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">    For loading shapefiles, use geopandas.read_file() directly.</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        network_path: Path to network GeoParquet file (.parquet)</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">        GeoDataFrame with river network</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">        FileNotFoundError: If network file does not exist</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        ValueError: If file is not a .parquet file</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">        &gt;&gt;&gt; from mobidic.preprocessing.io import load_network</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        &gt;&gt;&gt; network = load_network("river_network.parquet")</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">    """</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a>    <span class="n">network_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">network_path</span><span class="p">)</span>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">network_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a>        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Network file not found: </span><span class="si">{</span><span class="n">network_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a>    <span class="k">if</span> <span class="n">network_path</span><span class="o">.</span><span class="n">suffix</span> <span class="o">!=</span> <span class="s2">".parquet"</span><span class="p">:</span>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a>            <span class="sa">f</span><span class="s2">"Only .parquet files supported. Got: </span><span class="si">{</span><span class="n">network_path</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">. "</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a>            <span class="s2">"Use geopandas.read_file() to load other formats."</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a>        <span class="p">)</span>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loading river network from GeoParquet: </span><span class="si">{</span><span class="n">network_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">network_path</span><span class="p">)</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"River network loaded: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">network</span><span class="p">)</span><span class="si">}</span><span class="s2"> reaches"</span><span class="p">)</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a>    <span class="k">return</span> <span class="n">network</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-419">419</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-420">420</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-444">444</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#mobidic.preprocessing.io.load_network--source--__codelineno-0-450">450</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-415" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-415"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_network</span><span class="p">(</span><span class="n">network_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">:</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-416" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-416"></a><span class="w">    </span><span class="sd">"""Load processed river network from GeoParquet file.</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-417" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-417"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-418" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-418"></a><span class="sd">    Loads river network data from GeoParquet format only (the recommended format).</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-419" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-419"></a><span class="sd">    For loading shapefiles, use geopandas.read_file() directly.</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-420" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-420"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-421" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-421"></a><span class="sd">    Args:</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-422" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-422"></a><span class="sd">        network_path: Path to network GeoParquet file (.parquet)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-423" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-423"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-424" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-424"></a><span class="sd">    Returns:</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-425" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-425"></a><span class="sd">        GeoDataFrame with river network</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-426" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-426"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-427" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-427"></a><span class="sd">    Raises:</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-428" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-428"></a><span class="sd">        FileNotFoundError: If network file does not exist</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-429" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-429"></a><span class="sd">        ValueError: If file is not a .parquet file</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-430" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-430"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-431" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-431"></a><span class="sd">    Examples:</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-432" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-432"></a><span class="sd">        &gt;&gt;&gt; from mobidic.preprocessing.io import load_network</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-433" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-433"></a><span class="sd">        &gt;&gt;&gt; network = load_network("river_network.parquet")</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-434" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-434"></a><span class="sd">    """</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-435" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-435"></a>    <span class="n">network_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">network_path</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-436" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-436"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-437" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-437"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">network_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-438" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-438"></a>        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Network file not found: </span><span class="si">{</span><span class="n">network_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-439" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-439"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-440" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-440"></a>    <span class="k">if</span> <span class="n">network_path</span><span class="o">.</span><span class="n">suffix</span> <span class="o">!=</span> <span class="s2">".parquet"</span><span class="p">:</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-441" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-441"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-442" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-442"></a>            <span class="sa">f</span><span class="s2">"Only .parquet files supported. Got: </span><span class="si">{</span><span class="n">network_path</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">. "</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-443" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-443"></a>            <span class="s2">"Use geopandas.read_file() to load other formats."</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-444" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-444"></a>        <span class="p">)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-445" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-445"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-446" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-446"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loading river network from GeoParquet: </span><span class="si">{</span><span class="n">network_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-447" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-447"></a>    <span class="n">network</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">network_path</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-448" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-448"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"River network loaded: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">network</span><span class="p">)</span><span class="si">}</span><span class="s2"> reaches"</span><span class="p">)</span>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-449" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-449"></a>
+<a id="mobidic.preprocessing.io.load_network--source--__codelineno-0-450" name="mobidic.preprocessing.io.load_network--source--__codelineno-0-450"></a>    <span class="k">return</span> <span class="n">network</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
