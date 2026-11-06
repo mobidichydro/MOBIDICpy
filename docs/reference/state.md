@@ -394,6 +394,7 @@ output_states:
   discharge: true               # Save river discharge
   soil_capillary: true          # Save capillary water (Wc)
   soil_gravitational: true      # Save gravitational water (Wg)
+  soil_saturation: false        # Save effective soil saturation (Se)
   soil_plant: true              # Save plant/canopy water (Wp)
   soil_surface: true            # Save surface water (Ws)
   aquifer_head: false           # Save groundwater head (h) when Linear groundwater is active

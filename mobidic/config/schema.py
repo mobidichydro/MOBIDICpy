@@ -429,6 +429,10 @@ class OutputStates(BaseModel):
     soil_gravitational: Optional[bool] = Field(
         True, description="Option to save states of soil large pores for results analysis"
     )
+    soil_saturation: Optional[bool] = Field(
+        False,
+        description=("Option to save the effective soil saturation (Wc+Wg)/(Wc0+Wg0)"),
+    )
     soil_plant: Optional[bool] = Field(
         True, description="Option to save states of plant/canopy water for results analysis"
     )

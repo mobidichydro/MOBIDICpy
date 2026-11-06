@@ -1479,6 +1479,7 @@ class Simulation:
                     "paramset_id": self.config.basin.paramset_id,
                 },
                 reservoir_size=reservoir_size,
+                soil_capacity=wtot0,
             )
             logger.info(f"State output enabled: {state_settings.output_states}")
         else:

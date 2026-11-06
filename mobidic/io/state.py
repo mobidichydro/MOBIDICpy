@@ -322,6 +322,10 @@ class StateWriter:
         flushing: Flush interval (positive int = every N steps, -1 = only at end)
         max_file_size: Maximum file size in MB before creating a new chunk (default: 500)
         add_metadata: Additional global attributes (optional)
+        reservoir_size: Number of reservoirs (0 = no reservoir output)
+        soil_capacity: Total soil water capacity Wc0 + Wg0 [m] on the model grid, after the
+            calibration multipliers and the Wg_Wc_tr transition have been applied. It is required
+            when ``output_states.soil_saturation`` is enabled
 
     Examples:
         >>> # With automatic chunking at 500 MB
@@ -343,6 +347,7 @@ class StateWriter:
         max_file_size: float = 500.0,
         add_metadata: dict | None = None,
         reservoir_size: int = 0,
+        soil_capacity: np.ndarray | None = None,
     ):
         """Initialize the state writer and create the NetCDF file."""
         self.base_output_path = Path(output_path)
@@ -352,6 +357,23 @@ class StateWriter:
         self.network_size = network_size
         self.reservoir_size = reservoir_size
         self.output_states = output_states
+
+        # Total soil capacity for the effective saturation output
+        self.soil_capacity = None
+        if getattr(output_states, "soil_saturation", False):
+            if soil_capacity is None:
+                logger.warning(
+                    "output_states.soil_saturation is enabled but no soil capacity was supplied to "
+                    "StateWriter; the effective soil saturation will not be saved"
+                )
+            else:
+                soil_capacity = np.asarray(soil_capacity, dtype=float)
+                if soil_capacity.shape != tuple(grid_metadata["shape"]):
+                    raise ValueError(
+                        f"soil_capacity shape {soil_capacity.shape} does not match grid shape "
+                        f"{tuple(grid_metadata['shape'])}"
+                    )
+                self.soil_capacity = soil_capacity.copy()
         self.flushing = flushing
         self.max_file_size_bytes = max_file_size * 1024 * 1024  # Convert MB to bytes
         self.add_metadata = add_metadata or {}
@@ -577,6 +599,11 @@ class StateWriter:
             wg_data = np.array([s.wg for s in self.buffer])
             data_vars["Wg"] = (["time", "y", "x"], wg_data)
 
+        if self.soil_capacity is not None:
+            # Effective saturation: (Wc + Wg) / (Wc0 + Wg0).
+            se_data = np.array([(s.wc + s.wg) / self.soil_capacity for s in self.buffer])
+            data_vars["Se"] = (["time", "y", "x"], se_data)
+
         if self.output_states.soil_plant:
             # Check if any state has wp (plant water)
             has_wp = any(s.wp is not None for s in self.buffer)
@@ -693,6 +720,19 @@ class StateWriter:
                 "long_name": "Gravitational Water Content",
                 "units": "m",
                 "description": "Drainable water in soil large pores",
+                "grid_mapping": "crs",
+            }
+
+        if "Se" in flush_ds:
+            flush_ds["Se"].attrs = {
+                "long_name": "Effective Soil Saturation",
+                "units": "1",
+                "description": (
+                    "Ratio of the soil water content to the total soil water capacity, (Wc+Wg)/(Wc0+Wg0); "
+                    "equivalent to (theta - theta_wp)/(theta_s - theta_wp), i.e., relative to the wilting point"
+                ),
+                "valid_min": 0.0,
+                "valid_max": 1.0,
                 "grid_mapping": "crs",
             }
 

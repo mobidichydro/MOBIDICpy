@@ -416,6 +416,10 @@ output_states:
   # [boolean]
   soil_gravitational: true
 
+  # OPTIONAL: Save the effective soil saturation Se = (Wc+Wg)/(Wc0+Wg0), non dimensional. Default: false
+  # [boolean]
+  soil_saturation: false
+
   # OPTIONAL: Save states of plant/canopy water. Default: true
   # [boolean]
   soil_plant: true
